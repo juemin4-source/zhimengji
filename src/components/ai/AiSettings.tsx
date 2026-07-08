@@ -120,6 +120,20 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
     if (onSaveProviders) onSaveProviders(providers);
     if (onChangeModel) onChangeModel(selectedModel);
     if (onSaveBudget) onSaveBudget(parseInt(budgetInput) || 0);
+    // Persist API keys to Rust backend
+    const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+    if (hasTauri) {
+      (async () => {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          for (const p of providers) {
+            if (p.apiKey) {
+              await invoke('store_api_key', { provider: p.id, key: p.apiKey });
+            }
+          }
+        } catch { /* backend not available */ }
+      })();
+    }
     onClose();
   }, [providers, selectedModel, budgetInput, onSaveProviders, onChangeModel, onSaveBudget, onClose]);
 

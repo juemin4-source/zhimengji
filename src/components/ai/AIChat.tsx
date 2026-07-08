@@ -4,13 +4,226 @@ import type { WorldObject } from '../../types/world';
 import type { Message, DocCardData, AiModel } from '../../types/ai';
 import { DEFAULT_MODELS } from '../../types/ai';
 import DocCard from './DocCard';
-import { callLlm } from '../../lib/llm-client';
+import { callLlmStream } from '../../lib/llm-client';
+import * as api from '../../tauri-api';
 
 const CANON_DOT_COLORS: Record<string, string> = {
   '核心正典': '#FFB74D',
   '项目正典': '#90CAF9',
   '草案正典': '#CE93D8',
   '未收录': '#666',
+};
+
+// ── System Prompt Builder ──
+function buildSystemPrompt(focusObject: WorldObject | null): string {
+  let prompt = `你是织梦机 AI 助手，帮助用户进行世界构建和叙事创作。
+
+## 支持的对象类型
+- 人物：角色设定、背景故事、性格特征
+- 地点：场景描述、地理环境
+- 组织：势力结构、派系关系
+- 规则/机制：世界观规则、魔法系统、科技设定
+- 事件：历史事件、剧情节点
+- 物品：重要道具、特殊物品
+- 术语：专有名词、概念定义
+
+## 正典等级
+- 核心正典：不可更改的设定
+- 项目正典：当前项目确定的设定
+- 草案正典：待讨论的初步设定
+- 未收录：临时想法，未正式收录
+
+## 回复格式
+- 使用 Markdown 格式回复
+- 对于可结构化的内容（人物、地点、组织等），请用 JSON 代码块标记结构化数据，格式为：
+  \`\`\`json
+  {
+    "title": "名称",
+    "type": "world|org|character|location|item|term",
+    "typeLabel": "设定|组织|角色|地点|物品|术语",
+    "status": "草案",
+    "bodyHTML": "描述内容",
+    "sections": [{"title": "章节标题", "content": "章节内容"}]
+  }
+  \`\`\``;
+
+  if (focusObject) {
+    prompt += `\n\n## 当前聚焦对象
+用户正在关注以下对象：
+- 名称：${focusObject.name}
+- 类型：${focusObject.type}
+- 正典等级：${focusObject.canonLevel}
+- 标签：${focusObject.tags.join('、') || '无'}
+- 内容：${focusObject.content || '暂无内容'}`;
+  }
+
+  return prompt;
+}
+
+// ── DocCard Extraction ──
+function extractDocCards(content: string): DocCardData[] {
+  const cards: DocCardData[] = [];
+  const jsonBlockRegex = /```json\s*([\s\S]*?)```/g;
+  let match;
+  let idx = 0;
+  while ((match = jsonBlockRegex.exec(content)) !== null) {
+    try {
+      const data = JSON.parse(match[1].trim());
+      if (data.title && data.bodyHTML !== undefined) {
+        cards.push({
+          id: 'doc_' + Date.now() + '_' + (idx++),
+          type: data.type || 'world',
+          typeLabel: data.typeLabel || '设定',
+          title: data.title,
+          status: data.status || '草案',
+          bodyHTML: data.bodyHTML,
+          sections: data.sections || [],
+        });
+      }
+    } catch { /* skip invalid JSON blocks */ }
+  }
+  return cards;
+}
+
+// ── Safe Markdown Renderer ──
+function renderMarkdown(text: string): ReactNode {
+  if (!text) return null;
+  const parts: ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    const codeBlockMatch = remaining.match(/```(\w*)\n?([\s\S]*?)```/);
+    if (codeBlockMatch && codeBlockMatch.index !== undefined && codeBlockMatch.index >= 0) {
+      if (codeBlockMatch.index > 0) {
+        parts.push(renderInline(remaining.slice(0, codeBlockMatch.index), key++));
+      }
+      const lang = codeBlockMatch[1] || '';
+      const code = codeBlockMatch[2].replace(/\n$/, '');
+      parts.push(
+        <pre key={key++} style={{ background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '12px 16px', overflow: 'auto', fontSize: '0.8125rem', lineHeight: 1.5, margin: '8px 0' }}>
+          {lang ? <div style={{ fontSize: '0.6875rem', color: '#666', marginBottom: 6 }}>{lang}</div> : null}
+          <code style={{ fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'pre', color: '#e0e0e0' }}>{code}</code>
+        </pre>
+      );
+      remaining = remaining.slice(codeBlockMatch.index + codeBlockMatch[0].length);
+    } else {
+      parts.push(renderInline(remaining, key++));
+      remaining = '';
+    }
+  }
+
+  return <>{parts}</>;
+}
+
+function renderInline(text: string, keyBase: number): ReactNode {
+  const paragraphs = text.split(/\n\n+/).filter(p => p.trim());
+  if (paragraphs.length === 0) {
+    return renderFormatted(text.trim(), keyBase);
+  }
+  return paragraphs.map((p, i) => {
+    const trimmed = p.trim();
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/m);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const fontSize = ['1.5rem', '1.25rem', '1.1rem', '1rem', '0.9375rem', '0.875rem'][level - 1];
+      return (
+        <div key={`${keyBase}-h${i}`} style={{ fontSize, fontWeight: 600, color: 'var(--text-primary, #e0e0e0)', margin: '12px 0 6px', lineHeight: 1.4 }}>
+          {renderFormatted(headingMatch[2], `${keyBase}-h${i}`)}
+        </div>
+      );
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
+      const items = trimmed.split('\n').filter(l => /^[-*]\s+/.test(l.trim())).map(l => l.trim().replace(/^[-*]\s+/, ''));
+      return (
+        <ul key={`${keyBase}-ul${i}`} style={{ margin: '6px 0', paddingLeft: 20, color: 'var(--text-primary, #e0e0e0)', fontSize: '0.875rem', lineHeight: 1.6 }}>
+          {items.map((item, j) => <li key={j}>{renderFormatted(item, `${keyBase}-li${j}`)}</li>)}
+        </ul>
+      );
+    }
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const items = trimmed.split('\n').filter(l => /^\d+\.\s+/.test(l.trim())).map(l => l.trim().replace(/^\d+\.\s+/, ''));
+      return (
+        <ol key={`${keyBase}-ol${i}`} style={{ margin: '6px 0', paddingLeft: 20, color: 'var(--text-primary, #e0e0e0)', fontSize: '0.875rem', lineHeight: 1.6 }}>
+          {items.map((item, j) => <li key={j}>{renderFormatted(item, `${keyBase}-li${j}`)}</li>)}
+        </ol>
+      );
+    }
+    if (/^---+\s*$/.test(trimmed)) {
+      return <hr key={`${keyBase}-hr${i}`} style={{ border: 'none', borderTop: '1px solid var(--border-default, #2a2a2a)', margin: '16px 0' }} />;
+    }
+    return (
+      <p key={`${keyBase}-p${i}`} style={{ margin: '6px 0', lineHeight: 1.6 }}>
+        {renderFormatted(trimmed, `${keyBase}-p${i}`)}
+      </p>
+    );
+  });
+}
+
+function renderFormatted(text: string, key: string): ReactNode {
+  const parts: ReactNode[] = [];
+  let remaining = text;
+  let idx = 0;
+
+  while (remaining.length > 0) {
+    const codeMatch = remaining.match(/`([^`]+)`/);
+    if (codeMatch && codeMatch.index !== undefined && codeMatch.index >= 0) {
+      if (codeMatch.index > 0) parts.push(<span key={`${key}-t${idx++}`}>{remaining.slice(0, codeMatch.index)}</span>);
+      parts.push(
+        <code key={`${key}-c${idx++}`} style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 5px', borderRadius: 3, fontFamily: 'var(--font-mono, monospace)', fontSize: '0.8125rem', color: '#CE93D8' }}>
+          {codeMatch[1]}
+        </code>
+      );
+      remaining = remaining.slice(codeMatch.index + codeMatch[0].length);
+      continue;
+    }
+    const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch && linkMatch.index !== undefined && linkMatch.index >= 0) {
+      if (linkMatch.index > 0) parts.push(<span key={`${key}-t${idx++}`}>{remaining.slice(0, linkMatch.index)}</span>);
+      parts.push(
+        <a key={`${key}-l${idx++}`} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent, #B7FF00)', textDecoration: 'underline' }}>
+          {linkMatch[1]}
+        </a>
+      );
+      remaining = remaining.slice(linkMatch.index + linkMatch[0].length);
+      continue;
+    }
+    const boldMatch = remaining.match(/\*\*([^*]+)\*\*/);
+    if (boldMatch && boldMatch.index !== undefined && boldMatch.index >= 0) {
+      if (boldMatch.index > 0) parts.push(<span key={`${key}-t${idx++}`}>{remaining.slice(0, boldMatch.index)}</span>);
+      parts.push(<strong key={`${key}-b${idx++}`} style={{ fontWeight: 700, color: 'var(--text-primary, #e0e0e0)' }}>{boldMatch[1]}</strong>);
+      remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
+      continue;
+    }
+    const italicMatch = remaining.match(/\*([^*]+)\*/);
+    if (italicMatch && italicMatch.index !== undefined && italicMatch.index >= 0) {
+      if (italicMatch.index > 0) parts.push(<span key={`${key}-t${idx++}`}>{remaining.slice(0, italicMatch.index)}</span>);
+      parts.push(<em key={`${key}-i${idx++}`} style={{ fontStyle: 'italic', color: '#a0a0a0' }}>{italicMatch[1]}</em>);
+      remaining = remaining.slice(italicMatch.index + italicMatch[0].length);
+      continue;
+    }
+    const brMatch = remaining.match(/^([^\n]*)\n/);
+    if (brMatch && brMatch.index !== undefined && brMatch.index >= 0) {
+      if (brMatch[1]) parts.push(<span key={`${key}-t${idx++}`}>{brMatch[1]}</span>);
+      parts.push(<br key={`${key}-br${idx++}`} />);
+      remaining = remaining.slice(brMatch.index + brMatch[0].length);
+      continue;
+    }
+    parts.push(<span key={`${key}-t${idx++}`}>{remaining}</span>);
+    remaining = '';
+  }
+
+  return <>{parts}</>;
+}
+
+// ── Type mapping for DocCard → WorldObject ──
+const DOC_TYPE_TO_OBJECT_TYPE: Record<string, string> = {
+  'world': '规则/机制',
+  'org': '组织',
+  'character': '人物',
+  'location': '地点',
+  'item': '物品',
+  'term': '术语',
 };
 
 interface AIChatProps {
@@ -24,14 +237,37 @@ interface AIChatProps {
 
 let msgIdCounter = 0;
 function uid(): string { return 'msg_' + (++msgIdCounter); }
+
 export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateObject, onShowToast, onCreateObject }: AIChatProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: uid(), role: 'assistant',
-      content: '你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。',
-      timestamp: Date.now(),
-    },
-  ]);
+  // ── localStorage persistence ──
+  const storageKey = useMemo(() => `zhimengji_ai_messages_${activeBookId || 'global'}`, [activeBookId]);
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    msgIdCounter = 0;
+    try {
+      const key = `zhimengji_ai_messages_${activeBookId || 'global'}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* ignore localStorage errors */ }
+    return [
+      {
+        id: uid(), role: 'assistant',
+        content: '你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。',
+        timestamp: Date.now(),
+      },
+    ];
+  });
+
+  // Persist messages to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch { /* ignore storage errors */ }
+  }, [messages, storageKey]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [focusObjectId, setFocusObjectId] = useState<string | null>(null);
@@ -74,6 +310,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
+  // ── Focus / Outline Click ──
   const handleOutlineClick = useCallback((obj: WorldObject) => {
     if (focusObjectId === obj.id) {
       setFocusObjectId(null);
@@ -84,6 +321,8 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
   }, [focusObjectId, onNavigate]);
 
   const clearFocus = useCallback(() => { setFocusObjectId(null); }, []);
+
+  // ── Send Message (streaming + system prompt) ──
   const handleSend = useCallback(async () => {
     const text = inputText.trim();
     if (!text || isLoading) return;
@@ -91,13 +330,31 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
     if (inputRef.current) { inputRef.current.style.height = 'auto'; }
 
     const userMsg: Message = { id: uid(), role: 'user', content: text, timestamp: Date.now() };
+
+    // Build system prompt with focus context if available
+    const focusObject = focusObjectId ? (allObjects.find(o => o.id === focusObjectId) || null) : null;
+    const systemPrompt = buildSystemPrompt(focusObject);
+    const systemMsg: Message = { id: uid(), role: 'system', content: systemPrompt, timestamp: Date.now() };
+
+    // API messages: system prompt + conversation history + current user message
+    const apiMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...messages.map(m => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+      { role: 'user' as const, content: text },
+    ];
+
+    // Optimistically add user message to UI
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setIsLoading(true);
 
     try {
-      const response = await callLlm(
-        updatedMessages.map(m => ({ role: m.role, content: m.content })),
+      // Insert placeholder assistant message for streaming
+      const placeholderId = uid();
+      setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', content: '', timestamp: Date.now() }]);
+
+      const response = await callLlmStream(
+        apiMessages,
         {
           model: activeModel,
           apiKey: '',
@@ -112,19 +369,35 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
               }
               return prev;
             });
-          }
+          },
         }
       );
 
-      const assistantMsg: Message = {
-        id: uid(), role: 'assistant',
-        content: response.content,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, assistantMsg]);
+      // After streaming completes, extract DocCards from the full response
+      const docs = extractDocCards(response.content);
+      if (docs.length > 0) {
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === 'assistant') {
+            updated[updated.length - 1] = { ...last, docs };
+          }
+          return updated;
+        });
+      }
+
       setSessionTokens(prev => ({ in: prev.in + response.tokensIn, out: prev.out + response.tokensOut }));
       setTokenCount(prev => prev + response.tokensIn + response.tokensOut);
     } catch (err) {
+      // Remove empty placeholder if streaming failed before any content
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'assistant' && !last.content) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+
       const errorMsg: Message = {
         id: uid(), role: 'assistant',
         content: '抱歉，AI 调用出错了: ' + (err instanceof Error ? err.message : '未知错误'),
@@ -134,17 +407,27 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
       if (onShowToast) onShowToast('AI 调用失败', 'error');
     }
     setIsLoading(false);
-  }, [inputText, isLoading, activeModel, messages, onShowToast]);
+  }, [inputText, isLoading, activeModel, messages, focusObjectId, allObjects, onShowToast]);
 
+  // ── New Chat ──
   const handleNewChat = useCallback(() => { setShowNewChatConfirm(true); }, []);
 
   const confirmNewChat = useCallback(() => {
-    setMessages([{ id: uid(), role: 'assistant', content: '你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。', timestamp: Date.now() }]);
+    const welcome = [{
+      id: uid(), role: 'assistant' as const,
+      content: '你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。',
+      timestamp: Date.now(),
+    }];
+    setMessages(welcome);
     setTokenCount(0);
     setSessionTokens({ in: 0, out: 0 });
     setFocusObjectId(null);
     setShowNewChatConfirm(false);
-  }, []);
+    // Clear persisted messages for this project
+    try { localStorage.removeItem(storageKey); } catch {}
+  }, [storageKey]);
+
+  // ── DocCard Save ──
   const handleDocCardSave = useCallback(async (cardId: string, updates: { title?: string; bodyHTML?: string; sections?: Array<{ title: string; content: string }> }) => {
     setMessages(prev => prev.map(msg => {
       if (!msg.docs) return msg;
@@ -158,12 +441,50 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
     }
   }, [allObjects, onUpdateObject]);
 
+  // ── "收录为设定" — Actually create a WorldObject ──
+  const handleCollect = useCallback(async (cardId: string) => {
+    for (const msg of messages) {
+      if (!msg.docs) continue;
+      const card = msg.docs.find(d => d.id === cardId);
+      if (!card) continue;
+
+      const objectType = DOC_TYPE_TO_OBJECT_TYPE[card.type] || '规则/机制';
+      const now = Date.now();
+      const newObj: WorldObject = {
+        id: 'obj_' + now,
+        projectId: activeBookId || '',
+        name: card.title,
+        type: objectType as any,
+        status: '草稿' as any,
+        canonLevel: '草案正典' as any,
+        tags: [],
+        aliases: [],
+        selectedBoards: [],
+        content: '# ' + card.title + '\n\n' + (card.bodyHTML || ''),
+        referencesCount: 0,
+        judgmentHistory: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+      try {
+        await api.createWorldObject(newObj);
+        if (onShowToast) onShowToast('已收录为设定', 'success');
+      } catch (e) {
+        if (onShowToast) onShowToast('收录失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
+      }
+      return;
+    }
+    if (onShowToast) onShowToast('未找到可收录的内容', 'error');
+  }, [messages, activeBookId, onShowToast]);
+
+  // ── Keyboard ──
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }, [handleSend]);
 
   const btnHover = (e: React.MouseEvent) => { if (!(e.currentTarget as HTMLButtonElement).disabled) { Object.assign((e.currentTarget as HTMLElement).style, { background: 'rgba(183,255,0,0.12)', borderColor: '#444' }); } };
   const btnLeave = (e: React.MouseEvent) => { Object.assign((e.currentTarget as HTMLElement).style, { background: 'transparent', borderColor: 'var(--border-default, #2a2a2a)' }); };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
@@ -260,21 +581,24 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
                     {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
                   <div style={{ maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-lg, 12px)', fontSize: '0.875rem', lineHeight: 1.6,
-                      background: msg.role === 'user' ? 'rgba(66,165,245,0.08)' : 'var(--bg-surface, #141414)',
-                      border: msg.role === 'user' ? '1px solid rgba(66,165,245,0.12)' : '1px solid var(--border-default, #2a2a2a)',
-                      color: 'var(--text-primary, #e0e0e0)',
-                      borderTopRightRadius: msg.role === 'user' ? 4 : 12,
-                      borderTopLeftRadius: msg.role === 'assistant' ? 4 : 12,
-                    }}>
-                      <div style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: msg.content }} />
-                      {msg.docs && msg.docs.map(doc => (
-                        <DocCard key={doc.id} card={doc} highlighted={focusObjectId === doc.id}
-                          onSave={handleDocCardSave}
-                          onCollect={() => { if (onShowToast) onShowToast('已收录为设定', 'success'); }}
-                        />
-                      ))}
-                    </div>
+                    {msg.role !== 'system' && (
+                      <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-lg, 12px)', fontSize: '0.875rem', lineHeight: 1.6,
+                        background: msg.role === 'user' ? 'rgba(66,165,245,0.08)' : 'var(--bg-surface, #141414)',
+                        border: msg.role === 'user' ? '1px solid rgba(66,165,245,0.12)' : '1px solid var(--border-default, #2a2a2a)',
+                        color: 'var(--text-primary, #e0e0e0)',
+                        borderTopRightRadius: msg.role === 'user' ? 4 : 12,
+                        borderTopLeftRadius: msg.role === 'assistant' ? 4 : 12,
+                      }}>
+                        {/* Safe Markdown rendering — no dangerouslySetInnerHTML */}
+                        <div style={{ margin: 0 }}>{renderMarkdown(msg.content)}</div>
+                        {msg.docs && msg.docs.map(doc => (
+                          <DocCard key={doc.id} card={doc} highlighted={focusObjectId === doc.id}
+                            onSave={handleDocCardSave}
+                            onCollect={handleCollect}
+                          />
+                        ))}
+                      </div>
+                    )}
                     <div style={{ fontSize: '0.625rem', color: 'var(--text-muted, #666)', padding: '0 4px', marginTop: 2, textAlign: msg.role === 'user' ? 'right' : 'left' }}>
                       {new Date(msg.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
@@ -347,7 +671,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
           </div>
         </div>
       )}
-      
+
       {/* Model Picker Modal */}
       {showModelPicker && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowModelPicker(false)}>

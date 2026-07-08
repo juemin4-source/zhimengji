@@ -147,7 +147,7 @@ describe('Path 1: Story Creation (App level)', () => {
     fireEvent.change(screen.getByPlaceholderText('输入作品名称...'), { target: { value: '新作品' } });
 
     // Click next
-    fireEvent.click(screen.getByText('下一步 →'));
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
 
     // Step 2: skip template
     fireEvent.click(screen.getByText('跳过'));

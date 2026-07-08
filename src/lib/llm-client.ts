@@ -56,11 +56,10 @@ export async function callLlm(
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         const result: any = await invoke('call_llm', {
-          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          provider: model.providerId,
           model: model.name,
-          endpoint,
-          apiKey: token,
-          timeout,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          custom_endpoint: endpoint,
         });
         const tokensIn = result.tokensIn || estimateTokens(JSON.stringify(messages));
         const tokensOut = result.tokensOut || estimateTokens(result.content || '');
@@ -136,11 +135,10 @@ export async function callLlmStream(
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         const result: any = await invoke('call_llm_stream', {
-          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          provider: model.providerId,
           model: model.name,
-          endpoint,
-          apiKey: token,
-          timeout,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          custom_endpoint: endpoint,
         });
         if (onToken && result.content) onToken(result.content);
         fullContent = result.content || '';

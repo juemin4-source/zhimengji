@@ -118,9 +118,9 @@ function AppInner() {
   const [changelogEntries, setChangelogEntries] = useState<ChangelogEntry[]>([]);
 
   const [aiUsageStats, setAiUsageStats] = useState<UsageStats>({
-    todayTokens: 6240, maxTokens: 10000,
+    todayTokens: 0, maxTokens: 0,
     dailyHistory: [],
-    totalCostToday: 0.055, totalCostMonth: 1.24, budgetLimit: 10,
+    totalCostToday: 0, totalCostMonth: 0, budgetLimit: 10,
   });
   // v1.2: Object count for canon guide trigger
   const prevObjectCountRef = useRef(0);
@@ -148,19 +148,17 @@ function AppInner() {
 
   // ── AI usage stats from backend ──
   useEffect(() => {
-    if (showAiSettings) {
-      const loadUsage = async () => {
-        try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const stats = await invoke('get_usage_stats');
-          if (stats) setAiUsageStats(stats as UsageStats);
-        } catch {
-          // Backend not available, keep defaults
-        }
-      };
-      loadUsage();
-    }
-  }, [showAiSettings]);
+    const loadUsage = async () => {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const stats = await invoke('get_usage_stats');
+        if (stats) setAiUsageStats(stats as UsageStats);
+      } catch {
+        // Backend not available, keep empty defaults
+      }
+    };
+    loadUsage();
+  }, []);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
@@ -455,7 +453,7 @@ function AppInner() {
           }
         : o
     ));
-    syncManager.enqueue('appendJudgment', record).catch(() => {});
+    syncManager.enqueue('appendJudgment', record).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
     api.appendJudgmentRecord(record).catch(e => {
       console.error('Failed to append judgment', e);
       showToast(`${operationType}失败`, 'error');
@@ -499,7 +497,7 @@ function AppInner() {
       const target = updated.find(o => o.id === id);
       if (target && activeBookId) {
         const objWithProject = { ...target, projectId: activeBookId };
-        syncManager.enqueue('updateObject', objWithProject).catch(() => {});
+        syncManager.enqueue('updateObject', objWithProject).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
         api.updateWorldObject(objWithProject).catch(e => {
           console.error('Failed to update object', e);
           showToast('保存失败', 'error');
@@ -527,7 +525,7 @@ function AppInner() {
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
     if (activeBookId) {
-      syncManager.enqueue('createObject', newObj).catch(() => {});
+      syncManager.enqueue('createObject', newObj).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建${templateType}`, 'success'))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
@@ -564,7 +562,7 @@ function AppInner() {
       };
     });
     if (activeBookId) {
-      syncManager.enqueue('createObject', newObj).catch(() => {});
+      syncManager.enqueue('createObject', newObj).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建${templateType}`, "success"))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
@@ -587,7 +585,7 @@ function AppInner() {
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
     if (activeBookId) {
-      syncManager.enqueue('createObject', newObj).catch(() => {});
+      syncManager.enqueue('createObject', newObj).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建「${name}」`, 'success'))
         .catch(e => { console.error('Failed to create named object', e); showToast('创建对象失败', 'error'); });
@@ -601,7 +599,7 @@ function AppInner() {
     }
     setObjects(prev => prev.filter(o => o.id !== id));
     if (selectedObjectId === id) setSelectedObjectId(null);
-    syncManager.enqueue('deleteObject', { id }).catch(() => {});
+    syncManager.enqueue('deleteObject', { id }).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
     api.deleteWorldObject(id)
       .then(() => showToast('对象已删除', 'success'))
       .catch(e => { console.error('Failed to delete object', e); showToast('删除对象失败', 'error'); });
@@ -621,7 +619,7 @@ function AppInner() {
       if (o.id !== objectId || o.selectedBoards.includes(board)) return o;
       const updated = { ...o, selectedBoards: [...o.selectedBoards, board], updatedAt: Date.now() };
       if (activeBookId) {
-        syncManager.enqueue('updateObject', { ...updated, projectId: activeBookId }).catch(() => {});
+        syncManager.enqueue('updateObject', { ...updated, projectId: activeBookId }).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
         api.updateWorldObject({ ...updated, projectId: activeBookId })
           .then(() => showToast(`已放入「${board}」`, 'success'))
           .catch(e => { console.error('Failed to update board', e); showToast('加入画板失败', 'error'); });
@@ -666,7 +664,7 @@ function AppInner() {
     const canvasRecord: CanvasTabState = { ...merged, tabId };
     const canvasId = `${activeBookId}:${tabId}`;
     const version = Date.now();
-    syncManager.enqueue('saveCanvasState', { ...canvasRecord, id: canvasId, projectId: activeBookId, version }).catch(() => {});
+    syncManager.enqueue('saveCanvasState', { ...canvasRecord, id: canvasId, projectId: activeBookId, version }).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
     api.saveCanvasTabState({ ...canvasRecord, id: canvasId, projectId: activeBookId, version })
       .then((resp: any) => {
         if (resp && resp.error === 'VERSION_CONFLICT') {
@@ -708,7 +706,7 @@ function AppInner() {
       }
       return next;
     });
-    syncManager.enqueue('createConnection', newConn).catch(() => {});
+    syncManager.enqueue('createConnection', newConn).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
     api.createConnection(newConn).catch(e => { console.error('Failed to create connection', e); showToast('创建连线失败', 'error'); });
   }, [activeBookId, showToast]);
 
@@ -734,7 +732,7 @@ function AppInner() {
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     if (activeBookId) {
-      syncManager.enqueue('createObject', newObj).catch(() => {});
+      syncManager.enqueue('createObject', newObj).catch(e => { console.error('Sync failed', e); showToast('自动同步失败', 'error'); });
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建${templateType}`, 'success'))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
@@ -927,7 +925,17 @@ function AppInner() {
         activeModelId={aiActiveModelId}
         usageStats={aiUsageStats}
         onClose={() => setShowAiSettings(false)}
-        onSaveProviders={(providers) => setAiProviders(providers)}
+        onSaveProviders={async (providers) => {
+          setAiProviders(providers);
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            for (const p of providers) {
+              if (p.apiKey) {
+                await invoke('store_api_key', { provider: p.id, key: p.apiKey });
+              }
+            }
+          } catch {}
+        }}
         onChangeModel={(modelId) => setAiActiveModelId(modelId)}
         onSaveBudget={async (budget) => {
           setAiUsageStats(prev => ({ ...prev, budgetLimit: budget }));

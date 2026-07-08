@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import type { WorldObject } from '../types/world';
+import type { WorldObject, ObjectType } from '../types/world';
 
 interface DocOutlineProps {
   allObjects: WorldObject[];
   currentObjectId: string | null;
   onNavigate: (name: string) => void;
+  onCreateObject?: (templateType: ObjectType) => void;
 }
 
 interface GroupConfig {
@@ -22,6 +23,18 @@ const GROUPS: GroupConfig[] = [
   { key: 'setting', label: '设定', icon: '⚙️', predicate: (o) => ['地点', '组织', '规则/机制', '事件', '物品', '术语'].includes(o.type) && o.status !== '废弃' && o.status !== '草稿' },
 ];
 
+/** Map group key → the most appropriate ObjectType to create */
+function createTypeForGroup(groupKey: string): ObjectType {
+  switch (groupKey) {
+    case 'chapter': return '章节';
+    case 'character': return '人物';
+    case 'draft': return '事件';
+    case 'discarded': return '事件';
+    case 'setting': return '事件';
+    default: return '事件';
+  }
+}
+
 function statusIcon(status: string): string {
   switch (status) {
     case '锁定': return '\u{1F512}';
@@ -34,7 +47,7 @@ function statusIcon(status: string): string {
   }
 }
 
-export default function DocOutline({ allObjects, currentObjectId, onNavigate }: DocOutlineProps) {
+export default function DocOutline({ allObjects, currentObjectId, onNavigate, onCreateObject }: DocOutlineProps) {
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
@@ -68,6 +81,13 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate }: 
                 <span className="outline-group-icon">{group.icon}</span>
                 <span className="outline-group-label">{group.label}</span>
                 <span className="outline-count">{group.items.length}</span>
+                {onCreateObject && (
+                  <button
+                    className="outline-add-btn"
+                    title={`新建${createTypeForGroup(group.key)}`}
+                    onClick={(e) => { e.stopPropagation(); onCreateObject(createTypeForGroup(group.key)); }}
+                  >+</button>
+                )}
               </div>
               {!collapsedGroups[group.key] && (
                 <div className="outline-items">

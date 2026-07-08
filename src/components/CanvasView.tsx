@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
+import { TEMPLATES } from '../data/seed';
 
 interface TextAnnotation { id: string; text: string; x: number; y: number; }
 interface PartitionZone { id: string; label: string; x: number; y: number; width: number; height: number; }
@@ -95,6 +96,8 @@ export default function CanvasView({
   const [showTextDialog, setShowTextDialog] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [textInputPos, setTextInputPos] = useState({ x: 0, y: 0 });
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createDialogPos, setCreateDialogPos] = useState({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -201,6 +204,16 @@ export default function CanvasView({
     if (toolMode === 'template') { setShowTemplatePicker(true); setToolMode('select'); return; }
   }, [toolMode, panOffset]);
 
+  const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
+    // Only respond if clicking on the canvas background, not on a node
+    const target = e.target as HTMLElement;
+    if (target.closest('.canvas-node') || target.closest('.canvas-sticky') || target.closest('.text-annotation')) return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setCreateDialogPos({ x: e.clientX - rect.left + panOffset.x, y: e.clientY - rect.top + panOffset.y });
+    setShowCreateDialog(true);
+  }, [panOffset]);
+
   const handleConfirmText = useCallback(() => { if (textInput.trim()) { setTextLabels(prev => [...prev, { id: `text_${_textId++}`, text: textInput.trim(), x: textInputPos.x, y: textInputPos.y }]); setTextInput(''); setShowTextDialog(false); } }, [textInput, textInputPos]);
 
   const handleConfirmSticky = useCallback(() => { if (stickyText.trim()) { onAddSticky(activeTab, stickyText.trim()); setStickyText(''); setShowStickyDialog(false); } }, [stickyText, activeTab, onAddSticky]);
@@ -264,7 +277,7 @@ export default function CanvasView({
         background: sd.background, border: sd.border, color: sd.text, borderRadius: 8, padding: '8px 14px', fontSize: 12, cursor: 'pointer',
         boxShadow: isSelected ? '0 0 0 2px #1a73e8, 0 4px 16px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)', userSelect: 'none',
         opacity: isDiscarded ? 0.65 : 1, textDecoration: isDiscarded ? 'line-through' : 'none', zIndex: 10, ...(isKeyEvent ? { borderLeft: '4px solid #f44336' } : {}),
-      }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={() => onNavigate(obj.name)}>
+      }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={(e) => { e.stopPropagation(); onNavigate(obj.name); }}>
         <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 1 }}>{obj.name}</div>
         <div style={{ fontSize: 11, opacity: 0.7 }}>{isDiscarded ? '已废弃' : obj.type}</div>
       </div>;
@@ -276,7 +289,7 @@ export default function CanvasView({
       opacity: isDiscarded ? 0.7 : 1,
       boxShadow: isConnSource ? '0 0 0 3px #FF9800, 0 4px 16px rgba(0,0,0,0.3)' : isSelected ? '0 0 0 2px #1a73e8, 0 4px 16px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
       textDecoration: isDiscarded ? 'line-through' : 'none',
-    }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={() => onNavigate(obj.name)}>
+    }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={(e) => { e.stopPropagation(); onNavigate(obj.name); }}>
       <div className="node-name">{obj.name}</div>
       <div className="node-type">{obj.type}</div>
     </div>;
@@ -369,7 +382,7 @@ export default function CanvasView({
             <span>节点: {Object.keys(state.positions).length}</span><span>|</span><span>连线: {displayConnections.length}</span>
             {activeTab === '角色关系图' && toolMode === 'addConnection' && <><span>|</span><span style={{ color: '#FF9800' }}>{connSource ? '点击第二个节点建立连线' : '点击一个节点作为连线起点'}</span></>}
           </div>
-          <div ref={canvasRef} className="canvas-container" onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp} onClick={handleCanvasClick}
+          <div ref={canvasRef} className="canvas-container" onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp} onClick={handleCanvasClick} onDoubleClick={handleCanvasDoubleClick}
             style={{ cursor: toolMode === 'drag' ? 'grab' : toolMode === 'addConnection' && connSource ? 'crosshair' : toolMode === 'text' ? 'text' : toolMode === 'partition' ? 'crosshair' : 'default' }}>
             {activeTab === '角色关系图' && <svg className="canvas-svg">{renderConnections()}</svg>}
             {renderTimelineFeatures()}
@@ -486,6 +499,26 @@ export default function CanvasView({
       {contextMenu && (
         <div className="canvas-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={e => e.stopPropagation()}>
           <button className="ctx-item" onClick={() => { onCreateObject('事件'); setContextMenu(null); }}>➜ 转为对象</button>
+        </div>
+      )}
+
+      {showCreateDialog && (
+        <div className="canvas-overlay" onClick={() => setShowCreateDialog(false)}>
+          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}>
+            <h4>创建新对象</h4>
+            <div className="template-grid">
+              {TEMPLATES.map(t => (
+                <div key={t.type} className="template-card" onClick={() => { onCreateObject(t.type); setShowCreateDialog(false); }}>
+                  <div className="template-icon">{t.type === '人物' ? '👤' : t.type === '地点' ? '📍' : t.type === '组织' ? '🏛' : t.type === '事件' ? '📅' : t.type === '物品' ? '📦' : t.type === '术语' ? '📖' : t.type === '章节' ? '📄' : '⚙️'}</div>
+                  <div className="template-name">{t.type}</div>
+                  <div className="template-desc">{t.defaultTags.join(' · ')}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="tb-btn" onClick={() => setShowCreateDialog(false)}>取消</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

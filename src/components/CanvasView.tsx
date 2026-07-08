@@ -219,9 +219,22 @@ export default function CanvasView({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const autoLayoutRun = useRef<Set<string>>(new Set());
   const gridPlacedRun = useRef<Set<string>>(new Set());
+  // Stable refs to break callback recreation chain
+  const positionsRef = useRef<Record<string, CanvasNodePosition>>({});
+  const pendingDragRef = useRef<{
+    objectId: string;
+    clientX: number;
+    clientY: number;
+    startPositions: Record<string, { x: number; y: number }>;
+    dragOffsetX: number;
+    dragOffsetY: number;
+  } | null>(null);
   const state = canvasStates[activeTab];
 
   const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allObjects.forEach(o => m.set(o.name, o)); return m; }, [allObjects]);
+
+  // Keep positionsRef in sync (stable ref avoids callback recreation on every parent render)
+  useEffect(() => { positionsRef.current = state.positions; }, [state.positions]);
 
   // Auto-layout: force-directed on first load per tab
   useEffect(() => {
@@ -333,6 +346,20 @@ export default function CanvasView({
   }, [toolMode, panOffset]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    // Promote pending drag to actual drag when mouse moves > 3px threshold
+    // Prevents single-click from entering the drag render loop
+    const pending = pendingDragRef.current;
+    if (pending && !draggingNode) {
+      const dx = e.clientX - pending.clientX;
+      const dy = e.clientY - pending.clientY;
+      if (dx * dx + dy * dy > 9) {
+        setDraggingNode(pending.objectId);
+        setDragOffset({ x: pending.dragOffsetX, y: pending.dragOffsetY });
+        setDragStartPositions(pending.startPositions);
+        pendingDragRef.current = null;
+      }
+    }
+
     if (panning) { setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y }); }
 
     // Connection drag line
@@ -343,9 +370,9 @@ export default function CanvasView({
       }
     }
 
-    // Dragging node(s)
+    // Dragging node(s) — use positionsRef for stable ref to avoid dependency chain
     if (draggingNode) {
-      const pos = state.positions[draggingNode];
+      const pos = positionsRef.current[draggingNode];
       if (pos) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -356,7 +383,7 @@ export default function CanvasView({
         const dx = currentX - primaryStart.x;
         const dy = currentY - primaryStart.y;
 
-        const newPositions = { ...state.positions };
+        const newPositions = { ...positionsRef.current };
         for (const id of Object.keys(dragStartPositions)) {
           const start = dragStartPositions[id];
           if (start && newPositions[id]) {
@@ -366,21 +393,22 @@ export default function CanvasView({
         onUpdateCanvasState(activeTab, { positions: newPositions });
       }
     }
-  }, [panning, connSource, draggingNode, dragOffset, dragStartPositions, state.positions, activeTab, panOffset, onUpdateCanvasState, panStart]);
+  }, [panning, connSource, draggingNode, dragOffset, dragStartPositions, activeTab, panOffset, onUpdateCanvasState, panStart]);
 
   const handleCanvasMouseUp = useCallback((e: React.MouseEvent) => {
+    pendingDragRef.current = null;  // cancel any pending drag
     setPanning(false);
     setDraggingNode(null);
     setDragStartPositions(prev => Object.keys(prev).length === 0 ? prev : {});
 
-    // Connection drop detection
+    // Connection drop detection — use positionsRef to avoid dep chain
     if (connSource) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
         const mouseX = e.clientX - rect.left + panOffset.x;
         const mouseY = e.clientY - rect.top + panOffset.y;
 
-        for (const [id, pos] of Object.entries(state.positions)) {
+        for (const [id, pos] of Object.entries(positionsRef.current)) {
           if (id !== connSource &&
             mouseX >= pos.x && mouseX <= pos.x + NODE_W &&
             mouseY >= pos.y && mouseY <= pos.y + NODE_H) {
@@ -395,7 +423,7 @@ export default function CanvasView({
       setConnSource(null);
       setConnDragPos(null);
     }
-  }, [connSource, state.positions, panOffset]);
+  }, [connSource, panOffset]);
 
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, objectId: string) => {
     e.stopPropagation();
@@ -420,27 +448,28 @@ export default function CanvasView({
         onSelectObject(objectId);
       }
 
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (rect) {
-        setDraggingNode(objectId);
-        setDragOffset({
-          x: e.clientX - (state.positions[objectId]?.x || 0) - rect.left + panOffset.x,
-          y: e.clientY - (state.positions[objectId]?.y || 0) - rect.top + panOffset.y,
-        });
-
-        // Store start positions of all selected nodes for multi-drag
-        const selected = isCtrl
-          ? (multiSelectedIds.includes(objectId) ? [...multiSelectedIds] : [...multiSelectedIds, objectId])
-          : [objectId];
-        const starts: Record<string, { x: number; y: number }> = {};
-        for (const id of selected) {
-          const p = state.positions[id];
-          if (p) starts[id] = { x: p.x, y: p.y };
-        }
-        setDragStartPositions(starts);
+      // Don't start drag on mousedown — record potential drag and start only on actual mouse movement
+      // Prevents a single click from entering the drag render loop via accidental mousemove
+      const selected = isCtrl
+        ? (multiSelectedIds.includes(objectId) ? [...multiSelectedIds] : [...multiSelectedIds, objectId])
+        : [objectId];
+      const starts: Record<string, { x: number; y: number }> = {};
+      for (const id of selected) {
+        const p = positionsRef.current[id];
+        if (p) starts[id] = { x: p.x, y: p.y };
       }
+      const rect = canvasRef.current?.getBoundingClientRect();
+      const nodePos = positionsRef.current[objectId];
+      pendingDragRef.current = {
+        objectId,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        startPositions: starts,
+        dragOffsetX: e.clientX - (nodePos?.x || 0) - (rect?.left || 0) + panOffset.x,
+        dragOffsetY: e.clientY - (nodePos?.y || 0) - (rect?.top || 0) + panOffset.y,
+      };
     }
-  }, [toolMode, connSource, state.positions, panOffset, onSelectObject, multiSelectedIds]);
+  }, [toolMode, connSource, panOffset, onSelectObject, multiSelectedIds]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (toolMode === 'addObject') { setShowObjectPool(true); setToolMode('select'); return; }

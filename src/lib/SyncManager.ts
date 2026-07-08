@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SyncManager — Offline-first sync for 织梦机 v1.2 (P2-04).
  *
  * Queue strategy with IndexedDB persistence, retry with exponential backoff,
@@ -6,6 +6,7 @@
  */
 
 import type { SyncOperation, SyncOperationType, SaveStatus } from '../types/world';
+import { invoke } from '@tauri-apps/api/core';
 
 type StatusCallback = (status: SaveStatus) => void;
 type OnlineCallback = (online: boolean) => void;
@@ -134,7 +135,15 @@ export class SyncManager {
   startPing(): void {
     if (this.pingTimer) return;
     this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
-    this.ping();
+    this.initialPing();
+  }
+
+  private initialPing(): void {
+    try {
+      invoke('ping');
+    } catch {
+      // ignore - may be in test environment
+    }
   }
 
   stopPing(): void {

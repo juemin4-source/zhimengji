@@ -384,6 +384,7 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
   const [title, setTitle] = useState('');
   const [genre, setGenre] = useState(lastGenre && GENRES.includes(lastGenre) ? lastGenre : '其他');
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
   const [showTooltip, setShowTooltip] = useState(false);
   const [dirty, setDirty] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -393,6 +394,15 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
   }, []);
 
   const isValid = title.trim().length > 0;
+
+  const handleNext = () => {
+    if (!isValid) return;
+    setStep(2);
+  };
+
+  const handleSkip = () => {
+    onConfirm(title.trim(), genre, null);
+  };
   const currentGradient = genreGradients[genre] || genreGradients['其他'];
   const selectedPreset = selectedTemplate
     ? templatePresets[selectedTemplate as keyof typeof templatePresets]
@@ -566,19 +576,31 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
 
           {/* Footer */}
           <div style={s.footer}>
-            <button style={s.btnSecondary} onClick={onCancel}>
-              {'取消'}
-            </button>
-            <button
-              style={{
-                ...s.btnPrimary,
-                ...(isValid ? s.btnPrimaryActive : s.btnPrimaryDisabled),
-              }}
-              disabled={!isValid}
-              onClick={handleCreate}
-            >
-              {'开始创作'}
-            </button>
+            {step === 1 ? (
+              <><button style={s.btnSecondary} onClick={onCancel}>{'取消'}</button>
+              <button
+                style={{
+                  ...s.btnPrimary,
+                  ...(isValid ? s.btnPrimaryActive : s.btnPrimaryDisabled),
+                }}
+                disabled={!isValid}
+                onClick={handleNext}
+              >
+                {'下一步 →'}
+              </button></>
+            ) : (
+              <><button style={s.btnSecondary} onClick={handleSkip}>{'跳过'}</button>
+              <button
+                style={{
+                  ...s.btnPrimary,
+                  ...(isValid ? s.btnPrimaryActive : s.btnPrimaryDisabled),
+                }}
+                disabled={!isValid}
+                onClick={handleCreate}
+              >
+                {'开始创作'}
+              </button></>
+            )}
           </div>
         </div>
       </div>

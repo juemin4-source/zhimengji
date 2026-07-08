@@ -1,0 +1,48 @@
+mod commands;
+mod db;
+mod models;
+
+use db::Database;
+use std::fs;
+use tauri::Manager;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+            fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
+            let db_path = app_data_dir.join("zhimengji.db");
+            let database = Database::new(db_path.to_str().expect("Invalid db path"))
+                .expect("Failed to initialize database");
+            app.manage(database);
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            // Project
+            commands::list_projects,
+            commands::get_project,
+            commands::create_project,
+            commands::update_project,
+            commands::delete_project,
+            // WorldObject
+            commands::list_world_objects,
+            commands::get_world_object,
+            commands::create_world_object,
+            commands::update_world_object,
+            commands::delete_world_object,
+            // JudgmentRecord
+            commands::list_judgment_records,
+            commands::append_judgment_record,
+            // Connection
+            commands::list_connections,
+            commands::create_connection,
+            commands::delete_connection,
+            // CanvasTabState
+            commands::list_canvas_tab_states,
+            commands::save_canvas_tab_state,
+            commands::delete_canvas_tab_state,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

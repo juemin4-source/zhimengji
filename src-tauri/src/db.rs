@@ -101,7 +101,7 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_cts_project ON canvas_tab_states(project_id);
             CREATE INDEX IF NOT EXISTS idx_cts_tab ON canvas_tab_states(tab_id);
             CREATE INDEX IF NOT EXISTS idx_jr_object ON judgment_records(object_id);
-
+            "
         )?;
         Ok(())
     }

@@ -119,7 +119,7 @@ function renderMarkdown(text: string): ReactNode {
 function renderInline(text: string, keyBase: number): ReactNode {
   const paragraphs = text.split(/\n\n+/).filter(p => p.trim());
   if (paragraphs.length === 0) {
-    return renderFormatted(text.trim(), keyBase);
+    return renderFormatted(text.trim(), String(keyBase));
   }
   return paragraphs.map((p, i) => {
     const trimmed = p.trim();

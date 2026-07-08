@@ -1,5 +1,5 @@
 /**
- * SyncManager — IndexedDB-backed retry queue for 织梦机 v1.2 (P0-01, P0-02).
+ * SyncManager 鈥?IndexedDB-backed retry queue for 缁囨ⅵ鏈?v1.2 (P0-01, P0-02).
  *
  * All write operations route through enqueue() before reaching Tauri invoke.
  * Queue persisted to IndexedDB for survival across app restarts.
@@ -42,13 +42,14 @@ export class SyncManager {
   private onlineListeners: OnlineCallback[] = [];
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private _failedCount: number = 0;
+  private retryTimers: ReturnType<typeof setTimeout>[] = [];
   private processing: boolean = false;
 
   constructor() {
     this.dbPromise = openDB();
   }
 
-  // ── Online Status ──
+  // 鈹€鈹€ Online Status 鈹€鈹€
 
   isOnline(): boolean {
     return this._isOnline;
@@ -84,7 +85,7 @@ export class SyncManager {
     }
   }
 
-  // ── Lifecycle ──
+  // 鈹€鈹€ Lifecycle 鈹€鈹€
 
   startPing(): void {
     if (this.pingTimer) return;
@@ -113,7 +114,7 @@ export class SyncManager {
     }
   }
 
-  // ── Queue Operations ──
+  // 鈹€鈹€ Queue Operations 鈹€鈹€
 
   async enqueue(type: SyncOperationType, payload: any): Promise<void> {
     const op: SyncOperation = {
@@ -152,7 +153,7 @@ export class SyncManager {
     await this.processQueue();
   }
 
-  // ── Queue Processing ──
+  // 鈹€鈹€ Queue Processing 鈹€鈹€
 
   private async processQueue(): Promise<void> {
     if (this.processing) return;
@@ -183,7 +184,8 @@ export class SyncManager {
             await this.updateInDB(op);
             // Schedule retry with exponential backoff
             const delay = BACKOFF_BASE_MS * Math.pow(2, op.retryCount - 1);
-            setTimeout(() => this.processQueue(), delay);
+            const timer = setTimeout(() => this.processQueue(), delay);
+            this.retryTimers.push(timer);
             this.processing = false;
             return;
           }
@@ -199,7 +201,7 @@ export class SyncManager {
         this.setSaveStatus('saved');
       }
     } catch {
-      // Queue processing error — keep status
+      // Queue processing error 鈥?keep status
     } finally {
       this.processing = false;
     }
@@ -236,7 +238,7 @@ export class SyncManager {
     }
   }
 
-  // ── IndexedDB Helpers ──
+  // 鈹€鈹€ IndexedDB Helpers 鈹€鈹€
 
   private async withDB<T>(fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
     const db = await this.dbPromise!;
@@ -282,6 +284,9 @@ export class SyncManager {
   }
 
   async clearAll(): Promise<void> {
+    // Clear pending retry timers
+    for (const t of this.retryTimers) clearTimeout(t);
+    this.retryTimers = [];
     this._failedCount = 0;
     await this.withDB(store => store.clear());
   }

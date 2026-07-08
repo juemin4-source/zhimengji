@@ -1,0 +1,18 @@
+{
+  "id": "zhimengji-batch1",
+  "status": "completed",
+  "summary": "Batch 1: 实现TipTap编辑器Markdown渲染/源码切换、画板空白区域双击创建、大纲侧栏新建按钮",
+  "changes": [
+    "src/components/DocumentView.tsx — 集成TipTap编辑器：WYSIWYG模式（带格式工具栏）、源码模式（手动编辑HTML）、预览模式（只读渲染HTML）。工具栏在编辑模式使用TipTap commands（B/I/S/H2/H3/引用/列表/代码/代码块），源码模式沿用markdown插入。新增编辑/源码/预览三模式切换按钮",
+    "src/components/CanvasView.tsx — 画板空白区域双击弹出创建对话框：handleCanvasDoubleClick检测双击目标为非节点区域时弹出模板选择面板，节点已有onDoubleClick添加e.stopPropagation()避免冒泡",
+    "src/components/DocOutline.tsx — 每个分组头部添加+新建按钮，根据分组类型自动选择合适的ObjectType（章节→'章节'、人物→'人物'、其他→'事件'），onClick使用e.stopPropagation()防止触发折叠/展开",
+    "src/styles/global.css — 新增.outline-add-btn（新建按钮样式）、.tiptap-editor（TipTap编辑器ProseMirror样式）、.preview-content（预览模式样式）",
+    "src/__tests__/api.test.ts — 修复mockObject的类型断言（'as const'），使其符合WorldObject类型定义"
+  ],
+  "test_results": "npm run build通过（tsc -b无错误，vite build成功）。仅有一个chunk size warning（569KB，因TipTap打包在内，不影响功能）",
+  "issues": [
+    "TipTap编辑器内容存储为HTML格式以兼容ProseMirror内部状态，现有markdown风格内容通过ensureHtmlContent函数自动转换为<p>包裹的HTML渲染",
+    "预览模式使用dangerouslySetInnerHTML渲染HTML内容"
+  ],
+  "completedAt": "2026-07-08 05:18:33"
+}

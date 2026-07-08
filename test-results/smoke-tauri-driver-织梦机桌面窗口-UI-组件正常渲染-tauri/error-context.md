@@ -12,7 +12,8 @@
 # Error details
 
 ```
-Error: browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:4444
+Error: browserType.connectOverCDP: Unexpected status 404 when connecting to http://127.0.0.1:4444/json/version/.
+This does not look like a DevTools server, try connecting via ws://.
 Call log:
   - <ws preparing> retrieving websocket url from http://127.0.0.1:4444
 
@@ -63,7 +64,7 @@ Call log:
   40 | 
   41 |   test("UI 组件正常渲染", async ({}) => {
 > 42 |     const browser = await chromium.connectOverCDP("http://127.0.0.1:4444");
-     |                                    ^ Error: browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:4444
+     |                                    ^ Error: browserType.connectOverCDP: Unexpected status 404 when connecting to http://127.0.0.1:4444/json/version/.
   43 |     const context = browser.contexts()[0];
   44 |     const page = context.pages()[0];
   45 | 

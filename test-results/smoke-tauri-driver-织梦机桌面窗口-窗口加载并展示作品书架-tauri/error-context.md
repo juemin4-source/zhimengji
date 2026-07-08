@@ -12,7 +12,8 @@
 # Error details
 
 ```
-Error: browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:4444
+Error: browserType.connectOverCDP: Unexpected status 404 when connecting to http://127.0.0.1:4444/json/version/.
+This does not look like a DevTools server, try connecting via ws://.
 Call log:
   - <ws preparing> retrieving websocket url from http://127.0.0.1:4444
 
@@ -40,7 +41,7 @@ Call log:
   17 |   test("窗口加载并展示作品书架", async ({}) => {
   18 |     // 通过 tauri-driver 的 CDP 端点连接 Tauri 窗口
 > 19 |     const browser = await chromium.connectOverCDP("http://127.0.0.1:4444");
-     |                                    ^ Error: browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:4444
+     |                                    ^ Error: browserType.connectOverCDP: Unexpected status 404 when connecting to http://127.0.0.1:4444/json/version/.
   20 |     const context = browser.contexts()[0];
   21 |     const page = context.pages()[0];
   22 | 

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 
-// ── Project ──
+// 鈹€鈹€ Project 鈹€鈹€
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Project {
@@ -15,7 +15,7 @@ pub struct Project {
     pub updated_at: i64,
 }
 
-// ── JudgmentRecord ──
+// 鈹€鈹€ JudgmentRecord 鈹€鈹€
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JudgmentRecord {
@@ -29,7 +29,7 @@ pub struct JudgmentRecord {
     pub new_status: String,
 }
 
-// ── WorldObject ──
+// 鈹€鈹€ WorldObject 鈹€鈹€
 // Replaces: StoryNode + SettingCard + NarrativeUnit + NodeGroup
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -51,7 +51,7 @@ pub struct WorldObject {
     pub updated_at: i64,
 }
 
-// ── Connection ──
+// 鈹€鈹€ Connection 鈹€鈹€
 // Replaces: Link + NarrativeRelationship
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -65,7 +65,7 @@ pub struct Connection {
     pub label: String,
 }
 
-// ── CanvasTabState ──
+// 鈹€鈹€ CanvasTabState 鈹€鈹€
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasTabState {
@@ -85,7 +85,7 @@ pub struct CanvasTabState {
     pub updated_at: i64,
 }
 
-// ── CanvasNodePosition ──
+// 鈹€鈹€ CanvasNodePosition 鈹€鈹€
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[allow(dead_code)]
@@ -95,7 +95,7 @@ pub struct CanvasNodePosition {
     pub y: f64,
 }
 
-// ── StickyNote ──
+// 鈹€鈹€ StickyNote 鈹€鈹€
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StickyNote {
@@ -108,7 +108,7 @@ pub struct StickyNote {
     pub color: String,
 }
 
-// ── DB Row types (for SQLite storage with JSON columns) ──
+// 鈹€鈹€ DB Row types (for SQLite storage with JSON columns) 鈹€鈹€
 
 /// Internal row representation of WorldObject for DB storage.
 /// JSON arrays are stored as TEXT columns.
@@ -183,4 +183,70 @@ impl CanvasTabStateRow {
             updated_at: self.updated_at,
         }
     }
+}
+
+// -- P0-04: Versioned canvas tab state and response --
+
+/// CanvasTabState with a version stamp for conflict detection (P0-04)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CanvasTabStateVersioned {
+    /// The actual canvas tab state fields
+    pub id: String,
+    pub project_id: String,
+    pub tab_id: String,
+    pub positions: serde_json::Value,
+    pub sticky_notes: Vec<StickyNote>,
+    pub connections: Vec<Connection>,
+    pub scale: f64,
+    pub pan_x: f64,
+    pub pan_y: f64,
+    #[serde(default)]
+    pub created_at: i64,
+    #[serde(default)]
+    pub updated_at: i64,
+    /// Monotonic version stamp for conflict detection
+    pub version: i64,
+}
+
+/// Response from save_canvas_tab_state (P0-04)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveCanvasTabStateResponse {
+    pub state: CanvasTabState,
+    pub accepted: bool,
+    pub current_version: i64,
+}
+
+// -- P0-05: Export / Import --
+
+/// Result returned from export_project command (P0-05)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportResult {
+    pub success: bool,
+    pub path: String,
+    pub object_count: usize,
+    pub connection_count: usize,
+}
+
+/// Result returned from import_project command (P0-05)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub success: bool,
+    pub project_id: String,
+    pub project_name: String,
+    pub object_count: usize,
+    pub connection_count: usize,
+}
+
+/// Full project data serialized into the .zhimengji zip manifest (P0-05)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectExportData {
+    pub project: Project,
+    pub objects: Vec<WorldObject>,
+    pub connections: Vec<Connection>,
+    pub canvas_states: Vec<CanvasTabState>,
 }

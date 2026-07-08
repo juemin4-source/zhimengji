@@ -1,4 +1,4 @@
-// ===== UI-Layer Types for 织梦机 World Objects =====
+﻿// ===== UI-Layer Types for 织梦机 World Objects =====
 // These are in-memory types used by the UI components, separate from
 // the tauri-api persistence types. A future bridge layer maps between them.
 
@@ -20,7 +20,14 @@ export const CANON_LEVELS: CanonLevel[] = [
   '未收录', '草案正典', '项目正典', '核心正典'
 ];
 
-export type NavTab = '文档' | '画板' | '设定集' | '判断记录';
+export const CANON_COLORS: Record<CanonLevel, string> = {
+  '未收录': '#666666',
+  '草案正典': '#CE93D8',
+  '项目正典': '#90CAF9',
+  '核心正典': '#FFB74D',
+};
+
+export type NavTab = '文档' | '画板' | '设定集' | '判断记录' | '正典手册';
 
 export type CanvasTab = '角色关系图' | '时间线' | '设定推演图';
 
@@ -131,3 +138,114 @@ export interface Project {
   wordCount: number;
   gradient: [string, string];
 }
+
+// ===== v1.2 New Types =====
+
+export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error' | 'offline';
+
+export interface ChangelogEntry {
+  timestamp: number;
+  action: 'create_object' | 'delete_object' | 'update_object' | 'move_canvas_node' | 'create_connection' | 'delete_connection' | 'update_canvas_state';
+  objectId: string;
+  snapshot: Record<string, any>;
+}
+
+export type SyncOperationType = 'createObject' | 'updateObject' | 'deleteObject' | 'saveCanvasState' | 'createConnection' | 'deleteConnection' | 'appendJudgment';
+
+export interface SyncOperation {
+  id: string;
+  type: SyncOperationType;
+  payload: any;
+  retryCount: number;
+  maxRetries: number;
+  createdAt: number;
+  lastAttempt?: number;
+  error?: string;
+}
+
+export interface ExportResult {
+  success: boolean;
+  path: string;
+  objectCount: number;
+  connectionCount: number;
+}
+
+export interface ImportResult {
+  success: boolean;
+  projectId: string;
+  projectName: string;
+  objectCount: number;
+  connectionCount: number;
+}
+
+export interface CanvasTabStateResponse {
+  state: CanvasTabState;
+  accepted: boolean;
+  currentVersion: number;
+  error?: 'VERSION_CONFLICT';
+}
+
+export interface GenreGradient {
+  genre: string;
+  gradient: [string, string];
+}
+
+export const GENRE_GRADIENTS: GenreGradient[] = [
+  { genre: '科幻', gradient: ['#667eea', '#764ba2'] },
+  { genre: '奇幻', gradient: ['#0f2027', '#203a43'] },
+  { genre: '武侠', gradient: ['#8e0e00', '#1f1c18'] },
+  { genre: '悬疑', gradient: ['#232526', '#414345'] },
+  { genre: '言情', gradient: ['#e44d26', '#f16529'] },
+  { genre: '历史', gradient: ['#283048', '#859398'] },
+  { genre: '都市', gradient: ['#2c3e50', '#3498db'] },
+  { genre: '末世', gradient: ['#1a1a2e', '#16213e'] },
+  { genre: '恐怖', gradient: ['#0f0c29', '#302b63'] },
+  { genre: '其他', gradient: ['#6366f1', '#8b5cf6'] },
+  { genre: '未分类', gradient: ['#6366f1', '#8b5cf6'] },
+];
+
+export interface ProjectTemplate {
+  id: string;
+  name: string;
+  description: string;
+  presetObjectTypes: Array<{ type: ObjectType; name: string }>;
+}
+
+export const PROJECT_TEMPLATES: ProjectTemplate[] = [
+  {
+    id: 'blank',
+    name: '空白开始',
+    description: '从零开始，自由创作',
+    presetObjectTypes: [],
+  },
+  {
+    id: 'three-act',
+    name: '经典三幕式',
+    description: '开端→发展→高潮 三幕结构',
+    presetObjectTypes: [
+      { type: '章节', name: '第一幕：开端' },
+      { type: '章节', name: '第二幕：发展' },
+      { type: '章节', name: '第三幕：高潮' },
+    ],
+  },
+  {
+    id: 'character-driven',
+    name: '角色驱动',
+    description: '以核心角色为中心展开',
+    presetObjectTypes: [
+      { type: '人物', name: '主角' },
+      { type: '人物', name: '配角' },
+      { type: '人物', name: '反派' },
+    ],
+  },
+  {
+    id: 'world-first',
+    name: '世界先行',
+    description: '先构建世界观和规则',
+    presetObjectTypes: [
+      { type: '规则/机制', name: '世界基础规则' },
+      { type: '地点', name: '核心场景' },
+      { type: '组织', name: '主要势力' },
+    ],
+  },
+];

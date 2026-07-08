@@ -1,9 +1,12 @@
-import { invoke } from '@tauri-apps/api/core';
+﻿import { invoke } from '@tauri-apps/api/core';
 import type {
   WorldObject,
   Connection,
   CanvasTabState,
   JudgmentRecord,
+  ExportResult,
+  ImportResult,
+  CanvasTabStateResponse,
 } from './types/world';
 
 // ══════════════════════════════════════════
@@ -107,10 +110,30 @@ export function listCanvasTabStates(projectId: string): Promise<CanvasTabState[]
   return invoke('list_canvas_tab_states', { projectId });
 }
 
-export function saveCanvasTabState(state: CanvasTabState): Promise<CanvasTabState> {
+export function saveCanvasTabState(state: CanvasTabState & { version?: number }): Promise<CanvasTabState | CanvasTabStateResponse> {
   return invoke('save_canvas_tab_state', { state });
 }
 
 export function deleteCanvasTabState(id: string): Promise<void> {
   return invoke('delete_canvas_tab_state', { id });
+}
+
+// ══════════════════════════════════════════
+//  v1.2: Health check (P0-02)
+// ══════════════════════════════════════════
+
+export function ping(): Promise<string> {
+  return invoke('ping');
+}
+
+// ══════════════════════════════════════════
+//  v1.2: Export/Import (P0-05)
+// ══════════════════════════════════════════
+
+export function exportProject(projectId: string, outputPath: string): Promise<ExportResult> {
+  return invoke('export_project', { projectId, outputPath });
+}
+
+export function importProject(inputPath: string): Promise<ImportResult> {
+  return invoke('import_project', { inputPath });
 }

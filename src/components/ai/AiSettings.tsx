@@ -1,4 +1,4 @@
-﻿import { Key, Brain, BarChart3, DollarSign, Check, X, RefreshCw, TriangleAlert, CheckCircle } from 'lucide-react';
+import { Key, Brain, BarChart3, DollarSign, Check, X, RefreshCw, TriangleAlert, CheckCircle } from 'lucide-react';
 import React, { useState, useCallback } from 'react';
 import type { ProviderConfig, AiModel, UsageStats, SettingsTab } from '../../types/ai';
 import { PRESET_PROVIDERS, DEFAULT_MODELS } from '../../types/ai';
@@ -58,15 +58,61 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
 
   const handleTestConnection = useCallback(async (provider: ProviderConfig) => {
     setTestResults(prev => ({ ...prev, [provider.id]: { status: 'pending', message: '正在连接...' } }));
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
-    // Simulate test results
-    const success = provider.id !== 'local' || Math.random() > 0.5;
-    if (success) {
-      const latencies: Record<string, number> = { openai: 342, anthropic: 523, google: 410, azure: 380 };
-      setTestResults(prev => ({ ...prev, [provider.id]: { status: 'success', message: '连接成功 — 响应时间 ' + (latencies[provider.id] || 280) + 'ms · 模型列表已获取' } }));
-      handleUpdateProvider(provider.id, { status: 'connected' as const });
-    } else {
-      setTestResults(prev => ({ ...prev, [provider.id]: { status: 'fail', message: '连接失败 — 无法连接到 ' + provider.endpoint + ' · 请确认服务是否运行' } }));
+    const startTime = performance.now();
+
+    try {
+      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+      let success = false;
+      let message = '';
+      let models: string[] = [];
+
+      if (hasTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const result: any = await invoke('test_connection', {
+            provider: provider.id,
+            model: provider.models[0] || '',
+            endpoint: provider.endpoint,
+          });
+          const latency = Math.round(performance.now() - startTime);
+          models = result.models || [];
+          success = true;
+          message = '连接成功 — 响应时间 ' + latency + 'ms' + (models.length > 0 ? ' · 模型列表已获取' : '');
+        } catch {
+          // Tauri invoke failed, fall through to direct fetch
+        }
+      }
+
+      if (!success) {
+        const url = provider.endpoint.replace(/\/+$/, '') + '/models';
+        const response = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + provider.apiKey },
+          signal: AbortSignal.timeout((provider.timeout || 30) * 1000),
+        });
+        const latency = Math.round(performance.now() - startTime);
+
+        if (response.ok) {
+          const data = await response.json();
+          models = (data.data || data.models || []).map((m: any) => m.id || m.name || m);
+          success = true;
+          message = '连接成功 — 响应时间 ' + latency + 'ms' + (models.length > 0 ? ' · 模型列表已获取' : '');
+        } else {
+          message = '连接失败 — HTTP ' + response.status + ': ' + response.statusText;
+        }
+      }
+
+      if (success) {
+        setTestResults(prev => ({ ...prev, [provider.id]: { status: 'success', message } }));
+        handleUpdateProvider(provider.id, { status: 'connected' as const });
+      } else {
+        setTestResults(prev => ({ ...prev, [provider.id]: { status: 'fail', message } }));
+        handleUpdateProvider(provider.id, { status: 'error' as const });
+      }
+    } catch (err) {
+      setTestResults(prev => ({ ...prev, [provider.id]: {
+        status: 'fail',
+        message: '连接失败 — ' + ((err as Error).message || '未知错误'),
+      }}));
       handleUpdateProvider(provider.id, { status: 'error' as const });
     }
   }, [handleUpdateProvider]);

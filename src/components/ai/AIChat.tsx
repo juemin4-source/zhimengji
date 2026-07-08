@@ -1,9 +1,10 @@
-﻿import { useState, useRef, useCallback, useMemo, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect, type ReactNode } from 'react';
 import { User, Bot, X, Globe, Landmark, MapPin, FileText, Package } from 'lucide-react';
 import type { WorldObject } from '../../types/world';
 import type { Message, DocCardData, AiModel } from '../../types/ai';
 import { DEFAULT_MODELS } from '../../types/ai';
 import DocCard from './DocCard';
+import { callLlm } from '../../lib/llm-client';
 
 const CANON_DOT_COLORS: Record<string, string> = {
   '核心正典': '#FFB74D',
@@ -90,28 +91,50 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
     if (inputRef.current) { inputRef.current.style.height = 'auto'; }
 
     const userMsg: Message = { id: uid(), role: 'user', content: text, timestamp: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1200 + Math.random() * 800));
+    try {
+      const response = await callLlm(
+        updatedMessages.map(m => ({ role: m.role, content: m.content })),
+        {
+          model: activeModel,
+          apiKey: '',
+          timeout: 60000,
+          onToken: (token) => {
+            setMessages(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === 'assistant') {
+                const updated = [...prev];
+                updated[updated.length - 1] = { ...last, content: last.content + token };
+                return updated;
+              }
+              return prev;
+            });
+          }
+        }
+      );
 
-    const replyText = simulateAiResponse(text);
-    const replyDocs = simulateAiDocs(text);
-
-    const assistantMsg: Message = {
-      id: uid(), role: 'assistant', content: replyText,
-      docs: replyDocs, timestamp: Date.now(),
-    };
-    setMessages(prev => [...prev, assistantMsg]);
-    const tokensIn = Math.floor(Math.random() * 100 + 30);
-    const tokensOut = Math.floor(Math.random() * 200 + 50);
-    setSessionTokens(prev => ({ in: prev.in + tokensIn, out: prev.out + tokensOut }));
-    setTokenCount(prev => prev + tokensIn + tokensOut);
-    if (replyDocs && replyDocs.length > 0 && onShowToast) {
-      onShowToast('AI 已生成 ' + replyDocs.length + ' 个文档', 'success');
+      const assistantMsg: Message = {
+        id: uid(), role: 'assistant',
+        content: response.content,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+      setSessionTokens(prev => ({ in: prev.in + response.tokensIn, out: prev.out + response.tokensOut }));
+      setTokenCount(prev => prev + response.tokensIn + response.tokensOut);
+    } catch (err) {
+      const errorMsg: Message = {
+        id: uid(), role: 'assistant',
+        content: '抱歉，AI 调用出错了: ' + (err instanceof Error ? err.message : '未知错误'),
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+      if (onShowToast) onShowToast('AI 调用失败', 'error');
     }
     setIsLoading(false);
-  }, [inputText, isLoading, onShowToast]);
+  }, [inputText, isLoading, activeModel, messages, onShowToast]);
 
   const handleNewChat = useCallback(() => { setShowNewChatConfirm(true); }, []);
 
@@ -350,40 +373,3 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
     </div>
   );
 }
-function simulateAiResponse(text: string): string {
-  const lower = text.toLowerCase();
-  if (lower.includes('世界观') || lower.includes('世界')) return '以下是为你创建的世界观设定：';
-  if (lower.includes('角色') || lower.includes('人物')) return '我为你设计了以下角色：';
-  if (lower.includes('展开') || lower.includes('详细')) return '以下是展开后的完整设定：';
-  return '好的，我已经记录下你的想法。根据当前项目库，我建议从这个方向展开：';
-}
-
-function simulateAiDocs(text: string): DocCardData[] | undefined {
-  const lower = text.toLowerCase();
-  if (lower.includes('世界观') || lower.includes('世界') || lower.includes('天眼')) {
-    return [{
-      id: 'ai-world-' + Date.now(), type: 'world', typeLabel: '世界观',
-      title: '世界观 — 天眼纪元', status: '草稿',
-      bodyHTML: '<p><strong>时代背景：</strong>2078年，全球联合政府以"安全与效率"之名，发射了覆盖全球的 <strong>"天眼"（Omni-Eye）</strong> 卫星网络。</p><p><strong>核心设定：</strong>天眼系统不仅能监控地表所有移动物体，还通过脑波片分析技术，可以实时检测公民的"危险思维"。</p>',
-      sections: [{ title: '核心冲突', content: '个人隐私与集体安全的终极对立。' }, { title: '关键地点', content: '天眼中枢（轨道站）、灰区（地下抵抗基地）' }],
-    }];
-  }
-  if (lower.includes('角色') || lower.includes('人物')) {
-    return [{
-      id: 'ai-char-' + Date.now(), type: 'character', typeLabel: '人物',
-      title: '人物 — 反抗者', status: '草稿',
-      bodyHTML: '<p><strong>名称：</strong>陈星辉</p><p><strong>背景：</strong>原天眼系统工程师，发现系统被滥用后转入地下抵抗组织。</p>',
-    }];
-  }
-  return undefined;
-}
-
-
-
-
-
-
-
-
-
-

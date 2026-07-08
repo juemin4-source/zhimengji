@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
 import { CANVAS_TABS, CANON_LEVELS, CANON_COLORS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
@@ -530,7 +530,8 @@ function AppInner() {
         .then(() => showToast(`已创建${templateType}`, "success"))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
     }
-  
+  }, [activeBookId, showToast]);
+
   const onCreateNamedObject = useCallback(async (name: string, objectType: ObjectType) => {
     const template = TEMPLATES.find(t => t.type === objectType);
     const now = Date.now();

@@ -1,0 +1,403 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.3 — API Key 管理</title>
+<style>
+:root {
+  --bg-canvas: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-raised: #1e1e1e;
+  --bg-header: #0e0e0e;
+  --accent: #B7FF00;
+  --accent-hover: #c8ff33;
+  --accent-soft: rgba(183, 255, 0, 0.1);
+  --border-default: #2a2a2a;
+  --border-light: #333;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --canon-core: #FFB74D;
+  --canon-project: #90CAF9;
+  --danger: #f44336;
+  --success: #4CAF50;
+  --warning: #FFC107;
+  --info: #42A5F5;
+  --font-sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.9375rem;line-height:1.6;color:var(--text-primary);background:var(--bg-canvas);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::selection{background:rgba(183,255,0,.2)}
+button{font-family:var(--font-sans);cursor:pointer}
+input,select{font-family:var(--font-sans);outline:none}
+.prototype-banner{height:24px;background:#1a1a0e;border-bottom:1px solid #333300;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.6875rem;color:var(--accent);flex-shrink:0;letter-spacing:.5px}
+.prototype-banner span{opacity:.7}
+.app-shell{display:flex;flex-direction:column;height:100vh}
+.nav-bar{height:44px;background:var(--bg-header);border-bottom:1px solid var(--border-default);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;user-select:none}
+.nav-back{display:flex;align-items:center;gap:4px;color:var(--text-secondary);font-size:.8125rem;cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);transition:all .12s}
+.nav-back:hover{color:var(--text-primary);background:var(--bg-raised)}
+.nav-back svg{width:16px;height:16px}
+.nav-divider{width:1px;height:20px;background:var(--border-default);flex-shrink:0}
+.nav-project{font-size:.875rem;font-weight:600;color:var(--text-primary);flex-shrink:0}
+.nav-spacer{flex:1}
+.nav-actions{display:flex;align-items:center;gap:6px}
+.nav-icon-btn{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .12s;font-size:1rem}
+.nav-icon-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
+.nav-icon-btn.active{color:var(--accent);background:var(--accent-soft)}
+.settings-layout{display:flex;flex:1;overflow:hidden}
+.settings-sidebar{width:200px;min-width:200px;background:var(--bg-surface);border-right:1px solid var(--border-default);display:flex;flex-direction:column;overflow:hidden}
+.settings-sidebar-title{padding:14px 16px 10px;font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-default)}
+.settings-nav{flex:1;overflow-y:auto;padding:6px 0}
+.settings-nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;transition:all .1s;border-left:2px solid transparent;font-size:.8125rem;color:var(--text-secondary);user-select:none}
+.settings-nav-item:hover{background:rgba(255,255,255,.03);color:var(--text-primary)}
+.settings-nav-item.active{background:var(--accent-soft);border-left-color:var(--accent);color:var(--text-primary)}
+.settings-nav-item .nav-icon{width:20px;text-align:center;flex-shrink:0}
+.settings-content{flex:1;overflow-y:auto;padding:24px 32px}
+.settings-header{margin-bottom:24px}
+.settings-title{font-size:1.2rem;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.settings-desc{font-size:.8125rem;color:var(--text-secondary)}
+.section{margin-bottom:28px}
+.section-title{font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.provider-card{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden;margin-bottom:12px;transition:border-color .15s}
+.provider-card:hover{border-color:#333}
+.provider-card-header{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;transition:background .1s}
+.provider-card-header:hover{background:rgba(255,255,255,.02)}
+.provider-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.provider-icon.openai{background:rgba(66,165,245,.12)}
+.provider-icon.anthropic{background:rgba(255,152,0,.12)}
+.provider-icon.local{background:rgba(183,255,0,.08)}
+.provider-info{flex:1;min-width:0}
+.provider-name{font-size:.875rem;font-weight:600;color:var(--text-primary)}
+.provider-model{font-size:.75rem;color:var(--text-secondary);margin-top:2px}
+.provider-status{display:flex;align-items:center;gap:5px;font-size:.75rem;padding:2px 10px;border-radius:20px;border:1px solid;flex-shrink:0}
+.provider-status.connected{color:var(--success);border-color:rgba(76,175,80,.25);background:rgba(76,175,80,.06)}
+.provider-status.disconnected{color:var(--text-muted);border-color:var(--border-default)}
+.provider-status.error{color:var(--danger);border-color:rgba(244,67,54,.25);background:rgba(244,67,54,.06)}
+.status-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.provider-status.connected .status-dot{background:var(--success)}
+.provider-status.disconnected .status-dot{background:var(--text-muted)}
+.provider-status.error .status-dot{background:var(--danger)}
+.provider-chevron{color:var(--text-muted);font-size:.6rem;transition:transform .2s;flex-shrink:0}
+.provider-card.expanded .provider-chevron{transform:rotate(180deg)}
+.provider-card-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.provider-card.expanded .provider-card-body{max-height:300px}
+.provider-card-inner{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--border-default);padding-top:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:.75rem;color:var(--text-secondary);font-weight:500}
+.form-input{width:100%;padding:7px 10px;background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;transition:border-color .12s}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
+.form-input::placeholder{color:var(--text-muted)}
+.form-input.code{font-family:var(--font-mono);font-size:.75rem}
+.form-row{display:flex;gap:10px;align-items:flex-end}
+.form-row .form-group{flex:1}
+.form-hint{font-size:.6875rem;color:var(--text-muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:var(--radius-sm);font-size:.8125rem;font-weight:500;border:none;transition:all .12s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0a0a0a}
+.btn-primary:hover{background:var(--accent-hover);box-shadow:0 0 16px rgba(183,255,0,.2)}
+.btn-secondary{background:var(--bg-raised);color:var(--text-secondary);border:1px solid var(--border-default)}
+.btn-secondary:hover{background:#252525;color:var(--text-primary)}
+.btn-outline{background:transparent;color:var(--text-secondary);border:1px solid var(--border-default)}
+.btn-outline:hover{color:var(--text-primary);border-color:#444}
+.btn-danger{background:rgba(244,67,54,.1);color:var(--danger);border:1px solid rgba(244,67,54,.2)}
+.btn-danger:hover{background:rgba(244,67,54,.18)}
+.btn-sm{padding:4px 10px;font-size:.75rem}
+.btn-icon{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center}
+.test-result{display:flex;align-items:center;gap:6px;font-size:.75rem;padding:6px 10px;border-radius:var(--radius-sm);margin-top:4px}
+.test-result.success{background:rgba(76,175,80,.08);color:var(--success);border:1px solid rgba(76,175,80,.15)}
+.test-result.fail{background:rgba(244,67,54,.08);color:var(--danger);border:1px solid rgba(244,67,54,.15)}
+.test-result.pending{background:rgba(255,193,7,.06);color:var(--warning);border:1px solid rgba(255,193,7,.12)}
+.security-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(183,255,0,.04);border:1px solid rgba(183,255,0,.1);border-radius:var(--radius-sm);font-size:.75rem;color:var(--accent);margin-top:4px}
+.security-badge .lock-icon{font-size:.8125rem}
+.empty-providers{text-align:center;padding:32px 16px;color:var(--text-muted)}
+.empty-providers .empty-icon{font-size:2rem;margin-bottom:8px;opacity:.4}
+.empty-providers .empty-title{font-size:.875rem;color:var(--text-secondary);margin-bottom:4px}
+.empty-providers .empty-desc{font-size:.75rem;margin-bottom:12px}
+.status-bar{height:28px;background:var(--bg-header);border-top:1px solid var(--border-default);display:flex;align-items:center;padding:0 14px;font-size:.6875rem;color:var(--text-muted);flex-shrink:0;user-select:none}
+.status-bar-left{display:flex;align-items:center;gap:8px}
+.encryption-badge{display:flex;align-items:center;gap:4px;color:var(--accent);font-size:.6875rem}
+.encryption-badge svg{width:12px;height:12px}
+</style>
+</head>
+<body>
+<div class="prototype-banner"><span>⚡ 原型演示 v1.3 — API Key 管理设置页</span></div>
+<div class="app-shell">
+  <nav class="nav-bar">
+    <div class="nav-back" id="backBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>返回
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-project">设置</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-actions">
+      <button class="nav-icon-btn" title="保存设置" id="saveSettingsBtn">💾</button>
+    </div>
+  </nav>
+  <div class="settings-layout">
+    <aside class="settings-sidebar">
+      <div class="settings-sidebar-title">设置</div>
+      <div class="settings-nav">
+        <div class="settings-nav-item active">
+          <span class="nav-icon">🔑</span> API Keys
+        </div>
+        <div class="settings-nav-item">
+          <span class="nav-icon">📊</span> 用量监控
+        </div>
+        <div class="settings-nav-item">
+          <span class="nav-icon">🎨</span> 外观
+        </div>
+        <div class="settings-nav-item">
+          <span class="nav-icon">💾</span> 存储
+        </div>
+        <div class="settings-nav-item">
+          <span class="nav-icon">🔔</span> 通知
+        </div>
+        <div class="settings-nav-item">
+          <span class="nav-icon">ℹ️</span> 关于
+        </div>
+      </div>
+    </aside>
+    <main class="settings-content">
+      <div class="settings-header">
+        <div class="settings-title">API Key 管理</div>
+        <div class="settings-desc">配置各 AI 提供商的密钥和端点。所有密钥在本地加密存储，不会发送到任何第三方服务器。</div>
+        <div class="security-badge" style="margin-top:10px">
+          <span class="lock-icon">🔒</span> AES-256-GCM 加密存储 · 密钥仅存于本地
+        </div>
+      </div>
+
+      <!-- Provider: OpenAI -->
+      <div class="section">
+        <div class="section-title">已配置的提供商</div>
+        <div class="provider-card expanded" id="cardOpenAI">
+          <div class="provider-card-header" data-toggle="cardOpenAI">
+            <div class="provider-icon openai">🟢</div>
+            <div class="provider-info">
+              <div class="provider-name">OpenAI</div>
+              <div class="provider-model">GPT-4o · GPT-4 · GPT-3.5</div>
+            </div>
+            <span class="provider-status connected"><span class="status-dot"></span>已连接</span>
+            <span class="provider-chevron">▾</span>
+          </div>
+          <div class="provider-card-body">
+            <div class="provider-card-inner">
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input class="form-input code" type="password" value="sk-••••••••••••••••aBcD" id="openaiKey" placeholder="sk-...">
+                <span class="form-hint">最后编辑：2026-07-06 · 点击输入框修改</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Endpoint URL（可选）</label>
+                  <input class="form-input code" type="text" value="https://api.openai.com/v1" id="openaiEndpoint" placeholder="https://api.openai.com/v1">
+                </div>
+                <div class="form-group" style="max-width:120px">
+                  <label class="form-label">超时（秒）</label>
+                  <input class="form-input" type="number" value="30" style="width:80px">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn btn-primary btn-sm test-btn" data-provider="openai">⟳ 测试连接</button>
+                <button class="btn btn-outline btn-sm">保存</button>
+                <button class="btn btn-danger btn-sm" style="margin-left:auto">移除</button>
+              </div>
+              <div class="test-result success" id="testOpenAI" style="display:none">
+                ✓ 连接成功 — 响应时间 342ms · 模型列表已获取 (12 个)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Provider: Anthropic -->
+        <div class="provider-card expanded" id="cardAnthropic">
+          <div class="provider-card-header" data-toggle="cardAnthropic">
+            <div class="provider-icon anthropic">🟠</div>
+            <div class="provider-info">
+              <div class="provider-name">Anthropic</div>
+              <div class="provider-model">Claude 3.5 Sonnet · Claude 3 Haiku</div>
+            </div>
+            <span class="provider-status connected"><span class="status-dot"></span>已连接</span>
+            <span class="provider-chevron">▾</span>
+          </div>
+          <div class="provider-card-body">
+            <div class="provider-card-inner">
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input class="form-input code" type="password" value="sk-ant-••••••••••••••••xYz" id="anthropicKey" placeholder="sk-ant-...">
+                <span class="form-hint">最后编辑：2026-07-07</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Endpoint URL（可选）</label>
+                  <input class="form-input code" type="text" value="https://api.anthropic.com/v1" id="anthropicEndpoint" placeholder="https://api.anthropic.com/v1">
+                </div>
+                <div class="form-group" style="max-width:120px">
+                  <label class="form-label">超时（秒）</label>
+                  <input class="form-input" type="number" value="60" style="width:80px">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn btn-primary btn-sm test-btn" data-provider="anthropic">⟳ 测试连接</button>
+                <button class="btn btn-outline btn-sm">保存</button>
+                <button class="btn btn-danger btn-sm" style="margin-left:auto">移除</button>
+              </div>
+              <div class="test-result success" id="testAnthropic" style="display:none">
+                ✓ 连接成功 — 响应时间 523ms · 模型列表已获取 (4 个)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Provider: Local Model -->
+        <div class="provider-card" id="cardLocal">
+          <div class="provider-card-header" data-toggle="cardLocal">
+            <div class="provider-icon local">💚</div>
+            <div class="provider-info">
+              <div class="provider-name">本地模型</div>
+              <div class="provider-model">Llama 3 · Mistral · 自定义</div>
+            </div>
+            <span class="provider-status disconnected"><span class="status-dot"></span>未配置</span>
+            <span class="provider-chevron">▾</span>
+          </div>
+          <div class="provider-card-body">
+            <div class="provider-card-inner">
+              <div class="form-group">
+                <label class="form-label">Endpoint URL</label>
+                <input class="form-input code" type="text" placeholder="http://localhost:11434/v1" id="localEndpoint" value="">
+              </div>
+              <div class="form-group">
+                <label class="form-label">API Key（如有）</label>
+                <input class="form-input code" type="password" placeholder="可选" id="localKey">
+                <span class="form-hint">大多数本地推理服务不需要 API Key</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="max-width:200px">
+                  <label class="form-label">模型名称</label>
+                  <input class="form-input" type="text" placeholder="llama3" id="localModel" value="">
+                </div>
+                <div class="form-group" style="max-width:120px">
+                  <label class="form-label">超时（秒）</label>
+                  <input class="form-input" type="number" value="120" style="width:80px">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn btn-primary btn-sm test-btn" data-provider="local">⟳ 测试连接</button>
+                <button class="btn btn-outline btn-sm">保存</button>
+              </div>
+              <div class="test-result fail" id="testLocal" style="display:none">
+                ✗ 连接失败 — 无法连接到 localhost:11434 · 请确认服务是否运行
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add New Provider -->
+      <div class="section">
+        <div class="section-title">添加提供商</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline add-provider-btn" data-provider="openai">+ OpenAI</button>
+          <button class="btn btn-outline add-provider-btn" data-provider="anthropic">+ Anthropic</button>
+          <button class="btn btn-outline add-provider-btn" data-provider="google">+ Google AI</button>
+          <button class="btn btn-outline add-provider-btn" data-provider="azure">+ Azure OpenAI</button>
+          <button class="btn btn-outline add-provider-btn" data-provider="custom">+ 自定义端点</button>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="status-bar">
+    <div class="status-bar-left">
+      <span class="encryption-badge">🔒 本地加密存储 (AES-256-GCM)</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <span>已配置: <span class="stat-value" style="color:var(--text-secondary)">2 / 6 个提供商</span></span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  // Toggle expand/collapse provider cards
+  document.querySelectorAll('[data-toggle]').forEach(function(header) {
+    header.addEventListener('click', function() {
+      var cardId = this.dataset.toggle;
+      var card = document.getElementById(cardId);
+      if(card) card.classList.toggle('expanded');
+    });
+  });
+
+  // Test connection simulation
+  document.querySelectorAll('.test-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var provider = this.dataset.provider;
+      var testEl = document.getElementById('test' + provider.charAt(0).toUpperCase() + provider.slice(1));
+      if(!testEl) return;
+
+      // Show pending state
+      this.disabled = true;
+      this.textContent = '⟳ 测试中...';
+      testEl.className = 'test-result pending';
+      testEl.textContent = '⟳ 正在连接...';
+      testEl.style.display = 'flex';
+
+      var self = this;
+      setTimeout(function() {
+        self.disabled = false;
+        self.textContent = '⟳ 测试连接';
+        if(provider === 'local') {
+          testEl.className = 'test-result fail';
+          testEl.textContent = '✗ 连接失败 — 无法连接到 localhost:11434 · 请确认服务是否运行';
+          // Update status badge
+          var statusBadge = self.closest('.provider-card').querySelector('.provider-status');
+          if(statusBadge) {
+            statusBadge.className = 'provider-status error';
+            statusBadge.innerHTML = '<span class="status-dot"></span>连接错误';
+          }
+        } else {
+          testEl.className = 'test-result success';
+          var msgs = {
+            openai: '✓ 连接成功 — 响应时间 342ms · 模型列表已获取 (12 个)',
+            anthropic: '✓ 连接成功 — 响应时间 523ms · 模型列表已获取 (4 个)'
+          };
+          testEl.textContent = msgs[provider] || '✓ 连接成功';
+        }
+      }, 1500 + Math.random() * 1000);
+    });
+  });
+
+  // Add provider buttons
+  document.querySelectorAll('.add-provider-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      this.textContent = '✓ 已添加';
+      this.className = 'btn btn-sm';
+      this.style.cssText = 'color:var(--success);border-color:rgba(76,175,80,.3);background:rgba(76,175,80,.06);cursor:default';
+      this.disabled = true;
+      setTimeout(function() {
+        btn.textContent = '+ ' + btn.dataset.provider.charAt(0).toUpperCase() + btn.dataset.provider.slice(1);
+        btn.className = 'btn btn-outline add-provider-btn';
+        btn.style.cssText = '';
+        btn.disabled = false;
+      }, 2000);
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', function() {
+    window.location.href = 'index.html';
+  });
+
+  document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+    this.textContent = '✓';
+    setTimeout(function() {
+      document.getElementById('saveSettingsBtn').textContent = '💾';
+    }, 1500);
+  });
+})();
+</script>
+</body>
+</html>

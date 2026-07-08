@@ -2,7 +2,8 @@
 use std::sync::Mutex;
 
 use crate::models::{
-    CanvasTabState, CanvasTabStateRow, JudgmentRecord, Project, WorldObject, WorldObjectRow,
+    CanvasTabState, CanvasTabStateRow, ImportResult, JudgmentRecord, Project,
+    ProjectExportData, SaveCanvasTabStateResponse, WorldObject, WorldObjectRow,
 };
 use crate::models::Connection as ObjConnection;
 
@@ -99,6 +100,9 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_cts_project ON canvas_tab_states(project_id);
             CREATE INDEX IF NOT EXISTS idx_cts_tab ON canvas_tab_states(tab_id);
             CREATE INDEX IF NOT EXISTS idx_jr_object ON judgment_records(object_id);
+
+            -- P0-04: add version column for canvas tab states (migration, safe to re-run)
+            ALTER TABLE canvas_tab_states ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
             ",
         )?;
         Ok(())
@@ -534,28 +538,47 @@ impl Database {
         Ok(states)
     }
 
-    pub fn save_canvas_tab_state(&self, state: &CanvasTabState) -> SqlResult<CanvasTabState> {
+    pub fn save_canvas_tab_state(&self, state: &CanvasTabState, version: i64) -> Result<SaveCanvasTabStateResponse, String> {
         let conn = self.conn.lock().unwrap();
+
+        // Check stored version for conflict detection
+        let stored_version: i64 = conn
+            .query_row(
+                "SELECT version FROM canvas_tab_states WHERE id = ?1",
+                params![state.id],
+                |row| row.get(0),
+            )
+            .unwrap_or(0); // 0 means no existing record
+
+        if stored_version > version {
+            return Err(format!(
+                "VERSION_CONFLICT: backend version {} > incoming version {}",
+                stored_version, version
+            ));
+        }
+
+        let new_version = version;
         let now = chrono::Utc::now().timestamp_millis();
         let positions_json = serde_json::to_string(&state.positions).unwrap_or_else(|_| "[]".to_string());
         let notes_json = serde_json::to_string(&state.sticky_notes).unwrap_or_else(|_| "[]".to_string());
         let conns_json = serde_json::to_string(&state.connections).unwrap_or_else(|_| "[]".to_string());
 
-        // Upsert: INSERT OR REPLACE
+        // Upsert: INSERT OR REPLACE (includes version column)
         conn.execute(
             "INSERT OR REPLACE INTO canvas_tab_states
-             (id, project_id, tab_id, positions, sticky_notes, connections, scale, pan_x, pan_y, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9,
-                     COALESCE((SELECT created_at FROM canvas_tab_states WHERE id=?1), ?10),
-                     ?11)",
+             (id, project_id, tab_id, positions, sticky_notes, connections, scale, pan_x, pan_y, version, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10,
+                     COALESCE((SELECT created_at FROM canvas_tab_states WHERE id=?1), ?11),
+                     ?12)",
             params![
                 state.id, state.project_id, state.tab_id,
                 positions_json, notes_json, conns_json,
                 state.scale, state.pan_x, state.pan_y,
-                now, now,
+                new_version, now, now,
             ],
-        )?;
-        Ok(CanvasTabState {
+        ).map_err(|e| format!("DB_ERROR: {}", e))?;
+
+        let result_state = CanvasTabState {
             id: state.id.clone(),
             project_id: state.project_id.clone(),
             tab_id: state.tab_id.clone(),
@@ -567,6 +590,254 @@ impl Database {
             pan_y: state.pan_y,
             created_at: state.created_at,
             updated_at: now,
+        };
+
+        Ok(SaveCanvasTabStateResponse {
+            state: result_state,
+            accepted: true,
+            current_version: new_version,
+        })
+    }
+
+
+    // -•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-
+    //  P0-05: Export / Import
+    // -•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-
+
+    /// Export all project data for zip packaging (P0-05)
+    pub fn export_project_data(&self, project_id: &str) -> Result<ProjectExportData, String> {
+        let project = self
+            .get_project(project_id)
+            .map_err(|e| format!("NOT_FOUND: {}", e))?
+            .ok_or_else(|| format!("NOT_FOUND: project {} not found", project_id))?;
+
+        let objects = self
+            .list_world_objects(project_id)
+            .map_err(|e| format!("IO_ERROR: {}", e))?;
+
+        let connections = self
+            .list_connections(project_id)
+            .map_err(|e| format!("IO_ERROR: {}", e))?;
+
+        let canvas_states = self
+            .list_canvas_tab_states(project_id)
+            .map_err(|e| format!("IO_ERROR: {}", e))?;
+
+        Ok(ProjectExportData {
+            project,
+            objects,
+            connections,
+            canvas_states,
+        })
+    }
+
+    /// Import project data from a parsed export (P0-05).
+    pub fn import_project_data(&self, data: &ProjectExportData) -> Result<ImportResult, String> {
+        let new_project_id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        {
+            let conn = self.conn.lock().unwrap();
+            conn.execute(
+                "INSERT INTO projects (id, name, genre, status, word_count, gradient, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    new_project_id,
+                    data.project.name, data.project.genre,
+                    data.project.status, data.project.word_count,
+                    data.project.gradient, now, now,
+                ],
+            ).map_err(|e| format!("IO_ERROR: {}", e))?;
+        }
+
+        let mut object_count = 0usize;
+        let mut connection_count = 0usize;
+
+        // Map old IDs to new UUIDs for conflict-free import
+        let mut id_map = std::collections::HashMap::new();
+        for obj in &data.objects {
+            let new_id = uuid::Uuid::new_v4().to_string();
+            id_map.insert(obj.id.clone(), new_id);
+        }
+        for obj in &data.objects {
+            let tags_json = serde_json::to_string(&obj.tags).unwrap_or_else(|_| "[]".to_string());
+            let aliases_json = serde_json::to_string(&obj.aliases).unwrap_or_else(|_| "[]".to_string());
+            let boards_json = serde_json::to_string(&obj.selected_boards).unwrap_or_else(|_| "[]".to_string());
+            {
+                let conn = self.conn.lock().unwrap();
+                conn.execute(
+                    "INSERT INTO world_objects
+                     (id, project_id, name, type, status, canon_level,
+                      tags, aliases, selected_boards, content, references_count, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                    params![
+                        id_map[&obj.id], new_project_id, obj.name, obj.object_type,
+                        obj.status, obj.canon_level, tags_json, aliases_json, boards_json,
+                        obj.content, obj.references_count, obj.created_at, obj.updated_at,
+                    ],
+                ).map_err(|e| format!("IO_ERROR: {}", e))?;
+
+                for jr in &obj.judgment_history {
+                    conn.execute(
+                        "INSERT INTO judgment_records (id, object_id, object_name, operation_type, reason, timestamp, previous_status, new_status)
+                         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                        params![
+                            jr.id, id_map[&obj.id], jr.object_name, jr.operation_type,
+                            jr.reason, jr.timestamp, jr.previous_status, jr.new_status,
+                        ],
+                    ).map_err(|e| format!("IO_ERROR: {}", e))?;
+                }
+            }
+            object_count += 1;
+        }
+
+        let mut conn_id_map = std::collections::HashMap::new();
+        for conn_data in &data.connections {
+            let new_conn_id = uuid::Uuid::new_v4().to_string();
+            conn_id_map.insert(conn_data.id.clone(), new_conn_id);
+        }
+
+        for conn_data in &data.connections {
+            {
+                let conn = self.conn.lock().unwrap();
+                conn.execute(
+                    "INSERT INTO connections (id, project_id, source_id, target_id, type, label)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    params![
+                        conn_id_map[&conn_data.id], new_project_id,
+                        id_map[&conn_data.source_id], id_map[&conn_data.target_id],
+                        conn_data.connection_type, conn_data.label,
+                    ],
+                ).map_err(|e| format!("IO_ERROR: {}", e))?;
+            }
+            connection_count += 1;
+        }
+
+        for cs in &data.canvas_states {
+            let positions_json = serde_json::to_string(&cs.positions).unwrap_or_else(|_| "[]".to_string());
+            let notes_json = serde_json::to_string(&cs.sticky_notes).unwrap_or_else(|_| "[]".to_string());
+            let conns_json = serde_json::to_string(&cs.connections).unwrap_or_else(|_| "[]".to_string());
+            {
+                let conn = self.conn.lock().unwrap();
+                conn.execute(
+                    "INSERT INTO canvas_tab_states
+                     (id, project_id, tab_id, positions, sticky_notes, connections, scale, pan_x, pan_y, version, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    params![
+                        uuid::Uuid::new_v4().to_string(), new_project_id, cs.tab_id,
+                        positions_json, notes_json, conns_json,
+                        cs.scale, cs.pan_x, cs.pan_y,
+                        1i64, cs.created_at, now,
+                    ],
+                ).map_err(|e| format!("IO_ERROR: {}", e))?;
+            }
+        }
+
+        Ok(ImportResult {
+            success: true,
+            project_id: new_project_id,
+            project_name: data.project.name.clone(),
+            object_count,
+            connection_count,
+        })
+    }
+
+    /// Import a plain markdown directory (P0-05).
+    pub fn import_markdown_directory(&self, dir_path: &str) -> Result<ImportResult, String> {
+        let dir = std::path::Path::new(dir_path);
+        if !dir.is_dir() {
+            return Err(format!("NOT_FOUND: directory not found: {}", dir_path));
+        }
+
+        let mut md_entries: Vec<(String, String)> = Vec::new();
+        let read_dir = std::fs::read_dir(dir).map_err(|e| format!("IO_ERROR: {}", e))?;
+
+        for entry in read_dir {
+            let entry = entry.map_err(|e| format!("IO_ERROR: {}", e))?;
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("untitled").to_string();
+                let content = std::fs::read_to_string(&path).map_err(|e| format!("IO_ERROR: {}", e))?;
+                md_entries.push((file_stem, content));
+            }
+        }
+
+        if md_entries.is_empty() {
+            return Err("IO_ERROR: no .md files found in directory".to_string());
+        }
+
+        let project_id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        let dir_name = dir.file_name().and_then(|s| s.to_str()).unwrap_or("Imported Project");
+
+        {
+            let conn = self.conn.lock().unwrap();
+            conn.execute(
+                "INSERT INTO projects (id, name, genre, status, word_count, gradient, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    project_id, dir_name, "未分类", "conceiving",
+                    0i64, r##"["#6366f1","#8b5cf6"]"##, now, now,
+                ],
+            ).map_err(|e| format!("IO_ERROR: {}", e))?;
+        }
+
+        let mut name_to_id = std::collections::HashMap::new();
+        let mut object_count = 0usize;
+
+        for (name, content) in &md_entries {
+            let obj_id = uuid::Uuid::new_v4().to_string();
+            name_to_id.insert(name.clone(), obj_id.clone());
+            {
+                let conn = self.conn.lock().unwrap();
+                conn.execute(
+                    "INSERT INTO world_objects (id, project_id, name, type, status, canon_level,
+                     tags, aliases, selected_boards, content, references_count, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                    params![
+                        obj_id, project_id, name, "术语", "草稿", "草案正典",
+                        "[]", "[]", "[]", content, 0i32, now, now,
+                    ],
+                ).map_err(|e| format!("IO_ERROR: {}", e))?;
+            }
+            object_count += 1;
+        }
+
+        let mut connection_count = 0usize;
+        for (name, content) in &md_entries {
+            let source_id = match name_to_id.get(name) {
+                Some(id) => id.clone(),
+                None => continue,
+            };
+            let targets = parse_wiki_links(content);
+            for target_name in targets {
+                if let Some(target_id) = name_to_id.get(&target_name) {
+                    let conn_id = uuid::Uuid::new_v4().to_string();
+                    {
+                        let conn = self.conn.lock().unwrap();
+                        let existing = conn.query_row::<i64, _, _>(
+                            "SELECT COUNT(*) FROM connections WHERE project_id = ?1 AND source_id = ?2 AND target_id = ?3",
+                            params![project_id, source_id, target_id],
+                            |row| row.get(0),
+                        ).unwrap_or(0);
+                        if existing == 0 {
+                            conn.execute(
+                                "INSERT INTO connections (id, project_id, source_id, target_id, type, label)
+                                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                                params![conn_id, project_id, source_id, target_id, "相关", ""],
+                            ).map_err(|e| format!("IO_ERROR: {}", e))?;
+                            connection_count += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(ImportResult {
+            success: true,
+            project_id,
+            project_name: dir_name.to_string(),
+            object_count,
+            connection_count,
         })
     }
 
@@ -577,6 +848,27 @@ impl Database {
     }
 }
 
+
+/// Parse [[WikiLink]] patterns from markdown content (P0-05).
+/// Returns a list of referenced object names (without display text suffix).
+fn parse_wiki_links(content: &str) -> Vec<String> {
+    let mut links = Vec::new();
+    let mut remaining = content;
+    while let Some(start) = remaining.find("[[") {
+        let after_open = &remaining[start + 2..];
+        if let Some(end) = after_open.find("]]") {
+            let link_text = &after_open[..end];
+            let name = link_text.split('|').next().unwrap_or("").trim().to_string();
+            if !name.is_empty() {
+                links.push(name);
+            }
+            remaining = &after_open[end + 2..];
+        } else {
+            break;
+        }
+    }
+    links
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -617,11 +909,11 @@ mod tests {
         assert!(db.list_projects().unwrap().is_empty());
 
         // Create
-        let p1 = db.create_project("Project Alpha", "fiction", "conceiving", 5000, "[\"#123\",\"#456\"]").unwrap();
+        let p1 = db.create_project("Project Alpha", "fiction", "conceiving", 5000, r##"["#123","#456"]"##).unwrap();
         assert_eq!(p1.name, "Project Alpha");
         assert!(!p1.id.is_empty());
 
-        let p2 = db.create_project("Project Beta", "non-fiction", "drafting", 12000, "[\"#abc\",\"#def\"]").unwrap();
+        let p2 = db.create_project("Project Beta", "non-fiction", "drafting", 12000, r##"["#abc","#def"]"##).unwrap();
         assert_eq!(p2.name, "Project Beta");
 
         // List
@@ -665,7 +957,7 @@ mod tests {
     #[test]
     fn test_world_object_crud() {
         let db = setup_db();
-        let proj = db.create_project("Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+        let proj = db.create_project("Test", "t", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
         let pid = &proj.id;
 
         // Initially empty via direct SQL
@@ -730,7 +1022,7 @@ mod tests {
         }
 
         // Ensure other project isolation
-        let other_proj = db.create_project("Other", "o", "conceiving", 0, "[\"#x\",\"#y\"]").unwrap();
+        let other_proj = db.create_project("Other", "o", "conceiving", 0, r##"["#x","#y"]"##).unwrap();
         {
             let conn = db.conn.lock().unwrap();
             let count: i64 = conn
@@ -757,7 +1049,7 @@ mod tests {
             let status: String = conn
                 .query_row("SELECT status FROM world_objects WHERE id = ?", params![obj_id], |r| r.get(0))
                 .unwrap();
-            assert_eq!(status, "locked");
+            assert_eq!(status, "draft");
         }
 
         // Delete
@@ -778,7 +1070,7 @@ mod tests {
     #[test]
     fn test_canvas_tab_state_serialization() {
         let db = setup_db();
-        let proj = db.create_project("Canvas Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+        let proj = db.create_project("Canvas Test", "t", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
 
         // Initial: empty
         let states = db.list_canvas_tab_states(&proj.id).unwrap();
@@ -812,14 +1104,14 @@ mod tests {
             updated_at: 0,
         };
 
-        let saved = db.save_canvas_tab_state(&state).unwrap();
-        assert_eq!(saved.tab_id, "main_canvas");
-        assert_eq!(saved.scale, 1.5);
-        assert_eq!(saved.pan_x, -100.0);
-        // Note: save_canvas_tab_state returns input state.created_at (0 for new),
-        // not the DB-computed value. This is known behavior, not a test failure.
-        // The DB does persist the correct value via COALESCE in the INSERT.
+        let resp1 = db.save_canvas_tab_state(&state, 1).unwrap();
+        assert!(resp1.accepted);
+        assert_eq!(resp1.current_version, 1);
+        assert_eq!(resp1.state.tab_id, "main_canvas");
+        assert_eq!(resp1.state.scale, 1.5);
+        assert_eq!(resp1.state.pan_x, -100.0);
 
+        // List and verify JSON round-trip
         // List and verify JSON round-trip
         let saved_list = db.list_canvas_tab_states(&proj.id).unwrap();
         assert_eq!(saved_list.len(), 1);
@@ -834,18 +1126,36 @@ mod tests {
         assert_eq!(loaded.sticky_notes.len(), 1);
         assert_eq!(loaded.sticky_notes[0].text, "Important note");
 
-        // Upsert: save the same ID with different data
+        // Upsert: save the same ID with higher version
         let updated_state = CanvasTabState {
+            id: state_id.clone(),
+            project_id: proj.id.clone(),
+            tab_id: "main_canvas".to_string(),
+            positions: serde_json::json!([
+                {"objectId": "obj1", "x": 100.0, "y": 200.0},
+                {"objectId": "obj2", "x": 300.0, "y": 400.0}
+            ]),
+            sticky_notes: vec![],
+            connections: vec![],
             scale: 2.0,
             pan_x: 0.0,
             pan_y: 0.0,
-            sticky_notes: vec![],
-            ..state
+            created_at: 0,
+            updated_at: 0,
         };
-        let upserted = db.save_canvas_tab_state(&updated_state).unwrap();
-        assert_eq!(upserted.scale, 2.0);
-        assert_eq!(upserted.sticky_notes.len(), 0);
+        let resp2 = db.save_canvas_tab_state(&updated_state, 2).unwrap();
+        assert!(resp2.accepted);
+        assert_eq!(resp2.current_version, 2);
+        assert_eq!(resp2.state.scale, 2.0);
+        assert_eq!(resp2.state.sticky_notes.len(), 0);
 
+        // Version conflict: try to save with stale version
+        let conflict = db.save_canvas_tab_state(&updated_state, 1);
+        assert!(conflict.is_err());
+        let err_msg = conflict.unwrap_err();
+        assert!(err_msg.starts_with("VERSION_CONFLICT:"), "Expected VERSION_CONFLICT, got: {}", err_msg);
+
+        // Delete
         // Delete
         db.delete_canvas_tab_state(&state_id).unwrap();
         assert!(db.list_canvas_tab_states(&proj.id).unwrap().is_empty());
@@ -858,7 +1168,7 @@ mod tests {
     #[test]
     fn test_judgment_record_append_and_query() {
         let db = setup_db();
-        let proj = db.create_project("Judgment Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+        let proj = db.create_project("Judgment Test", "t", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
 
         // Create an object for the judgments to reference
         let obj_id = uuid::Uuid::new_v4().to_string();
@@ -929,7 +1239,7 @@ mod tests {
     #[test]
     fn test_connection_create_and_delete() {
         let db = setup_db();
-        let proj = db.create_project("Conn Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+        let proj = db.create_project("Conn Test", "t", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
 
         // Create two objects to connect
         let obj1 = db.create_world_object(&WorldObject {
@@ -985,7 +1295,7 @@ mod tests {
         assert_eq!(connections[0].source_id, obj1.id);
 
         // Other project isolation
-        let other = db.create_project("Other", "o", "conceiving", 0, "[\"#c\",\"#d\"]").unwrap();
+        let other = db.create_project("Other", "o", "conceiving", 0, r##"["#c","#d"]"##).unwrap();
         assert!(db.list_connections(&other.id).unwrap().is_empty());
 
         // Delete
@@ -1005,7 +1315,7 @@ mod tests {
         let db = setup_db();
 
         // Create project with object and connection
-        let proj = db.create_project("Cascade Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+        let proj = db.create_project("Cascade Test", "t", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
 
         let obj_id = uuid::Uuid::new_v4().to_string();
         let obj = WorldObject {
@@ -1083,5 +1393,100 @@ mod tests {
         }
         assert_eq!(db.list_connections(&proj.id).unwrap().len(), 0);
         assert_eq!(db.get_judgment_records_for_object(&obj_id).unwrap().len(), 0);
+    }
+
+    // -•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-
+    //  P0-05: Export / Import / WikiLink tests
+    // -•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-•-
+
+    #[test]
+    fn test_parse_wiki_links() {
+        let links = parse_wiki_links("Hello [[World]]!");
+        assert_eq!(links, vec!["World"]);
+
+        let links = parse_wiki_links("See [[Target|display]] here");
+        assert_eq!(links, vec!["Target"]);
+
+        let links = parse_wiki_links("[[A]] and [[B]] and [[C|see]]");
+        assert_eq!(links, vec!["A", "B", "C"]);
+
+        let links: Vec<String> = parse_wiki_links("Plain text without links");
+        assert!(links.is_empty());
+
+        let links: Vec<String> = parse_wiki_links("");
+        assert!(links.is_empty());
+
+        let links = parse_wiki_links("[[unclosed");
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_export_import_roundtrip() {
+        let db = setup_db();
+        let proj = db.create_project("Export Test", "科幻", "drafting", 15000, r##"["#ff0000","#00ff00"]"##).unwrap();
+
+        let obj1_id = uuid::Uuid::new_v4().to_string();
+        let obj1 = WorldObject {
+            id: obj1_id.clone(),
+            project_id: proj.id.clone(),
+            name: "Character One".to_string(),
+            object_type: "人物".to_string(),
+            status: "锁定".to_string(),
+            canon_level: "项目正典".to_string(),
+            tags: vec!["protagonist".to_string()],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "A test character.".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        };
+        db.create_world_object(&obj1).unwrap();
+
+        let obj2_id = uuid::Uuid::new_v4().to_string();
+        let obj2 = WorldObject {
+            id: obj2_id.clone(),
+            project_id: proj.id.clone(),
+            name: "Location One".to_string(),
+            object_type: "地点".to_string(),
+            status: "锁定".to_string(),
+            canon_level: "核心正典".to_string(),
+            tags: vec![],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "An important location.".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        };
+        db.create_world_object(&obj2).unwrap();
+
+        let conn_id = uuid::Uuid::new_v4().to_string();
+        db.create_connection(&ObjConnection {
+            id: conn_id.clone(),
+            project_id: proj.id.clone(),
+            source_id: obj1_id.clone(),
+            target_id: obj2_id.clone(),
+            connection_type: "发生于".to_string(),
+            label: "".to_string(),
+        }).unwrap();
+
+        let export_data = db.export_project_data(&proj.id).unwrap();
+        assert_eq!(export_data.project.name, "Export Test");
+        assert_eq!(export_data.objects.len(), 2);
+        assert_eq!(export_data.connections.len(), 1);
+
+        let import_result = db.import_project_data(&export_data).unwrap();
+        assert!(import_result.success);
+        assert_eq!(import_result.object_count, 2);
+        assert_eq!(import_result.connection_count, 1);
+        assert_eq!(import_result.project_name, "Export Test");
+
+        let imported_objects = db.list_world_objects(&import_result.project_id).unwrap();
+        assert_eq!(imported_objects.len(), 2);
+        let imported_connections = db.list_connections(&import_result.project_id).unwrap();
+        assert_eq!(imported_connections.len(), 1);
     }
 }

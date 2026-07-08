@@ -193,7 +193,7 @@ pub fn export_project(
     // Write project.json
     let json = serde_json::to_string_pretty(&data)
         .map_err(|e| format!("IO_ERROR: {}", e))?;
-    zip.start_file("project.json", zip::write::FileOptions::default())
+    zip.start_file("project.json", zip::write::FileOptions::<()>::default())
         .map_err(|e| format!("IO_ERROR: {}", e))?;
     zip.write_all(json.as_bytes())
         .map_err(|e| format!("IO_ERROR: {}", e))?;
@@ -201,7 +201,7 @@ pub fn export_project(
     // Write per-object .md files
     for obj in &data.objects {
         let filename = format!("objects/{}.md", obj.id);
-        zip.start_file(&filename, zip::write::FileOptions::default())
+        zip.start_file(&filename, zip::write::FileOptions::<()>::default())
             .map_err(|e| format!("IO_ERROR: {}", e))?;
         zip.write_all(obj.content.as_bytes())
             .map_err(|e| format!("IO_ERROR: {}", e))?;

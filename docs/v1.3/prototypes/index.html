@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.3 — BYOK 完善：AI Gateway 版本</title>
+<style>
+:root {
+  --bg-canvas: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-raised: #1e1e1e;
+  --bg-header: #0e0e0e;
+  --accent: #B7FF00;
+  --accent-hover: #c8ff33;
+  --accent-soft: rgba(183, 255, 0, 0.1);
+  --border-default: #2a2a2a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --canon-core: #FFB74D;
+  --canon-project: #90CAF9;
+  --danger: #f44336;
+  --success: #4CAF50;
+  --warning: #FFC107;
+  --info: #42A5F5;
+  --font-sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{
+  font-family:var(--font-sans);font-size:.9375rem;line-height:1.6;
+  background:var(--bg-canvas);color:var(--text-primary);
+  min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem;
+  -webkit-font-smoothing:antialiased
+}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::selection{background:rgba(183,255,0,.2)}
+.app{width:100%;max-width:880px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 0 .75rem;border-bottom:1px solid var(--border-default);flex-wrap:wrap;gap:.75rem}
+.topbar-left{display:flex;align-items:center;gap:.75rem}
+.topbar-title{font-size:1.35rem;font-weight:700;letter-spacing:.02em;background:linear-gradient(135deg,var(--accent),#d4ff5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-sub{font-size:.75rem;color:var(--text-muted)}
+.version-badge{font-size:.6875rem;padding:2px 10px;border-radius:20px;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(183,255,0,.15);white-space:nowrap}
+.season-badge{font-size:.6875rem;padding:2px 10px;border-radius:20px;background:rgba(144,202,249,.08);color:var(--info);border:1px solid rgba(144,202,249,.12);white-space:nowrap}
+
+/* ===== Hero / Description ===== */
+.hero{padding:1.5rem 0;border-bottom:1px solid var(--border-default)}
+.hero h2{font-size:1.1rem;font-weight:600;margin-bottom:.5rem}
+.hero p{font-size:.875rem;color:var(--text-secondary);max-width:600px;margin-bottom:.75rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{padding:2px 10px;border-radius:20px;font-size:.6875rem;background:var(--bg-raised);border:1px solid var(--border-default);color:var(--text-muted)}
+
+/* ===== Section ===== */
+.section-title{font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:1.5rem 0 1rem;display:flex;align-items:center;gap:8px}
+.section-title .count{color:var(--text-secondary);font-weight:400}
+
+/* ===== Prototype Card Grid ===== */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:1rem}
+.card{
+  background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);
+  padding:1.25rem;cursor:pointer;transition:all .2s;text-decoration:none;display:block;position:relative;overflow:hidden
+}
+.card:hover{transform:translateY(-3px);border-color:#333;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.card:hover .card-arrow{transform:translateX(4px);opacity:1}
+.card-number{position:absolute;top:1rem;right:1rem;font-size:.625rem;color:var(--text-muted);font-family:var(--font-mono,monospace)}
+.card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:.75rem}
+.card-icon.feature{background:var(--accent-soft)}
+.card-icon.settings{background:rgba(144,202,249,.1)}
+.card-icon.usage{background:rgba(255,152,0,.1)}
+.card-icon.overview{background:rgba(183,255,0,.06)}
+.card-title{font-size:1rem;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.card-desc{font-size:.8125rem;color:var(--text-secondary);line-height:1.5}
+.card-features{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.card-feature{padding:2px 8px;font-size:.625rem;border-radius:3px;background:var(--bg-raised);border:1px solid var(--border-default);color:var(--text-muted)}
+.card-arrow{position:absolute;bottom:1rem;right:1rem;color:var(--accent);font-size:.75rem;opacity:.5;transition:all .2s}
+
+/* ===== Merged P2 Items ===== */
+.p2-section{margin-top:2rem;padding:1rem 1.25rem;background:rgba(144,202,249,.03);border:1px solid rgba(144,202,249,.08);border-radius:var(--radius-md)}
+.p2-title{font-size:.8125rem;font-weight:600;color:var(--info);margin-bottom:6px}
+.p2-desc{font-size:.75rem;color:var(--text-secondary)}
+.p2-desc code{padding:1px 5px;background:var(--bg-raised);border-radius:3px;font-size:.6875rem;color:var(--text-primary)}
+
+/* ===== Inline Status Bar Prototype ===== */
+.mini-status-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg-header);border:1px solid var(--border-default);border-radius:6px;font-size:.6875rem;color:var(--text-muted);margin-top:1.5rem}
+.mini-status-bar .mdot{width:6px;height:6px;border-radius:50%}
+.mini-status-bar .mdot.green{background:var(--success)}
+.mini-status-bar .mdot.yellow{background:var(--warning)}
+.mini-status-bar .sep{color:var(--border-default)}
+.mini-status-bar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+/* ===== Links ===== */
+.footer-links{display:flex;gap:1rem;padding:1.5rem 0;flex-wrap:wrap}
+.footer-link{font-size:.8125rem;color:var(--text-muted);text-decoration:none;transition:color .12s}
+.footer-link:hover{color:var(--accent)}
+
+@media(max-width:640px){
+  .card-grid{grid-template-columns:1fr}
+  .topbar{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 class="topbar-title">织梦机 v1.3</h1>
+      <span class="version-badge">BYOK 完善</span>
+      <span class="season-badge">🌱 春生</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <span class="version-badge">v1.2 → v1.3</span>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>AI Gateway 版本 — 自由使用自己的 AI 密钥</h2>
+    <p>
+      v1.3 的核心变化：织梦机不再内置 AI 配额限制（配额制废除），改为 BYOK（Bring Your Own Key）架构。
+      你自带 API Key，用自己的账户调用 AI，用量和费用完全由自己掌控。
+      同时将 P2-04 底部状态栏从 deferred 合并进本版本交付。
+    </p>
+    <div class="tags">
+      <span class="tag">BYOK</span>
+      <span class="tag">多模型切换</span>
+      <span class="tag">用量监控</span>
+      <span class="tag">加密存储</span>
+      <span class="tag">统一状态栏</span>
+    </div>
+  </div>
+
+  <!-- Prototypes -->
+  <div class="section-title">
+    <span>核心原型</span>
+    <span class="count">4 屏</span>
+  </div>
+
+  <div class="card-grid">
+    <!-- Card 1: AI Assistant -->
+    <a class="card" href="ai-assistant.html">
+      <span class="card-number">01</span>
+      <div class="card-icon feature">💡</div>
+      <div class="card-title">AI 助手浮窗</div>
+      <div class="card-desc">左侧栏底部可折叠的 AI 助手面板。支持多模型切换（GPT-4o / Claude / 本地模型），实时对话，用量进度条。点击灯泡图标展开/收起，在侧栏内联交互。</div>
+      <div class="card-features">
+        <span class="card-feature">多模型切换</span>
+        <span class="card-feature">实时对话</span>
+        <span class="card-feature">@提及对象</span>
+        <span class="card-feature">用量条</span>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+
+    <!-- Card 2: Settings API Keys -->
+    <a class="card" href="settings-keys.html">
+      <span class="card-number">02</span>
+      <div class="card-icon settings">🔑</div>
+      <div class="card-title">API Key 管理设置页</div>
+      <div class="card-desc">多提供商密钥管理：OpenAI、Anthropic、本地模型，每提供商独立输入。支持加密存储（AES-256-GCM）、连接测试、端点自定义配置。</div>
+      <div class="card-features">
+        <span class="card-feature">AES-256 加密</span>
+        <span class="card-feature">连接测试</span>
+        <span class="card-feature">多提供商</span>
+        <span class="card-feature">自定义端点</span>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+
+    <!-- Card 3: Model Selector + Usage -->
+    <a class="card" href="model-selector.html">
+      <span class="card-number">03</span>
+      <div class="card-icon usage">📊</div>
+      <div class="card-title">模型选择与用量监控</div>
+      <div class="card-desc">模型选择面板（单选，带定价标签）、每日 token 用量进度条（绿→黄→红阈值）、各模型使用量分解、近 7 天趋势图、月费用估算与预算上限。</div>
+      <div class="card-features">
+        <span class="card-feature">每日用量</span>
+        <span class="card-feature">阈值预警</span>
+        <span class="card-feature">费用估算</span>
+        <span class="card-feature">趋势图</span>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+
+    <!-- Card 4: Status Bar (integrated inline) -->
+    <a class="card" href="ai-assistant.html" style="grid-column:span 1">
+      <span class="card-number">04</span>
+      <div class="card-icon overview">📋</div>
+      <div class="card-title">统一底部状态栏</div>
+      <div class="card-desc">底部状态栏合并 AI 连接状态指示 + 字数统计 + 正典状态 + token 用量。绿色/红色连接点可点击切换，实时反映 AI 服务连通性。</div>
+      <div class="card-features">
+        <span class="card-feature">连接状态</span>
+        <span class="card-feature">字数统计</span>
+        <span class="card-feature">正典状态</span>
+        <span class="card-feature">P2-04 合并</span>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+  </div>
+
+  <!-- Merged P2 -->
+  <div class="p2-section">
+    <div class="p2-title">📌 已合并 deferred P2 项目</div>
+    <div class="p2-desc">
+      <strong>P2-04</strong> — 底部状态栏：字数统计 / 项目总字数 / 正典状态 已从 deferred 合并进 v1.3 的统一状态栏。<br>
+      在 <code>ai-assistant.html</code> 底部可见：字数 (1,234) | 项目 (43,217) | 核心正典 | tokens (0) 的完整状态栏布局。
+    </div>
+  </div>
+
+  <!-- Mini Status Bar Preview -->
+  <div class="mini-status-bar">
+    <span class="mdot green"></span>
+    <span>AI 已连接</span>
+    <span class="sep">|</span>
+    <span>字数: 1,234</span>
+    <span class="sep">|</span>
+    <span>项目: 43,217</span>
+    <span class="sep">|</span>
+    <span style="color:var(--canon-core)">核心正典</span>
+    <span class="right">
+      <span>tokens: 6.2K</span>
+      <span class="mdot yellow"></span>
+    </span>
+  </div>
+
+  <!-- Out of Scope Reminder -->
+  <div class="p2-section" style="margin-top:1rem;border-color:rgba(244,67,54,.08);background:rgba(244,67,54,.02)">
+    <div class="p2-title" style="color:var(--text-muted)">🚫 不在本版本范围</div>
+    <div class="p2-desc" style="color:var(--text-muted)">
+      Agent / Skill 架构与任务队列 (v1.4) · 编辑器内 AI 内容生成 · 云账号/用户登录 · 模板市场 · 移动端/Web 版 · 多人协作 · EPUB/PDF 导出 · 插件系统 · 地图/地理系统 · 多语言支持
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-links">
+    <a class="footer-link" href="../v1.2/prototypes/bookshelf.html" target="_blank">v1.2 书架原型</a>
+    <a class="footer-link" href="../v1.2/prototypes/editor.html" target="_blank">v1.2 编辑器原型</a>
+    <a class="footer-link" href="../v1.2/prototypes/canvas.html" target="_blank">v1.2 画布原型</a>
+  </div>
+</div>
+</body>
+</html>

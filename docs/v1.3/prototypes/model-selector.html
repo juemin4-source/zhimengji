@@ -1,0 +1,400 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.3 — 模型选择与用量监控</title>
+<style>
+:root {
+  --bg-canvas: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-raised: #1e1e1e;
+  --bg-header: #0e0e0e;
+  --accent: #B7FF00;
+  --accent-hover: #c8ff33;
+  --accent-soft: rgba(183, 255, 0, 0.1);
+  --accent-soft2: rgba(183, 255, 0, 0.05);
+  --border-default: #2a2a2a;
+  --border-light: #333;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --canon-core: #FFB74D;
+  --canon-project: #90CAF9;
+  --danger: #f44336;
+  --success: #4CAF50;
+  --warning: #FFC107;
+  --info: #42A5F5;
+  --font-sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font-sans);font-size:.9375rem;line-height:1.6;color:var(--text-primary);background:var(--bg-canvas);min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::selection{background:rgba(183,255,0,.2)}
+button{font-family:var(--font-sans);cursor:pointer}
+.prototype-banner{height:24px;background:#1a1a0e;border-bottom:1px solid #333300;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.6875rem;color:var(--accent);letter-spacing:.5px;margin:-2rem -1rem 1rem;flex-shrink:0}
+.prototype-banner span{opacity:.7}
+.container{width:100%;max-width:680px}
+
+/* ===== Top Bar ===== */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid var(--border-default)}
+.back-link{display:flex;align-items:center;gap:4px;color:var(--text-secondary);font-size:.8125rem;cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);transition:all .12s;text-decoration:none}
+.back-link:hover{color:var(--text-primary);background:var(--bg-raised)}
+.back-link svg{width:16px;height:16px}
+.topbar-title{font-size:1.2rem;font-weight:700;background:linear-gradient(135deg,var(--accent),#d4ff5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-spacer{flex:1}
+
+/* ===== Card ===== */
+.card{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.card-header{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-default)}
+.card-header-title{font-size:.875rem;font-weight:600;color:var(--text-primary);flex:1}
+.card-header-action{font-size:.75rem;color:var(--accent);cursor:pointer;transition:opacity .12s}
+.card-header-action:hover{opacity:.7}
+.card-body{padding:18px}
+
+/* ===== Model Selector ===== */
+.model-list{display:flex;flex-direction:column;gap:4px}
+.model-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:all .12s;border:1px solid transparent;user-select:none}
+.model-item:hover{background:var(--accent-soft2);border-color:var(--border-light)}
+.model-item.active{background:var(--accent-soft);border-color:rgba(183,255,0,.2)}
+.model-item .model-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.model-item.active .model-check{border-color:var(--accent);background:var(--accent)}
+.model-item.active .model-check::after{content:"✓";color:#0a0a0a;font-size:.6rem;font-weight:700}
+.model-item .model-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0}
+.model-item .model-icon.gpt{background:rgba(66,165,245,.12)}
+.model-item .model-icon.claude{background:rgba(255,152,0,.12)}
+.model-item .model-icon.local{background:rgba(183,255,0,.08)}
+.model-item .model-info{flex:1;min-width:0}
+.model-item .model-name{font-size:.8125rem;font-weight:500;color:var(--text-primary)}
+.model-item .model-desc{font-size:.7rem;color:var(--text-muted);margin-top:1px}
+.model-item .model-cost{font-size:.6875rem;color:var(--text-muted);white-space:nowrap}
+
+/* ===== Daily Usage Bar ===== */
+.usage-overview{margin-bottom:20px}
+.usage-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.usage-title{font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+.usage-total{font-size:1.1rem;font-weight:700;color:var(--text-primary)}
+.usage-total small{font-size:.75rem;font-weight:400;color:var(--text-muted)}
+.usage-bar{height:8px;background:var(--bg-raised);border-radius:4px;overflow:hidden;position:relative}
+.usage-bar-fill{height:100%;border-radius:4px;transition:width .5s ease;background:linear-gradient(90deg,var(--success),var(--warning),var(--danger))}
+.usage-bar-stops{display:flex;justify-content:space-between;margin-top:4px;font-size:.625rem;color:var(--text-muted);padding:0 2px}
+.usage-warning-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:.75rem;margin-top:8px}
+.usage-warning-badge.normal{background:rgba(76,175,80,.08);color:var(--success);border:1px solid rgba(76,175,80,.15)}
+.usage-warning-badge.caution{background:rgba(255,193,7,.08);color:var(--warning);border:1px solid rgba(255,193,7,.15)}
+.usage-warning-badge.critical{background:rgba(244,67,54,.08);color:var(--danger);border:1px solid rgba(244,67,54,.15)}
+
+/* ===== Per-Model Breakdown ===== */
+.breakdown-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-default)}
+.breakdown-item:last-child{border-bottom:none;padding-bottom:0}
+.breakdown-item:first-child{padding-top:0}
+.breakdown-icon{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65rem;flex-shrink:0}
+.breakdown-icon.gpt{background:rgba(66,165,245,.1)}
+.breakdown-icon.claude{background:rgba(255,152,0,.1)}
+.breakdown-icon.local{background:rgba(183,255,0,.08)}
+.breakdown-info{flex:1;min-width:0}
+.breakdown-name{font-size:.8125rem;color:var(--text-primary);font-weight:500}
+.breakdown-model{font-size:.6875rem;color:var(--text-muted)}
+.breakdown-stats{text-align:right;flex-shrink:0}
+.breakdown-tokens{font-size:.8125rem;color:var(--text-primary);font-weight:500}
+.breakdown-cost{font-size:.6875rem;color:var(--text-muted)}
+.breakdown-bar-wrap{width:60px;flex-shrink:0}
+.breakdown-bar{height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden}
+.breakdown-bar-fill{height:100%;border-radius:2px}
+.breakdown-bar-fill.gpt{background:var(--info)}
+.breakdown-bar-fill.claude{background:var(--warning)}
+.breakdown-bar-fill.local{background:var(--accent)}
+
+/* ===== Chart (Sparkline) ===== */
+.sparkline-row{display:flex;align-items:flex-end;gap:2px;height:36px;padding:4px 0}
+.sparkline-bar{width:100%;border-radius:2px 2px 0 0;transition:height .3s ease;background:var(--accent);opacity:.5}
+.sparkline-bar.today{opacity:1;background:var(--accent-hover)}
+
+/* ===== Cost Estimate ===== */
+.cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cost-card{background:var(--bg-raised);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:14px;text-align:center}
+.cost-card .cost-amount{font-size:1.3rem;font-weight:700;color:var(--text-primary)}
+.cost-card .cost-amount small{font-size:.75rem;font-weight:400;color:var(--text-muted)}
+.cost-card .cost-label{font-size:.6875rem;color:var(--text-muted);margin-top:4px}
+
+/* ===== Link ===== */
+.settings-link{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:var(--accent);cursor:pointer;transition:opacity .12s;text-decoration:none}
+.settings-link:hover{opacity:.7}
+.settings-link svg{width:14px;height:14px}
+</style>
+</head>
+<body>
+<div class="prototype-banner"><span>⚡ 原型演示 v1.3 — 模型选择与用量监控</span></div>
+<div class="container">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <a class="back-link" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>返回总览
+    </a>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-title">模型与用量</div>
+  </div>
+
+  <!-- ===== Model Selector Card ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-header-title">选择 AI 模型</span>
+      <a class="settings-link" href="settings-keys.html">⚙️ 管理 API Keys</a>
+    </div>
+    <div class="card-body">
+      <div class="model-list">
+        <div class="model-item active" data-model="gpt4o">
+          <div class="model-check"></div>
+          <div class="model-icon gpt">🟢</div>
+          <div class="model-info">
+            <div class="model-name">GPT-4o</div>
+            <div class="model-desc">OpenAI · 最快 · 知识截止 2025-10</div>
+          </div>
+          <span class="model-cost">$0.01/1K tokens</span>
+        </div>
+        <div class="model-item" data-model="claude-sonnet">
+          <div class="model-check"></div>
+          <div class="model-icon claude">🟠</div>
+          <div class="model-info">
+            <div class="model-name">Claude 3.5 Sonnet</div>
+            <div class="model-desc">Anthropic · 长上下文 · 知识截止 2026-04</div>
+          </div>
+          <span class="model-cost">$0.008/1K tokens</span>
+        </div>
+        <div class="model-item" data-model="claude-haiku">
+          <div class="model-check"></div>
+          <div class="model-icon claude">🟠</div>
+          <div class="model-info">
+            <div class="model-name">Claude 3 Haiku</div>
+            <div class="model-desc">Anthropic · 轻量快速 · 知识截止 2026-01</div>
+          </div>
+          <span class="model-cost">$0.002/1K tokens</span>
+        </div>
+        <div class="model-item" data-model="local">
+          <div class="model-check"></div>
+          <div class="model-icon local">💚</div>
+          <div class="model-info">
+            <div class="model-name">本地模型 (Llama 3)</div>
+            <div class="model-desc">本地推理 · 免费 · 需配置端点</div>
+          </div>
+          <span class="model-cost" style="color:var(--success)">免费</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Daily Usage Card ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-header-title">今日用量</span>
+      <span class="card-header-action" id="resetUsage">重置演示数据</span>
+    </div>
+    <div class="card-body">
+      <div class="usage-overview">
+        <div class="usage-header">
+          <span class="usage-title">Tokens 使用量</span>
+          <span class="usage-total" id="usageTotal">6,240 <small>/ 10,000</small></span>
+        </div>
+        <div class="usage-bar">
+          <div class="usage-bar-fill" id="usageBarFill" style="width:62.4%"></div>
+        </div>
+        <div class="usage-bar-stops">
+          <span>0</span>
+          <span style="color:var(--warning)">5,000</span>
+          <span style="color:var(--danger)">8,000</span>
+          <span>10,000</span>
+        </div>
+        <div class="usage-warning-badge caution" id="usageBadge">
+          ⚠ 已使用 62.4% · 接近黄色阈值
+        </div>
+      </div>
+
+      <!-- Per-Model Breakdown -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">各模型分解</div>
+        <div class="breakdown-item">
+          <div class="breakdown-icon gpt">🟢</div>
+          <div class="breakdown-info">
+            <div class="breakdown-name">GPT-4o</div>
+            <div class="breakdown-model">OpenAI</div>
+          </div>
+          <div class="breakdown-bar-wrap">
+            <div class="breakdown-bar"><div class="breakdown-bar-fill gpt" style="width:70%"></div></div>
+          </div>
+          <div class="breakdown-stats">
+            <div class="breakdown-tokens">3,842</div>
+            <div class="breakdown-cost">$0.038</div>
+          </div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-icon claude">🟠</div>
+          <div class="breakdown-info">
+            <div class="breakdown-name">Claude 3.5 Sonnet</div>
+            <div class="breakdown-model">Anthropic</div>
+          </div>
+          <div class="breakdown-bar-wrap">
+            <div class="breakdown-bar"><div class="breakdown-bar-fill claude" style="width:45%"></div></div>
+          </div>
+          <div class="breakdown-stats">
+            <div class="breakdown-tokens">2,106</div>
+            <div class="breakdown-cost">$0.017</div>
+          </div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-icon local">💚</div>
+          <div class="breakdown-info">
+            <div class="breakdown-name">本地模型</div>
+            <div class="breakdown-model">Llama 3 (本地)</div>
+          </div>
+          <div class="breakdown-bar-wrap">
+            <div class="breakdown-bar"><div class="breakdown-bar-fill local" style="width:10%"></div></div>
+          </div>
+          <div class="breakdown-stats">
+            <div class="breakdown-tokens">292</div>
+            <div class="breakdown-cost">$0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Sparkline -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">近 7 天趋势</div>
+        <div style="display:flex;align-items:flex-end;gap:6px;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar" style="height:18%"></div></div>
+            <span style="font-size:.625rem;color:var(--text-muted)">周三</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar" style="height:45%"></div></div>
+            <span style="font-size:.625rem;color:var(--text-muted)">周四</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar" style="height:52%"></div></div>
+            <span style="font-size:.625rem;color:var(--text-muted)">周五</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar" style="height:38%"></div></div>
+            <span style="font-size:.625rem;color:var(--text-muted)">周六</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar" style="height:71%"></div></div>
+            <span style="font-size:.625rem;color:var(--text-muted)">周日</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar" style="height:55%"></div></div>
+            <span style="font-size:.625rem;color:var(--text-muted)">周一</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div class="sparkline-row"><div class="sparkline-bar today" style="height:62%"></div></div>
+            <span style="font-size:.625rem;color:var(--accent);font-weight:600">今天</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Cost Estimate Card ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-header-title">费用估算</span>
+      <span class="card-header-action" style="cursor:default;color:var(--text-muted)">本月至今</span>
+    </div>
+    <div class="card-body">
+      <div class="cost-grid">
+        <div class="cost-card">
+          <div class="cost-amount">$0.055</div>
+          <div class="cost-label">今日花费</div>
+        </div>
+        <div class="cost-card">
+          <div class="cost-amount">$1.24 <small>USD</small></div>
+          <div class="cost-label">本月累计</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:var(--radius-md);display:flex;align-items:center;gap:10px">
+        <span style="font-size:.8125rem;color:var(--text-secondary);flex:1">设定月预算上限</span>
+        <input type="number" value="10" style="width:60px;padding:4px 6px;background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;text-align:right;font-family:var(--font-mono)">
+        <span style="font-size:.75rem;color:var(--text-muted)">USD</span>
+        <button class="settings-link" style="font-size:.75rem">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert threshold note -->
+  <div style="text-align:center;padding:12px 0;color:var(--text-muted);font-size:.75rem">
+    用量达到 80% 时状态栏显示黄色预警 · 达到 95% 时显示红色警告并禁用新对话
+  </div>
+</div>
+<script>
+(function(){
+  var currentModel = 'gpt4o';
+  var totalTokens = 6240;
+  var maxTokens = 10000;
+
+  // Model selection
+  document.querySelectorAll('.model-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.model-item').forEach(function(m) { m.classList.remove('active'); });
+      this.classList.add('active');
+      currentModel = this.dataset.model;
+    });
+  });
+
+  // Reset usage
+  document.getElementById('resetUsage').addEventListener('click', function() {
+    totalTokens = Math.floor(Math.random() * 3000 + 500);
+    updateUsage();
+    this.textContent = '✓ 已重置';
+    var self = this;
+    setTimeout(function() { self.textContent = '重置演示数据'; }, 1500);
+  });
+
+  function updateUsage() {
+    var pct = (totalTokens / maxTokens) * 100;
+    document.getElementById('usageTotal').innerHTML = totalTokens.toLocaleString() + ' <small>/ ' + maxTokens.toLocaleString() + '</small>';
+    document.getElementById('usageBarFill').style.width = pct + '%';
+
+    var badge = document.getElementById('usageBadge');
+    if(pct >= 95) {
+      badge.className = 'usage-warning-badge critical';
+      badge.innerHTML = '🔴 严重超额 — 已使用 ' + pct.toFixed(1) + '% · 建议减少 AI 调用';
+    } else if(pct >= 80) {
+      badge.className = 'usage-warning-badge caution';
+      badge.innerHTML = '⚠ 接近限额 — 已使用 ' + pct.toFixed(1) + '% · 黄色预警';
+    } else {
+      badge.className = 'usage-warning-badge normal';
+      badge.innerHTML = '✅ 用量正常 — 已使用 ' + pct.toFixed(1) + '% · 绿色状态';
+    }
+
+    // Simulate model breakdown changes
+    var gptPct = Math.min(100, 50 + Math.random() * 30);
+    var claudePct = Math.min(100, 30 + Math.random() * 30);
+    var localPct = Math.min(100, 5 + Math.random() * 15);
+    var breakdownFills = document.querySelectorAll('.breakdown-bar-fill');
+    if(breakdownFills[0]) breakdownFills[0].style.width = gptPct + '%';
+    if(breakdownFills[1]) breakdownFills[1].style.width = claudePct + '%';
+    if(breakdownFills[2]) breakdownFills[2].style.width = localPct + '%';
+
+    var gptTokens = Math.round(totalTokens * (gptPct / 100));
+    var claudeTokens = Math.round(totalTokens * (claudePct / 100));
+    var localTokens = totalTokens - gptTokens - claudeTokens;
+    if(localTokens < 0) localTokens = 0;
+
+    var btns = document.querySelectorAll('.breakdown-tokens');
+    if(btns[0]) btns[0].textContent = gptTokens.toLocaleString();
+    if(btns[1]) btns[1].textContent = claudeTokens.toLocaleString();
+    if(btns[2]) btns[2].textContent = localTokens.toLocaleString();
+
+    var costs = document.querySelectorAll('.breakdown-cost');
+    if(costs[0]) costs[0].textContent = '$' + (gptTokens * 0.00001).toFixed(3);
+    if(costs[1]) costs[1].textContent = '$' + (claudeTokens * 0.000008).toFixed(3);
+    if(costs[2]) costs[2].textContent = '$0.00';
+  }
+})();
+</script>
+</body>
+</html>

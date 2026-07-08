@@ -1,0 +1,422 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.3 — AI 助手浮窗</title>
+<style>
+:root {
+  --bg-canvas: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-raised: #1e1e1e;
+  --bg-header: #0e0e0e;
+  --accent: #B7FF00;
+  --accent-hover: #c8ff33;
+  --accent-soft: rgba(183, 255, 0, 0.1);
+  --accent-soft2: rgba(183, 255, 0, 0.05);
+  --border-default: #2a2a2a;
+  --border-light: #333;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --canon-core: #FFB74D;
+  --canon-project: #90CAF9;
+  --canon-draft: #CE93D8;
+  --danger: #f44336;
+  --success: #4CAF50;
+  --warning: #FFC107;
+  --info: #42A5F5;
+  --font-sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.9375rem;line-height:1.6;color:var(--text-primary);background:var(--bg-canvas);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#444}
+::selection{background:rgba(183,255,0,.2)}
+.app-shell{display:flex;flex-direction:column;height:100vh}
+.nav-bar{height:44px;background:var(--bg-header);border-bottom:1px solid var(--border-default);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;user-select:none}
+.nav-back{display:flex;align-items:center;gap:4px;color:var(--text-secondary);font-size:.8125rem;cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);transition:all .12s}
+.nav-back:hover{color:var(--text-primary);background:var(--bg-raised)}
+.nav-back svg{width:16px;height:16px}
+.nav-divider{width:1px;height:20px;background:var(--border-default);flex-shrink:0}
+.nav-project{font-size:.875rem;font-weight:600;color:var(--text-primary);flex-shrink:0}
+.nav-spacer{flex:1}
+.nav-actions{display:flex;align-items:center;gap:6px}
+.nav-icon-btn{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .12s;font-size:1rem}
+.nav-icon-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
+.nav-icon-btn.active{color:var(--accent);background:var(--accent-soft)}
+.main-layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--bg-surface);border-right:1px solid var(--border-default);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:10px 12px 8px;font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border-default)}
+.sidebar-search{position:relative;padding:8px 12px}
+.sidebar-search input{width:100%;padding:5px 8px 5px 28px;background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;font-family:var(--font-sans);outline:none;transition:border-color .12s}
+.sidebar-search input:focus{border-color:var(--accent)}
+.sidebar-search input::placeholder{color:var(--text-muted)}
+.sidebar-search svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none}
+.sidebar-content{flex:1;overflow-y:auto;padding:4px 0}
+.outline-section{margin-bottom:2px}
+.outline-section-header{display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:.75rem;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:color .12s;user-select:none}
+.outline-section-header:hover{color:var(--text-primary)}
+.outline-section-header .collapse-icon{width:14px;height:14px;flex-shrink:0;transition:transform .15s;color:var(--text-muted)}
+.outline-section-header .section-count{margin-left:auto;font-size:.6875rem;color:var(--text-muted);font-weight:400}
+.outline-items{max-height:300px;transition:max-height .2s ease;overflow:hidden}
+.outline-items.collapsed{max-height:0!important}
+.outline-item{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 20px;cursor:pointer;transition:all .1s;border-left:3px solid transparent;user-select:none}
+.outline-item:hover{background:rgba(255,255,255,.03)}
+.outline-item.active{background:var(--accent-soft);border-left-color:var(--accent)!important}
+.outline-canon-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.outline-item-name{font-size:.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.outline-item .item-tag{margin-left:auto;font-size:.625rem;padding:1px 5px;border-radius:3px;background:var(--bg-raised);color:var(--text-muted);flex-shrink:0}
+.editor-area{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg-canvas);position:relative}
+.editor-scroll{flex:1;overflow-y:auto;padding:24px 32px}
+.editor-content{font-family:var(--font-sans);font-size:.9375rem;line-height:1.7;color:var(--text-primary);min-height:100%}
+.editor-content h2{font-size:1.3rem;font-weight:700;margin:.7em 0 .3em}
+.editor-content p{margin:.5em 0;color:var(--text-secondary)}
+.editor-content .wiki-link{color:var(--canon-project);text-decoration:underline;text-decoration-color:rgba(144,202,249,.3);cursor:pointer}
+.ai-assistant{position:relative;border-top:1px solid var(--border-default);transition:all .25s ease;flex-shrink:0}
+.ai-assistant.collapsed{height:auto}
+.ai-assistant-toggle{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none;transition:background .12s}
+.ai-assistant-toggle:hover{background:var(--accent-soft2)}
+.ai-assistant-toggle .ai-icon{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,rgba(183,255,0,.15),rgba(66,165,245,.1));border:1px solid rgba(183,255,0,.15);display:flex;align-items:center;justify-content:center;font-size:.8125rem;flex-shrink:0}
+.ai-assistant-toggle .ai-label{font-size:.8125rem;font-weight:500;color:var(--text-secondary);flex:1}
+.ai-assistant-toggle .ai-status{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ai-assistant-toggle .ai-status.online{background:var(--success);box-shadow:0 0 6px rgba(76,175,80,.4)}
+.ai-assistant-toggle .ai-status.offline{background:var(--text-muted)}
+.ai-assistant-toggle .ai-chevron{color:var(--text-muted);font-size:.625rem;transition:transform .2s}
+.ai-assistant.expanded .ai-chevron{transform:rotate(180deg)}
+.ai-panel{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.ai-assistant.expanded .ai-panel{max-height:380px}
+.ai-panel-inner{padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.ai-model-row{display:flex;align-items:center;gap:8px}
+.ai-model-select{flex:1;position:relative}
+.ai-model-select select{appearance:none;-webkit-appearance:none;width:100%;background:var(--bg-raised);color:var(--text-primary);padding:6px 28px 6px 10px;border:1px solid var(--border-default);border-radius:var(--radius-sm);font-size:.8125rem;font-family:var(--font-sans);cursor:pointer;transition:border-color .12s;outline:none}
+.ai-model-select select:hover{border-color:#444}
+.ai-model-select select:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.ai-model-select::after{content:"▾";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.6rem;color:var(--text-muted);pointer-events:none}
+.ai-model-badge{font-size:.625rem;padding:2px 6px;border-radius:3px;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(183,255,0,.2);white-space:nowrap}
+.ai-conversation{background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:10px;min-height:120px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.ai-msg{display:flex;gap:8px;max-width:100%}
+.ai-msg.assistant{align-items:flex-start}
+.ai-msg.user{flex-direction:row-reverse}
+.ai-msg-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem}
+.ai-msg.assistant .ai-msg-avatar{background:rgba(183,255,0,.1);border:1px solid rgba(183,255,0,.15)}
+.ai-msg.user .ai-msg-avatar{background:rgba(66,165,245,.1);border:1px solid rgba(66,165,245,.15)}
+.ai-msg-bubble{max-width:85%;padding:6px 10px;border-radius:var(--radius-md);font-size:.8125rem;line-height:1.5}
+.ai-msg.assistant .ai-msg-bubble{background:var(--bg-raised);border:1px solid var(--border-default);color:var(--text-primary);border-top-left-radius:2px}
+.ai-msg.user .ai-msg-bubble{background:rgba(66,165,245,.08);border:1px solid rgba(66,165,245,.12);color:var(--text-primary);border-top-right-radius:2px}
+.ai-msg-time{font-size:.625rem;color:var(--text-muted);margin-top:2px}
+.ai-typing{display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:var(--radius-md);border-top-left-radius:2px;width:80px}
+.ai-typing-dot{width:5px;height:5px;border-radius:50%;background:var(--text-muted);animation:dotPulse 1.4s ease-in-out infinite}
+.ai-typing-dot:nth-child(2){animation-delay:.2s}
+.ai-typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,60%,100%{opacity:.3;transform:scale(.85)}30%{opacity:1;transform:scale(1)}}
+.ai-input-row{display:flex;align-items:center;gap:8px}
+.ai-input{flex:1;position:relative}
+.ai-input input{width:100%;padding:7px 10px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;font-family:var(--font-sans);outline:none;transition:border-color .12s}
+.ai-input input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
+.ai-input input::placeholder{color:var(--text-muted)}
+.ai-send-btn{width:30px;height:30px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#0a0a0a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9375rem;transition:all .12s;flex-shrink:0}
+.ai-send-btn:hover{background:var(--accent-hover);box-shadow:0 0 12px rgba(183,255,0,.25)}
+.ai-send-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.ai-usage-bar{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:2px}
+.ai-usage-track{flex:1;height:3px;background:var(--bg-raised);border-radius:2px;overflow:hidden}
+.ai-usage-fill{height:100%;border-radius:2px;transition:width .3s ease}
+.ai-usage-fill.green{background:var(--success)}
+.ai-usage-fill.yellow{background:var(--warning)}
+.ai-usage-fill.red{background:var(--danger)}
+.ai-usage-text{font-size:.625rem;color:var(--text-muted);white-space:nowrap}
+.status-bar{height:28px;background:var(--bg-header);border-top:1px solid var(--border-default);display:flex;align-items:center;padding:0 14px;font-size:.6875rem;color:var(--text-muted);flex-shrink:0;user-select:none}
+.status-left{display:flex;align-items:center;gap:6px}
+.status-save{padding:1px 6px;border-radius:3px;cursor:pointer;transition:background .12s}
+.status-save:hover{background:var(--bg-raised)}
+.status-save.saved{color:var(--success)}
+.status-save.unsaved{color:var(--warning)}
+.status-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.status-right .sep{color:var(--border-default)}
+.status-right .stat-value{color:var(--text-secondary)}
+.conn-indicator{display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:1px 6px;border-radius:3px;transition:background .12s}
+.conn-indicator:hover{background:var(--bg-raised)}
+.conn-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.conn-dot.connected{background:var(--success);box-shadow:0 0 4px rgba(76,175,80,.5)}
+.conn-dot.disconnected{background:var(--text-muted)}
+.conn-dot.error{background:var(--danger);box-shadow:0 0 4px rgba(244,67,54,.4)}
+.conn-label{color:var(--text-muted)}
+.prototype-banner{height:24px;background:#1a1a0e;border-bottom:1px solid #333300;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.6875rem;color:var(--accent);flex-shrink:0;letter-spacing:.5px}
+.prototype-banner span{opacity:.7}
+</style>
+</head>
+<body>
+<div class="prototype-banner"><span>⚡ 原型演示 v1.3 — AI 助手浮窗</span></div>
+<div class="app-shell">
+  <nav class="nav-bar">
+    <div class="nav-back" id="backBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>书架
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-project">觉醒纪元</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-actions">
+      <button class="nav-icon-btn" title="画布">🔮</button>
+      <button class="nav-icon-btn" title="时间线">⏳</button>
+      <button class="nav-icon-btn active" title="设置" id="settingsBtn">⚙️</button>
+    </div>
+  </nav>
+  <div class="main-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header"><span>大纲</span><span>5 项</span></div>
+      <div class="sidebar-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" placeholder="搜索大纲..." autocomplete="off">
+      </div>
+      <div class="sidebar-content">
+        <div class="outline-section">
+          <div class="outline-section-header">
+            <svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            <span>正文</span><span class="section-count">3</span>
+          </div>
+          <div class="outline-items">
+            <div class="outline-item active"><span class="outline-canon-dot" style="background:#FFB74D"></span><span class="outline-item-name">👤 张三</span></div>
+            <div class="outline-item"><span class="outline-canon-dot" style="background:#90CAF9"></span><span class="outline-item-name">👤 李四</span></div>
+            <div class="outline-item"><span class="outline-canon-dot" style="background:#FFB74D"></span><span class="outline-item-name">⚙️ 乐园机制</span></div>
+          </div>
+        </div>
+        <div class="outline-section">
+          <div class="outline-section-header">
+            <svg class="collapse-icon collapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            <span>草稿</span><span class="section-count">2</span>
+          </div>
+          <div class="outline-items collapsed">
+            <div class="outline-item"><span class="outline-canon-dot" style="background:#CE93D8"></span><span class="outline-item-name">📋 替换计划</span></div>
+            <div class="outline-item"><span class="outline-canon-dot" style="background:#666"></span><span class="outline-item-name">📄 旧设定草案</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-assistant expanded" id="aiAssistant">
+        <div class="ai-assistant-toggle" id="aiToggle">
+          <div class="ai-icon">💡</div>
+          <span class="ai-label">AI 助手</span>
+          <span class="ai-status online" id="aiStatusDot"></span>
+          <span class="ai-chevron">▾</span>
+        </div>
+        <div class="ai-panel" id="aiPanel">
+          <div class="ai-panel-inner">
+            <div class="ai-model-row">
+              <div class="ai-model-select">
+                <select id="modelSelect">
+                  <option value="gpt4o">GPT-4o</option>
+                  <option value="claude-sonnet" selected>Claude 3.5 Sonnet</option>
+                  <option value="claude-haiku">Claude 3 Haiku</option>
+                  <option value="local">本地模型 (Llama 3)</option>
+                </select>
+              </div>
+              <span class="ai-model-badge">已连接</span>
+            </div>
+            <div class="ai-conversation" id="aiConv">
+              <div class="ai-msg assistant">
+                <div class="ai-msg-avatar">🤖</div>
+                <div>
+                  <div class="ai-msg-bubble">你好！我是 AI 助手，可以帮你整理大纲、分析人物关系或生成写作建议。有什么需要帮忙的？</div>
+                  <div class="ai-msg-time">10:32 AM</div>
+                </div>
+              </div>
+              <div class="ai-msg user">
+                <div class="ai-msg-avatar">👤</div>
+                <div>
+                  <div class="ai-msg-bubble">帮我总结一下张三和李四的关系演变</div>
+                  <div class="ai-msg-time">10:33 AM</div>
+                </div>
+              </div>
+              <div class="ai-msg assistant">
+                <div class="ai-msg-avatar">🤖</div>
+                <div>
+                  <div class="ai-msg-bubble">根据当前设定，张三（人造人 AX-7）与李四（外勤特工）的搭档关系可以分为三个阶段：<br><br><strong>1. 磨合期</strong> — 李四最初对与[[人造人]]搭档持保留态度。<br><strong>2. 信任建立</strong> — 经过三次外勤任务，张三的分析能力多次救了李四的命。<br><strong>3. 情感依赖</strong> — 李四开始对张三产生超越任务的情感依赖。</div>
+                  <div class="ai-msg-time">10:33 AM</div>
+                </div>
+              </div>
+              <div class="ai-msg assistant" id="typingIndicator" style="display:none">
+                <div class="ai-msg-avatar">🤖</div>
+                <div>
+                  <div class="ai-typing">
+                    <span class="ai-typing-dot"></span>
+                    <span class="ai-typing-dot"></span>
+                    <span class="ai-typing-dot"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ai-input-row">
+              <div class="ai-input">
+                <input type="text" id="aiChatInput" placeholder="输入消息，@ 提及对象..." autocomplete="off">
+              </div>
+              <button class="ai-send-btn" id="aiSendBtn" disabled>↑</button>
+            </div>
+            <div class="ai-usage-bar">
+              <div class="ai-usage-track">
+                <div class="ai-usage-fill yellow" style="width:62%"></div>
+              </div>
+              <span class="ai-usage-text">今日 6.2K / 10K tokens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <main class="editor-area">
+      <div class="editor-scroll">
+        <div class="editor-content">
+          <h2>张三</h2>
+          <p><strong>姓名</strong>：张三　　<strong>年龄</strong>：28　　<strong>身份</strong>：人造人</p>
+          <p><strong>所属</strong>：<span class="wiki-link">[[乐园机制]]</span><br><strong>状态</strong>：活跃</p>
+          <p>高个子，黑色短发，瞳孔带有微弱荧光（人造人特征）。<br>通常穿着深灰色制服，左臂有编号 <strong>AX-7</strong> 的烙印。</p>
+          <p>张三是在 <span class="wiki-link">[[乐园机制]]</span> 启动后第一批被激活的人造人之一。<br>他的主要职责是维持 <span class="wiki-link">[[中央数据库]]</span> 的日常运维。</p>
+          <blockquote style="border-left:3px solid var(--accent);padding:8px 16px;margin:12px 0;color:var(--text-secondary);background:rgba(183,255,0,.04);border-radius:0 4px 4px 0">我不是在活着，我只是在执行程序。<br>— 张三</blockquote>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="status-bar">
+    <div class="status-left">
+      <span class="status-save saved">已保存 ✓</span>
+      <span class="conn-indicator" id="connIndicator">
+        <span class="conn-dot connected"></span>
+        <span class="conn-label">AI 已连接</span>
+      </span>
+    </div>
+    <div class="status-right">
+      <span>字数: <span class="stat-value">1,234</span></span><span class="sep">|</span>
+      <span>项目: <span class="stat-value">43,217</span></span><span class="sep">|</span>
+      <span style="color:var(--canon-core)">核心正典</span><span class="sep">|</span>
+      <span>tokens: <span class="stat-value" id="statusTokens">0</span></span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var expanded = true;
+  var toggle = document.getElementById('aiToggle');
+  var assistant = document.getElementById('aiAssistant');
+  var sendBtn = document.getElementById('aiSendBtn');
+  var chatInput = document.getElementById('aiChatInput');
+  var modelSelect = document.getElementById('modelSelect');
+  var connDot = document.querySelector('.conn-dot');
+  var connLabel = document.querySelector('.conn-label');
+  var typingEl = document.getElementById('typingIndicator');
+
+  toggle.addEventListener('click', function(e) {
+    if(e.target.closest('.ai-model-select')||e.target.closest('select')) return;
+    expanded = !expanded;
+    assistant.classList.toggle('expanded', expanded);
+  });
+
+  chatInput.addEventListener('input', function() {
+    sendBtn.disabled = this.value.trim().length === 0;
+  });
+
+  function addUserMsg(text) {
+    var conv = document.getElementById('aiConv');
+    var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    var d = document.createElement('div');
+    d.className = 'ai-msg user';
+    d.innerHTML = '<div class="ai-msg-avatar">👤</div><div><div class="ai-msg-bubble">' + escHtml(text) + '</div><div class="ai-msg-time">' + time + '</div></div>';
+    conv.insertBefore(d, typingEl);
+    conv.scrollTop = conv.scrollHeight;
+  }
+
+  function addAssistantMsg(text) {
+    var conv = document.getElementById('aiConv');
+    var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    var d = document.createElement('div');
+    d.className = 'ai-msg assistant';
+    d.innerHTML = '<div class="ai-msg-avatar">🤖</div><div><div class="ai-msg-bubble">' + text + '</div><div class="ai-msg-time">' + time + '</div></div>';
+    conv.insertBefore(d, typingEl);
+    conv.scrollTop = conv.scrollHeight;
+  }
+
+  function updateUsage() {
+    var fill = document.querySelector('.ai-usage-fill');
+    var txt = document.querySelector('.ai-usage-text');
+    var oldPct = parseFloat(fill.style.width);
+    var newPct = Math.min(100, oldPct + Math.random() * 8 + 2);
+    var newTokens = Math.min(10, Math.round((newPct / 100 * 10) * 10) / 10);
+    fill.style.width = newPct + '%';
+    txt.textContent = '今日 ' + newTokens + 'K / 10K tokens';
+    if(newPct > 80) fill.className = 'ai-usage-fill red';
+    else if(newPct > 50) fill.className = 'ai-usage-fill yellow';
+    else fill.className = 'ai-usage-fill green';
+    var tokEl = document.getElementById('statusTokens');
+    tokEl.textContent = (parseInt(tokEl.textContent)||0) + Math.floor(Math.random() * 50 + 10);
+  }
+
+  sendBtn.addEventListener('click', function() {
+    if(sendBtn.disabled) return;
+    var text = chatInput.value.trim();
+    if(!text) return;
+    addUserMsg(text);
+    chatInput.value = '';
+    sendBtn.disabled = true;
+    typingEl.style.display = 'flex';
+    var replies = [
+      '这个角度很有意思，让我想想…',
+      '好的，我已经记下了。关于这个方向，有几个建议…',
+      '根据当前设定库，这件事与[[乐园机制]]有潜在关联。',
+      '我整理了相关的大纲节点，需要查看吗？'
+    ];
+    setTimeout(function() {
+      typingEl.style.display = 'none';
+      addAssistantMsg(replies[Math.floor(Math.random() * replies.length)]);
+      updateUsage();
+    }, 1200);
+  });
+
+  chatInput.addEventListener('keydown', function(e) {
+    if(e.key === 'Enter' && !sendBtn.disabled) sendBtn.click();
+  });
+
+  modelSelect.addEventListener('change', function() {
+    connDot.className = 'conn-dot connected';
+    connLabel.textContent = 'AI 已连接';
+    var badge = document.querySelector('.ai-model-badge');
+    if(this.value === 'local') {
+      badge.textContent = '本地运行';
+      badge.style.cssText = 'color:var(--info);border-color:rgba(66,165,245,.2);background:rgba(66,165,245,.1)';
+    } else {
+      badge.textContent = '已连接';
+      badge.style.cssText = 'color:var(--accent);border-color:rgba(183,255,0,.2);background:var(--accent-soft)';
+    }
+  });
+
+  document.getElementById('connIndicator').addEventListener('click', function() {
+    var dot = document.querySelector('.conn-dot');
+    var lbl = document.querySelector('.conn-label');
+    if(dot.classList.contains('connected')) {
+      dot.className = 'conn-dot error';
+      lbl.textContent = 'AI 连接失败';
+      document.getElementById('aiStatusDot').className = 'ai-status offline';
+    } else {
+      dot.className = 'conn-dot connected';
+      lbl.textContent = 'AI 已连接';
+      document.getElementById('aiStatusDot').className = 'ai-status online';
+    }
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', function() {
+    window.location.href = 'settings-keys.html';
+  });
+
+  document.getElementById('backBtn').addEventListener('click', function() {
+    window.location.href = 'index.html';
+  });
+
+  function escHtml(t) {
+    var m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+    return t.replace(/[&<>"']/g,function(c){return m[c]||c;});
+  }
+})();
+</script>
+</body>
+</html>

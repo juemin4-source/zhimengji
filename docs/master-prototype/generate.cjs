@@ -95,7 +95,7 @@ function getDefaultData(screenId) {
 function assemblePage(screen, css, templates) {
   const data = (screen.data && Object.keys(screen.data).length) ? screen.data : getDefaultData(screen.id);
   let html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>' + escapeHtml(screen.title) + ' — 织梦机 v2.0</title>';
-  html += '<link rel="stylesheet" href="prototype.css">';
+  html += '<style>' + css + '</style>';
   html += '<script src="https://unpkg.com/lucide@latest"></script></head><body>';
   html += '<div class="app" id="app">';
   for (const section of (screen.sections||[])) {
@@ -119,6 +119,54 @@ function assemblePage(screen, css, templates) {
       html += '<div class="statusbar"><div class="status-left"><span><span class="conn-dot" id="connDot"></span> <span id="connLabel">已连接</span></span></div><div class="status-right"><span>织梦机 v2.0</span><span>|</span><span>' + escapeHtml(screen.title) + '</span></div></div>';
     } else if (section === 'empty-state') {
       html += '<div class="empty-state visible" id="emptyState"><div class="empty-title">' + escapeHtml(data.emptyTitle||'暂无内容') + '</div><div class="empty-sub">' + escapeHtml(data.emptySub||'开始创建') + '</div><div class="empty-actions"><button class="btn btn-primary">+ 创建第一个</button></div></div>';
+    } else if (section === 'info-panel') {
+      const panelTitle = data.infoTitle||screen.title;
+      const fields = data.infoFields||[];
+      html += '<div class="rich-panel"><div class="rich-panel-title">' + escapeHtml(panelTitle) + '</div><div class="rich-panel-grid">';
+      for (const f of fields) {
+        html += '<div class="rich-field"><span class="rich-field-label">' + escapeHtml(f.label) + '</span><span class="rich-field-value">' + escapeHtml(String(f.value)) + '</span></div>';
+      }
+      html += '</div></div>';
+    } else if (section === 'item-list') {
+      const listItems = data.listItems||[];
+      html += '<div class="rich-panel"><div class="rich-panel-title">' + escapeHtml(data.listTitle||'') + '<span class="rich-panel-count">' + listItems.length + '</span></div><div class="rich-list">';
+      for (const item of listItems) {
+        html += '<div class="rich-list-item">';
+        if (item.dot) html += '<span class="rich-dot ' + escapeHtml(item.dot) + '"></span>';
+        html += '<span class="rich-list-name">' + escapeHtml(item.name||'') + '</span>';
+        if (item.meta) html += '<span class="rich-list-meta">' + escapeHtml(item.meta) + '</span>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+    } else if (section === 'conversation') {
+      const msgs = data.conversations||[];
+      html += '<div class="rich-panel"><div class="rich-panel-title">对话 <span class="rich-panel-count">' + msgs.length + '</span></div><div class="rich-conversation">';
+      for (const m of msgs) {
+        const isUser = m.role === 'user';
+        html += '<div class="rich-msg ' + (isUser?'rich-msg-user':'rich-msg-ai') + '"><div class="rich-msg-role">' + (isUser?'你':'AI') + '</div><div class="rich-msg-text">' + escapeHtml((m.message||'').substring(0,200)) + '</div></div>';
+      }
+      html += '</div></div>';
+    } else if (section === 'breakdown-chart') {
+      const bd = data.breakdown||[];
+      html += '<div class="rich-panel"><div class="rich-panel-title">用量分解</div><div class="rich-breakdown">';
+      for (const b of bd) {
+        const pct = b.pct||0;
+        html += '<div class="rich-bar-row"><span class="rich-bar-label">' + escapeHtml(b.model||'') + '</span><div class="rich-bar-track"><div class="rich-bar-fill" style="width:' + pct + '%"></div></div><span class="rich-bar-pct">' + pct + '%</span></div>';
+      }
+      html += '</div></div>';
+    } else if (section === 'data-display') {
+      // Render all data keys that have values as a comprehensive display
+      const excludeKeys = ['navTabs','activeTab','searchPlaceholder','filters','stats','projects','emptyTitle','emptySub','emptyBtnText','infoTitle','infoFields','listTitle','listItems','conversations','breakdown','dailyCost','testResults','providers','models','availableModels','commands','groups','allItems','smartGroups','recentItems','references','referrers','timeline','levels','boards','unsortedEvents','recentChanges','records','sections','poolItems','eras','zones','tools','recentSearches','lastError','cardData','originalData','originalData','availableModes','conversations'];
+      const renderKeys = Object.keys(data).filter(k => !excludeKeys.includes(k) && data[k] !== null && data[k] !== undefined && data[k] !== '');
+      if (renderKeys.length > 0) {
+        html += '<div class="rich-panel"><div class="rich-panel-title">屏幕数据 <span class="rich-panel-count">' + renderKeys.length + '</span></div><div class="rich-panel-grid">';
+        for (const k of renderKeys) {
+          let v = data[k];
+          if (typeof v === 'object') v = JSON.stringify(v).substring(0,60);
+          html += '<div class="rich-field"><span class="rich-field-label">' + escapeHtml(k) + '</span><span class="rich-field-value">' + escapeHtml(String(v)) + '</span></div>';
+        }
+        html += '</div></div>';
+      }
     }
   }
   html += '</div>';
@@ -150,7 +198,7 @@ function main() {
   const css = loadCSS();
   const templates = loadTemplates();
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'prototype.css'), css, 'utf-8');
+  // CSS inlined into each HTML file
   const screens = config.screens || [];
   const generated = [];
   for (const screen of screens) {

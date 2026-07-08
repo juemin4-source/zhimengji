@@ -559,3 +559,464 @@ impl Database {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{CanvasNodePosition, StickyNote};
+
+    fn setup_db() -> Database {
+        let conn = Connection::open(":memory:").unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        let db = Database {
+            conn: Mutex::new(conn),
+        };
+        db.init_schema().unwrap();
+        db
+    }
+
+    fn make_project(name: &str) -> Project {
+        Project {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: name.to_string(),
+            genre: "test".to_string(),
+            status: "conceiving".to_string(),
+            word_count: 1000,
+            gradient: "[\"#000\",\"#fff\"]".to_string(),
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
+
+    fn make_judgment(object_id: &str, op: &str, prev: &str, new: &str) -> JudgmentRecord {
+        JudgmentRecord {
+            id: uuid::Uuid::new_v4().to_string(),
+            object_id: object_id.to_string(),
+            object_name: "test".to_string(),
+            operation_type: op.to_string(),
+            reason: format!("test: {}", op),
+            timestamp: chrono::Utc::now().timestamp_millis(),
+            previous_status: prev.to_string(),
+            new_status: new.to_string(),
+        }
+    }
+
+    // ──────────────────────────────────────────
+    //  Project CRUD
+    // ──────────────────────────────────────────
+
+    #[test]
+    fn test_project_crud() {
+        let db = setup_db();
+
+        // Initially empty
+        assert!(db.list_projects().unwrap().is_empty());
+
+        // Create
+        let p1 = db.create_project("Project Alpha", "fiction", "conceiving", 5000, "[\"#123\",\"#456\"]").unwrap();
+        assert_eq!(p1.name, "Project Alpha");
+        assert!(!p1.id.is_empty());
+
+        let p2 = db.create_project("Project Beta", "non-fiction", "drafting", 12000, "[\"#abc\",\"#def\"]").unwrap();
+        assert_eq!(p2.name, "Project Beta");
+
+        // List
+        let projects = db.list_projects().unwrap();
+        assert_eq!(projects.len(), 2);
+
+        // Get
+        let got = db.get_project(&p1.id).unwrap().expect("should exist");
+        assert_eq!(got.name, "Project Alpha");
+        assert_eq!(got.genre, "fiction");
+
+        // Get non-existent
+        assert!(db.get_project("nonexistent-id").unwrap().is_none());
+
+        // Update
+        let mut updated = got;
+        updated.name = "Updated Alpha".to_string();
+        updated.word_count = 9999;
+        db.update_project(&updated).unwrap();
+        let re_read = db.get_project(&updated.id).unwrap().expect("should exist after update");
+        assert_eq!(re_read.name, "Updated Alpha");
+        assert_eq!(re_read.word_count, 9999);
+        assert!(re_read.updated_at >= re_read.created_at);
+
+        // Delete
+        db.delete_project(&p2.id).unwrap();
+        assert_eq!(db.list_projects().unwrap().len(), 1);
+        assert!(db.get_project(&p2.id).unwrap().is_none());
+    }
+
+    // ──────────────────────────────────────────
+    //  WorldObject CRUD (with judgment_history)
+    // ──────────────────────────────────────────
+
+    #[test]
+    fn test_world_object_crud() {
+        let db = setup_db();
+        let proj = db.create_project("Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+        let pid = &proj.id;
+
+        // Initially empty
+        assert!(db.list_world_objects(pid).unwrap().is_empty());
+
+        // Create with judgment_history
+        let obj_id = uuid::Uuid::new_v4().to_string();
+        let j1 = make_judgment(&obj_id, "提升正典", "未收录", "草案正典");
+        let j2 = make_judgment(&obj_id, "锁定", "草案正典", "锁定");
+
+        let obj = WorldObject {
+            id: obj_id.clone(),
+            project_id: pid.clone(),
+            name: "Character A".to_string(),
+            object_type: "人物".to_string(),
+            status: "锁定".to_string(),
+            canon_level: "核心正典".to_string(),
+            tags: vec!["主角".to_string(), "觉醒者".to_string()],
+            aliases: vec!["CA".to_string()],
+            selected_boards: vec!["角色关系图".to_string()],
+            content: "A test character with rich backstory.".to_string(),
+            references_count: 3,
+            judgment_history: vec![j1, j2],
+            created_at: 0,
+            updated_at: 0,
+        };
+
+        let created = db.create_world_object(&obj).unwrap();
+        assert_eq!(created.name, "Character A");
+        assert_eq!(created.tags.len(), 2);
+        assert_eq!(created.judgment_history.len(), 2);
+
+        // Get by id
+        let got = db.get_world_object(&obj_id).unwrap().expect("should exist");
+        assert_eq!(got.name, "Character A");
+        assert_eq!(got.object_type, "人物");
+        assert_eq!(got.references_count, 3);
+        assert_eq!(got.judgment_history.len(), 2);
+
+        // List by project
+        let list = db.list_world_objects(pid).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].judgment_history.len(), 2);
+
+        // Ensure other project isolation
+        let other_proj = db.create_project("Other", "o", "conceiving", 0, "[\"#x\",\"#y\"]").unwrap();
+        assert!(db.list_world_objects(&other_proj.id).unwrap().is_empty());
+
+        // Update
+        let mut update_obj = created;
+        update_obj.name = "Character A (Updated)".to_string();
+        update_obj.status = "草稿".to_string();
+        update_obj.content = "Updated content here.".to_string();
+        update_obj.tags.push("更新".to_string());
+        db.update_world_object(&update_obj).unwrap();
+
+        let re_read = db.get_world_object(&obj_id).unwrap().expect("should exist after update");
+        assert_eq!(re_read.name, "Character A (Updated)");
+        assert_eq!(re_read.status, "草稿");
+        assert!(re_read.tags.contains(&"更新".to_string()));
+
+        // Delete
+        db.delete_world_object(&obj_id).unwrap();
+        assert!(db.get_world_object(&obj_id).unwrap().is_none());
+        assert!(db.list_world_objects(pid).unwrap().is_empty());
+    }
+
+    // ──────────────────────────────────────────
+    //  CanvasTabState serialization round-trip
+    // ──────────────────────────────────────────
+
+    #[test]
+    fn test_canvas_tab_state_serialization() {
+        let db = setup_db();
+        let proj = db.create_project("Canvas Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+
+        // Initial: empty
+        let states = db.list_canvas_tab_states(&proj.id).unwrap();
+        // May have default states from App, but DB starts empty
+        assert!(states.is_empty());
+
+        // Save a state with all JSON fields populated
+        let state_id = uuid::Uuid::new_v4().to_string();
+        let state = CanvasTabState {
+            id: state_id.clone(),
+            project_id: proj.id.clone(),
+            tab_id: "角色关系图".to_string(),
+            positions: serde_json::json!([
+                {"objectId": "obj1", "x": 100.0, "y": 200.0},
+                {"objectId": "obj2", "x": 300.0, "y": 400.0}
+            ]),
+            sticky_notes: vec![
+                StickyNote {
+                    id: "sticky1".to_string(),
+                    text: "Important note".to_string(),
+                    x: 50.0, y: 60.0,
+                    width: 160.0, height: 100.0,
+                    color: "#3E2723".to_string(),
+                }
+            ],
+            connections: vec![],
+            scale: 1.5,
+            pan_x: -100.0,
+            pan_y: -200.0,
+            created_at: 0,
+            updated_at: 0,
+        };
+
+        let saved = db.save_canvas_tab_state(&state).unwrap();
+        assert_eq!(saved.tab_id, "角色关系图");
+        assert_eq!(saved.scale, 1.5);
+        assert_eq!(saved.pan_x, -100.0);
+        assert!(saved.created_at > 0);
+
+        // List and verify JSON round-trip
+        let saved_list = db.list_canvas_tab_states(&proj.id).unwrap();
+        assert_eq!(saved_list.len(), 1);
+        let loaded = &saved_list[0];
+
+        // positions should be a valid JSON array
+        let pos_arr = loaded.positions.as_array().expect("positions should be array");
+        assert_eq!(pos_arr.len(), 2);
+        assert_eq!(pos_arr[0]["objectId"], "obj1");
+
+        // sticky_notes should be parsed back
+        assert_eq!(loaded.sticky_notes.len(), 1);
+        assert_eq!(loaded.sticky_notes[0].text, "Important note");
+
+        // Upsert: save the same ID with different data
+        let updated_state = CanvasTabState {
+            scale: 2.0,
+            pan_x: 0.0,
+            pan_y: 0.0,
+            sticky_notes: vec![],
+            ..state
+        };
+        let upserted = db.save_canvas_tab_state(&updated_state).unwrap();
+        assert_eq!(upserted.scale, 2.0);
+        assert_eq!(upserted.sticky_notes.len(), 0);
+
+        // Delete
+        db.delete_canvas_tab_state(&state_id).unwrap();
+        assert!(db.list_canvas_tab_states(&proj.id).unwrap().is_empty());
+    }
+
+    // ──────────────────────────────────────────
+    //  JudgmentRecord append and query
+    // ──────────────────────────────────────────
+
+    #[test]
+    fn test_judgment_record_append_and_query() {
+        let db = setup_db();
+        let proj = db.create_project("Judgment Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+
+        // Create an object for the judgments to reference
+        let obj_id = uuid::Uuid::new_v4().to_string();
+        let obj = WorldObject {
+            id: obj_id.clone(),
+            project_id: proj.id.clone(),
+            name: "Judged Object".to_string(),
+            object_type: "物品".to_string(),
+            status: "草稿".to_string(),
+            canon_level: "未收录".to_string(),
+            tags: vec![],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        };
+        let obj = db.create_world_object(&obj).unwrap();
+
+        // Append a lock judgment
+        let lock_record = make_judgment(&obj.id, "锁定", "草稿", "锁定");
+        let saved_lock = db.append_judgment_record(&lock_record).unwrap();
+        assert!(!saved_lock.id.is_empty());
+
+        // Append a status change judgment
+        let promote_record = make_judgment(&obj.id, "提升正典", "未收录", "草案正典");
+        db.append_judgment_record(&promote_record).unwrap();
+
+        // Get by object
+        let obj_records = db.get_judgment_records_for_object(&obj.id).unwrap();
+        assert_eq!(obj_records.len(), 2);
+
+        // List by project
+        let proj_records = db.list_judgment_records(&proj.id).unwrap();
+        assert_eq!(proj_records.len(), 2);
+
+        // Verify record content
+        let lock_found = proj_records.iter().find(|r| r.operation_type == "锁定");
+        assert!(lock_found.is_some());
+        assert_eq!(lock_found.unwrap().previous_status, "草稿");
+        assert_eq!(lock_found.unwrap().new_status, "锁定");
+
+        // Append record with empty id (auto-generate)
+        let empty_id_record = JudgmentRecord {
+            id: "".to_string(),
+            object_id: obj.id.clone(),
+            object_name: "Judged Object".to_string(),
+            operation_type: "废弃".to_string(),
+            reason: "Deprecated".to_string(),
+            timestamp: chrono::Utc::now().timestamp_millis(),
+            previous_status: "锁定".to_string(),
+            new_status: "废弃".to_string(),
+        };
+        let saved_empty = db.append_judgment_record(&empty_id_record).unwrap();
+        assert!(!saved_empty.id.is_empty());
+        assert_ne!(saved_empty.id, "");
+
+        // Verify 3 records now
+        assert_eq!(db.get_judgment_records_for_object(&obj.id).unwrap().len(), 3);
+    }
+
+    // ──────────────────────────────────────────
+    //  Connection create and delete
+    // ──────────────────────────────────────────
+
+    #[test]
+    fn test_connection_create_and_delete() {
+        let db = setup_db();
+        let proj = db.create_project("Conn Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+
+        // Create two objects to connect
+        let obj1 = db.create_world_object(&WorldObject {
+            id: uuid::Uuid::new_v4().to_string(),
+            project_id: proj.id.clone(),
+            name: "Source".to_string(),
+            object_type: "人物".to_string(),
+            status: "草稿".to_string(),
+            canon_level: "未收录".to_string(),
+            tags: vec![],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        }).unwrap();
+        let obj2 = db.create_world_object(&WorldObject {
+            id: uuid::Uuid::new_v4().to_string(),
+            project_id: proj.id.clone(),
+            name: "Target".to_string(),
+            object_type: "地点".to_string(),
+            status: "草稿".to_string(),
+            canon_level: "未收录".to_string(),
+            tags: vec![],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        }).unwrap();
+
+        let conn_id = uuid::Uuid::new_v4().to_string();
+        let connection = ObjConnection {
+            id: conn_id.clone(),
+            project_id: proj.id.clone(),
+            source_id: obj1.id.clone(),
+            target_id: obj2.id.clone(),
+            connection_type: "影响".to_string(),
+            label: "influences".to_string(),
+        };
+
+        let created = db.create_connection(&connection).unwrap();
+        assert_eq!(created.connection_type, "影响");
+        assert_eq!(created.label, "influences");
+
+        // List
+        let connections = db.list_connections(&proj.id).unwrap();
+        assert_eq!(connections.len(), 1);
+        assert_eq!(connections[0].source_id, obj1.id);
+
+        // Other project isolation
+        let other = db.create_project("Other", "o", "conceiving", 0, "[\"#c\",\"#d\"]").unwrap();
+        assert!(db.list_connections(&other.id).unwrap().is_empty());
+
+        // Delete
+        db.delete_connection(&conn_id).unwrap();
+        assert!(db.list_connections(&proj.id).unwrap().is_empty());
+    }
+
+    // ──────────────────────────────────────────
+    //  Cascade delete
+    // ──────────────────────────────────────────
+
+    #[test]
+    fn test_cascade_delete() {
+        let db = setup_db();
+
+        // Create project with object and connection
+        let proj = db.create_project("Cascade Test", "t", "conceiving", 0, "[\"#a\",\"#b\"]").unwrap();
+
+        let obj_id = uuid::Uuid::new_v4().to_string();
+        let obj = WorldObject {
+            id: obj_id.clone(),
+            project_id: proj.id.clone(),
+            name: "WillBeDeleted".to_string(),
+            object_type: "人物".to_string(),
+            status: "草稿".to_string(),
+            canon_level: "未收录".to_string(),
+            tags: vec![],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        };
+        db.create_world_object(&obj).unwrap();
+
+        // Add a judgment for the object
+        let jr = make_judgment(&obj_id, "锁定", "草稿", "锁定");
+        db.append_judgment_record(&jr).unwrap();
+
+        // Add a connection
+        let conn_id = uuid::Uuid::new_v4().to_string();
+        let other_obj_id = uuid::Uuid::new_v4().to_string();
+        let other_obj = WorldObject {
+            id: other_obj_id.clone(),
+            project_id: proj.id.clone(),
+            name: "Other".to_string(),
+            object_type: "地点".to_string(),
+            status: "草稿".to_string(),
+            canon_level: "未收录".to_string(),
+            tags: vec![],
+            aliases: vec![],
+            selected_boards: vec![],
+            content: "".to_string(),
+            references_count: 0,
+            judgment_history: vec![],
+            created_at: 0,
+            updated_at: 0,
+        };
+        db.create_world_object(&other_obj).unwrap();
+        db.create_connection(&ObjConnection {
+            id: conn_id.clone(),
+            project_id: proj.id.clone(),
+            source_id: obj_id.clone(),
+            target_id: other_obj_id.clone(),
+            connection_type: "相关".to_string(),
+            label: "".to_string(),
+        }).unwrap();
+
+        // Verify everything exists
+        assert_eq!(db.list_world_objects(&proj.id).unwrap().len(), 2);
+        assert_eq!(db.list_connections(&proj.id).unwrap().len(), 1);
+        assert_eq!(db.get_judgment_records_for_object(&obj_id).unwrap().len(), 1);
+
+        // Delete project - cascade should remove objects, connections, judgments
+        db.delete_project(&proj.id).unwrap();
+
+        // Verify cascaded
+        assert_eq!(db.list_world_objects(&proj.id).unwrap().len(), 0);
+        assert_eq!(db.list_connections(&proj.id).unwrap().len(), 0);
+        assert_eq!(db.get_judgment_records_for_object(&obj_id).unwrap().len(), 0);
+    }
+}

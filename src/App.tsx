@@ -160,17 +160,24 @@ export default function App() {
   //  NOTE: defined BEFORE CRUD so onUpdateObject can reference addJudgment
   // ══════════════════════════════════════════
 
-  const addJudgment = useCallback(async (objectId: string, operationType: JudgmentOperation, reason: string, prevStatus: string, newStatus: string) => {
+  const addJudgment = useCallback(async (objectId: string, operationType: JudgmentOperation, reason: string, prevValue: string, newValue: string) => {
     const obj = objects.find(o => o.id === objectId);
     if (!obj) return;
     const now = Date.now();
+    const statusOps: JudgmentOperation[] = ['锁定', '废弃', '待验证'];
     const record = {
       id: jid(), objectId, objectName: obj.name, operationType,
-      reason, timestamp: now, previousStatus: prevStatus, newStatus,
+      reason, timestamp: now, previousStatus: prevValue, newStatus: newValue,
     };
     setObjects(prev => prev.map(o =>
       o.id === objectId
-        ? { ...o, status: newStatus as ObjectStatus, judgmentHistory: [...o.judgmentHistory, record], updatedAt: now }
+        ? {
+            ...o,
+            // Only overwrite status for status-type operations
+            ...(statusOps.includes(operationType) ? { status: newValue as ObjectStatus } : {}),
+            judgmentHistory: [...o.judgmentHistory, record],
+            updatedAt: now,
+          }
         : o
     ));
     api.appendJudgmentRecord(record).catch(e => console.error('Failed to append judgment', e));

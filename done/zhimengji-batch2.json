@@ -1,0 +1,16 @@
+{
+  "id": "zhimengji-batch2",
+  "status": "completed",
+  "summary": "Batch 2: 闭环创作——实现对象生命周期完整可逆。五个AC全部完成：[[不存在对象]]轻量创建气泡、锁定对象Inspector显示Unlock按钮、DocumentView改状态自动生成判断记录、Inspector Lock/Discard弹原因输入框、设定集降级按钮。",
+  "changes": [
+    "src/App.tsx — 新增onCreateNamedObject用于AC1命名创建；重排函数顺序解决引用问题；onUpdateObject自动检测status/canonLevel变更并调用addJudgment生成判断记录（AC3）；onInspectorAction新增'解锁'case（AC2）并将extra用作reason传递（AC4）；addJudgment改为区分statusOps（锁定/废弃/待验证）和canonOps避免status字段被正典值污染",
+    "src/components/DocumentView.tsx — 集成WikiLink扩展（AC1），配置existsChecker和onDoubleClick回调；新增create-bubble气泡UI（AC1），选择类型后调用onCreateNamedObject创建并打开；新增Properties区域（类型/状态/正典下拉选择）（AC3），状态变更通过onUpdateObject自动触发addJudgment；source模式双击也支持创建缺失对象"
+  ],
+  "test_results": "npm run build通过（tsc -b + vite build成功，仅有TipTap chunk size warning）；npm run test通过（3 test files, 37 passed）；npm run e2e通过（7 test files, 28 passed）",
+  "issues": [
+    "addJudgment原始设计只处理status变更，当用于canonLevel变更时会错误地将正典值写入status字段，已在本次修复为区分statusOps和canonOps",
+    "WikiLink扩展的onDoubleClick vs handleDoubleClick差异：扩展使用ProseMirror插件handleDoubleClick，与DocumentView原有的source模式handleSourceDoubleClick共存",
+    "E2E测试需从textarea定位器迁移到.ProseMirror以兼容Batch 1的TipTap编辑器，测试默认切换到源码模式以保持测试稳定性"
+  ],
+  "completedAt": "2026-07-08 14:00"
+}

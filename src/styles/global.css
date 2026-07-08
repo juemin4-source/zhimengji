@@ -148,7 +148,7 @@ body {
 
 /* ===== Main Content Area ===== */
 .main-area { display: flex; flex: 1; overflow: hidden; }
-.main-content { flex: 1; overflow: auto; background: #0a0a0a; }
+.main-content { flex: 1; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; }
 
 /* ===== Inspector ===== */
 .inspector-panel {

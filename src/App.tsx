@@ -1,4 +1,5 @@
 ﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { User, MapPin, Building2, Settings, Calendar, Package, BookOpen, FileText, Search } from 'lucide-react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
 import { CANVAS_TABS, CANON_LEVELS, CANON_COLORS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
@@ -776,6 +777,14 @@ function AppInner() {
         onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected}
       />;
       case '判断记录': return <JudgmentRecords allObjects={objects} onNavigate={onNavigate} />;
+      case 'AI': return <AIChat
+        allObjects={objects}
+        activeBookId={activeBookId}
+        onNavigate={onNavigate}
+        onUpdateObject={onUpdateObject}
+        onShowToast={showToast}
+        onCreateObject={(templateType: string) => onCreateObject(templateType as ObjectType)}
+      />;
       default: return null;
     }
   };
@@ -801,15 +810,12 @@ function AppInner() {
             <div className="offline-banner">离线 ● 当前处于离线状态，编辑内容将在恢复连接后自动同步。</div>
           )}
           <nav className="nav-bar">
-            <button onClick={handleBackToBookshelf} className="nav-back" title="返回书架">
+            <button onClick={handleBackToBookshelf} className="nav-back-btn" title="返回书架">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
               书架
             </button>
             <div className="nav-divider" />
-            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span>
-            {activeNavTab === '文档' && (
-              <div className="nav-modes">
-                <button className={`nav-mode-btn ${editorMode === 'source' ? 'active' : ''}`} onClick={() => setEditorMode('source')} data-mode='source'>源码</button>
+            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span> data-mode='source'>源码</button>
                 <button className={`nav-mode-btn ${editorMode === 'preview' ? 'active' : ''}`} onClick={() => setEditorMode('preview')} data-mode='preview'>预览</button>
                 <button className={`nav-mode-btn ${editorMode === 'wysiwyg' ? 'active' : ''}`} onClick={() => setEditorMode('wysiwyg')} data-mode='wysiwyg'>WYSIWYG</button>
               </div>
@@ -821,15 +827,15 @@ function AppInner() {
             {/* Search button */}
             {currentObject && (
               <div className="nav-badges">
-                <span className="nav-badge">{TYPE_ICONS[currentObject.type] || '📄'} {currentObject.type}</span>
+                <span className="nav-badge">{renderTypeIcon(currentObject.type)} {currentObject.type}</span>
                 <span className="nav-badge"><span className="dot" style={{ background: CANON_COLORS[currentObject.canonLevel] }}></span>{currentObject.canonLevel}</span>
               </div>
             )}
             <button className="tb-btn" onClick={() => setShowGlobalSearch(true)} title="全局搜索 (Ctrl+K)" style={{ fontSize: 13, gap: 4 }}>
-              🔍 <kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
+              <Search size={16} /><kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
             </button>
             <button className="tb-btn" onClick={() => setShowAiSettings(true)} title="AI 设置" style={{ fontSize: 13 }}
-            >⚙️</button>
+            ><Settings size={16} /></button>
           </nav>
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>
@@ -887,6 +893,8 @@ function AppInner() {
     </div>
   );
 }
+
+
 
 
 

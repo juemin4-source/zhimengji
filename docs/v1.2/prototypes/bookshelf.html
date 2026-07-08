@@ -1,0 +1,983 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作品书架 — 织梦机 v1.2</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  /* ===== Design Tokens ===== */
+  :root {
+    --bg-canvas: #0a0a0a;
+    --bg-surface: #141414;
+    --bg-raised: #1e1e1e;
+    --bg-header: #0e0e0e;
+    --accent: #B7FF00;
+    --accent-hover: #c8ff33;
+    --accent-soft: rgba(183, 255, 0, 0.1);
+    --border-default: #2a2a2a;
+    --border-subtle: #222;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666;
+    --canon-core: #FFB74D;
+    --canon-project: #90CAF9;
+    --canon-draft: #CE93D8;
+    --canon-none: #666;
+    --danger: #f44336;
+    --warning: #FF9800;
+    --safe: #4CAF50;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-card: 0 2px 12px rgba(0,0,0,0.3);
+    --shadow-card-hover: 0 8px 32px rgba(0,0,0,0.5);
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+  }
+
+  /* ===== App Shell ===== */
+  .app {
+    width: 100%;
+    max-width: 1100px;
+    min-height: 80vh;
+  }
+
+  /* ===== Top Bar ===== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0 0.75rem;
+    border-bottom: 1px solid var(--border-default);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+  .topbar-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, var(--accent), #d4ff5e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+  /* ===== Buttons ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: var(--transition-fast);
+    position: relative;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0a;
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 20px rgba(183,255,0,0.25);
+  }
+  .btn-primary .tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    background: var(--bg-raised);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    border: 1px solid var(--border-default);
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition-fast);
+  }
+  .btn-primary .tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px; left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid var(--border-default);
+  }
+  .btn-primary:hover .tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .btn-icon {
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+  }
+  .btn-icon:hover {
+    color: var(--text-primary);
+    border-color: #444;
+    background: rgba(255,255,255,0.03);
+  }
+
+  /* ===== Custom Select ===== */
+  .select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .select-wrap select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg-header);
+    color: var(--text-secondary);
+    padding: 0.45rem 1.75rem 0.45rem 0.75rem;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    min-width: 7rem;
+  }
+  .select-wrap select:hover {
+    border-color: #444;
+    color: var(--text-primary);
+  }
+  .select-wrap select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+  .select-wrap::after {
+    content: '▼';
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .select-wrap-lg select { min-width: 8.5rem; }
+
+  /* ===== Search / Filter Bar ===== */
+  .filterbar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 0;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 180px;
+    max-width: 320px;
+  }
+  .search-wrap .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--bg-header);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    transition: var(--transition-fast);
+  }
+  .search-wrap input::placeholder { color: var(--text-muted); }
+  .search-wrap input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+
+  /* ===== Statistics Bar ===== */
+  .statsbar {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.6rem 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+  }
+  .statsbar span { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .statsbar .num { color: var(--text-secondary); font-weight: 500; }
+  .statsbar .highlight { color: var(--accent); }
+
+  /* ===== Card Grid ===== */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    padding: 1.5rem 0;
+  }
+
+  /* ===== Card Base ===== */
+  .card {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    box-shadow: var(--shadow-card);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    aspect-ratio: 3 / 4;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: #333;
+  }
+
+  /* Gradient background layer — shared setup */
+  .card-gradient {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-size: 200% 200%;
+    background-position: 0% 50%;
+  }
+  .card:hover .card-gradient {
+    animation: gradientShift 5s ease-in-out infinite;
+  }
+
+  @keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    25%  { background-position: 100% 50%; }
+    50%  { background-position: 100% 100%; }
+    75%  { background-position: 0% 100%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Overlay particle/glow effects (static) */
+  .card-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* Sci-fi: deep indigo/navy with blue-purple glow */
+  .grad-sci-fi {
+    background: linear-gradient(145deg, #1a1a3e, #0d0d2b, #16213e, #0f3460, #1a1a3e);
+  }
+  .grad-sci-fi::before {
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 30%, rgba(144,202,249,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 70%, rgba(206,147,216,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 50% 10%, rgba(183,255,0,0.04) 0%, transparent 60%);
+  }
+
+  /* Fantasy: deep forest with gold-green glow */
+  .grad-fantasy {
+    background: linear-gradient(145deg, #1a2e1a, #0f1f0f, #1e3a1e, #2a4a1a, #1a2e1a);
+  }
+  .grad-fantasy::before {
+    background:
+      radial-gradient(ellipse 70% 50% at 70% 20%, rgba(183,255,0,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 30% 70%, rgba(255,183,77,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(144,202,249,0.06) 0%, transparent 50%);
+  }
+
+  /* Wuxia: warm crimson with amber glow */
+  .grad-wuxia {
+    background: linear-gradient(145deg, #2e1a1a, #1f0f0f, #3e1e1a, #4a2a1a, #2e1a1a);
+  }
+  .grad-wuxia::before {
+    background:
+      radial-gradient(ellipse 70% 50% at 30% 25%, rgba(255,183,77,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 70% 70%, rgba(244,67,54,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(255,152,0,0.05) 0%, transparent 50%);
+  }
+
+  /* Card content overlay */
+  .card-content {
+    position: relative;
+    z-index: 2;
+    padding: 1.5rem 1.25rem 1.25rem;
+    background: linear-gradient(transparent 20%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.88) 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-height: 55%;
+    justify-content: flex-end;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.4);
+    line-height: 1.3;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.15rem;
+  }
+
+  .genre-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 4px currentColor;
+  }
+  .status-dot.draft   { background: var(--warning); color: var(--warning); }
+  .status-dot.idea    { background: var(--canon-none); color: var(--canon-none); }
+  .status-dot.revise  { background: var(--canon-draft); color: var(--canon-draft); }
+
+  .card-wordcount {
+    font-size: 0.8125rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 400;
+  }
+  .card-wordcount strong {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* Canon dots (top-right horizontal strip) */
+  .canon-dots {
+    position: absolute;
+    top: 1rem;
+    right: 3rem;
+    display: flex;
+    gap: 5px;
+    z-index: 3;
+  }
+  .canon-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    transition: var(--transition-fast);
+  }
+  .canon-dot.core    { background: var(--canon-core); border-color: var(--canon-core); }
+  .canon-dot.project { background: var(--canon-project); border-color: var(--canon-project); }
+  .canon-dot.draft   { background: var(--canon-draft); border-color: var(--canon-draft); }
+  .canon-dot.none    { background: var(--canon-none); border-color: var(--canon-none); }
+
+  /* ===== "..." Menu Button ===== */
+  .menu-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 4;
+    width: 28px; height: 28px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: rgba(0,0,0,0.35);
+    color: rgba(255,255,255,0.6);
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: var(--transition-fast);
+    backdrop-filter: blur(4px);
+  }
+  .card:hover .menu-toggle {
+    opacity: 1;
+  }
+  .menu-toggle:hover {
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+  }
+  .menu-toggle.active {
+    opacity: 1;
+    background: rgba(0,0,0,0.55);
+    color: var(--accent);
+  }
+
+  /* Dropdown menu */
+  .card-menu {
+    position: absolute;
+    top: 2.75rem;
+    right: 0.75rem;
+    z-index: 20;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.35rem 0;
+    min-width: 140px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.95);
+    transition: var(--transition-fast);
+    transform-origin: top right;
+  }
+  .card-menu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+  .card-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+  .card-menu-item:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+  }
+  .card-menu-item.danger { color: var(--danger); }
+  .card-menu-item.danger:hover { background: rgba(244,67,54,0.1); }
+
+  /* ===== Empty State ===== */
+  .empty-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    gap: 1.25rem;
+  }
+  .empty-state.visible {
+    display: flex;
+  }
+  .empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--bg-raised);
+    border: 2px dashed var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .empty-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .empty-sub {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    max-width: 320px;
+  }
+  .empty-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition-fast);
+  }
+  .btn-secondary:hover {
+    border-color: #444;
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.03);
+  }
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: var(--transition-fast);
+  }
+  .btn-link:hover { color: var(--accent); }
+
+  /* ===== Utility ===== */
+  [data-hidden] { display: none !important; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0,0,0,0); border: 0;
+  }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1e1e1e;
+    color: #e0e0e0;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 600px) {
+    body { padding: 1rem 0.75rem; }
+    .topbar { flex-direction: column; align-items: stretch; }
+    .topbar-actions { justify-content: flex-end; }
+    .statsbar { font-size: 0.75rem; gap: 0.75rem; }
+    .card-grid { grid-template-columns: 1fr; gap: 1rem; }
+    .card { aspect-ratio: auto; min-height: 260px; }
+    .filterbar .search-wrap { max-width: none; }
+  }
+  @media (min-width: 601px) and (max-width: 900px) {
+    .card-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ===== Top Bar ===== -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="topbar-title">作品书架</h1>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" id="newBookBtn">
+        <span>+</span> 新建作品
+        <span class="tooltip">Ctrl+click 快速创建</span>
+      </button>
+      <div class="select-wrap">
+        <select id="sortSelect">
+          <option value="updated">最近更新</option>
+          <option value="created">创建时间</option>
+          <option value="name">作品名 A-Z</option>
+          <option value="words">字数多→少</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Filter Bar ===== -->
+  <div class="filterbar">
+    <div class="search-wrap">
+      <span class="search-icon">&#x1F50D;</span>
+      <input type="text" id="searchInput" placeholder="搜索作品..." autocomplete="off">
+    </div>
+    <div class="select-wrap">
+      <select id="genreFilter">
+        <option value="all">全部体裁</option>
+        <option value="科幻">科幻</option>
+        <option value="奇幻">奇幻</option>
+        <option value="武侠">武侠</option>
+        <option value="都市">都市</option>
+        <option value="历史">历史</option>
+        <option value="悬疑">悬疑</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <select id="statusFilter">
+        <option value="all">全部状态</option>
+        <option value="构思中">构思中</option>
+        <option value="草稿中">草稿中</option>
+        <option value="修改中">修改中</option>
+        <option value="已完成">已完成</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ===== Statistics Bar ===== -->
+  <div class="statsbar">
+    <span>共 <span class="num" id="workCount">3</span> 部作品</span>
+    <span>|</span>
+    <span>总字数 <span class="num">43,217</span></span>
+    <span>|</span>
+    <span>最高正典对象 <span class="num highlight">5</span> 个</span>
+  </div>
+
+  <!-- ===== Card Grid ===== -->
+  <div class="card-grid" id="cardGrid">
+
+    <!-- Card 1: 觉醒纪元 — 科幻 / 草稿中 -->
+    <div class="card" data-title="觉醒纪元" data-genre="科幻" data-status="草稿中" data-words="12430" data-created="2025-12-01" data-updated="2026-06-28">
+      <div class="card-gradient grad-sci-fi"></div>
+      <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
+      <div class="card-menu">
+        <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
+        <button class="card-menu-item" data-action="genre">&#x2702; 更改体裁</button>
+        <button class="card-menu-item danger" data-action="delete">&#x2716; 删除作品</button>
+        <button class="card-menu-item" data-action="export">&#x2913; 导出</button>
+      </div>
+      <div class="canon-dots">
+        <span class="canon-dot core" title="正典核心"></span>
+        <span class="canon-dot project" title="正典项目"></span>
+        <span class="canon-dot draft" title="正典草稿"></span>
+        <span class="canon-dot none" title="未分类"></span>
+        <span class="canon-dot core" title="正典核心"></span>
+      </div>
+      <div class="card-content">
+        <div class="card-title">觉醒纪元</div>
+        <div class="card-meta">
+          <span class="genre-badge">科幻</span>
+          <span class="status-indicator">
+            <span class="status-dot draft"></span> 草稿中
+          </span>
+        </div>
+        <div class="card-wordcount"><strong>12,430</strong> 字</div>
+      </div>
+    </div>
+
+    <!-- Card 2: 星空彼岸 — 奇幻 / 构思中 -->
+    <div class="card" data-title="星空彼岸" data-genre="奇幻" data-status="构思中" data-words="3800" data-created="2026-02-14" data-updated="2026-05-10">
+      <div class="card-gradient grad-fantasy"></div>
+      <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
+      <div class="card-menu">
+        <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
+        <button class="card-menu-item" data-action="genre">&#x2702; 更改体裁</button>
+        <button class="card-menu-item danger" data-action="delete">&#x2716; 删除作品</button>
+        <button class="card-menu-item" data-action="export">&#x2913; 导出</button>
+      </div>
+      <div class="canon-dots">
+        <span class="canon-dot project" title="正典项目"></span>
+        <span class="canon-dot draft" title="正典草稿"></span>
+        <span class="canon-dot none" title="未分类"></span>
+      </div>
+      <div class="card-content">
+        <div class="card-title">星空彼岸</div>
+        <div class="card-meta">
+          <span class="genre-badge">奇幻</span>
+          <span class="status-indicator">
+            <span class="status-dot idea"></span> 构思中
+          </span>
+        </div>
+        <div class="card-wordcount"><strong>3,800</strong> 字</div>
+      </div>
+    </div>
+
+    <!-- Card 3: 江湖行 — 武侠 / 修改中 -->
+    <div class="card" data-title="江湖行" data-genre="武侠" data-status="修改中" data-words="28987" data-created="2025-08-20" data-updated="2026-07-05">
+      <div class="card-gradient grad-wuxia"></div>
+      <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
+      <div class="card-menu">
+        <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
+        <button class="card-menu-item" data-action="genre">&#x2702; 更改体裁</button>
+        <button class="card-menu-item danger" data-action="delete">&#x2716; 删除作品</button>
+        <button class="card-menu-item" data-action="export">&#x2913; 导出</button>
+      </div>
+      <div class="canon-dots">
+        <span class="canon-dot core" title="正典核心"></span>
+        <span class="canon-dot core" title="正典核心"></span>
+        <span class="canon-dot project" title="正典项目"></span>
+        <span class="canon-dot draft" title="正典草稿"></span>
+      </div>
+      <div class="card-content">
+        <div class="card-title">江湖行</div>
+        <div class="card-meta">
+          <span class="genre-badge">武侠</span>
+          <span class="status-indicator">
+            <span class="status-dot revise"></span> 修改中
+          </span>
+        </div>
+        <div class="card-wordcount"><strong>28,987</strong> 字</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== Empty State ===== -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">&#x1F4D6;</div>
+    <div class="empty-title">还没有作品</div>
+    <div class="empty-sub">
+      创建你的第一个作品，开始编织属于你的世界。
+    </div>
+    <div class="empty-actions">
+      <button class="btn btn-primary">+ 创建第一个作品</button>
+      <button class="btn-secondary">从模板开始</button>
+      <button class="btn-link">查看教程 &rarr;</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== Configuration =====
+  // Set to true to show the empty state instead of the card grid
+  const SHOW_EMPTY_STATE = false;
+
+  // ===== DOM refs =====
+  const grid = document.getElementById('cardGrid');
+  const emptyState = document.getElementById('emptyState');
+  const searchInput = document.getElementById('searchInput');
+  const genreFilter = document.getElementById('genreFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const sortSelect = document.getElementById('sortSelect');
+  const workCount = document.getElementById('workCount');
+
+  // ===== Toast =====
+  function showToast(msg) {
+    var el = document.querySelector('.toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    // Force reflow so transition plays
+    void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function() {
+      el.classList.remove('show');
+    }, 2000);
+  }
+
+  // ===== Card helpers =====
+  function getCards() {
+    return Array.from(grid.querySelectorAll('.card'));
+  }
+
+  // ===== Filter & Sort =====
+  function updateDisplay() {
+    var cards = getCards();
+
+    // Filter
+    var searchTerm = searchInput.value.trim().toLowerCase();
+    var genre = genreFilter.value;
+    var status = statusFilter.value;
+
+    cards.forEach(function(card) {
+      var title = card.getAttribute('data-title').toLowerCase();
+      var cardGenre = card.getAttribute('data-genre');
+      var cardStatus = card.getAttribute('data-status');
+
+      var matchSearch = !searchTerm || title.indexOf(searchTerm) !== -1;
+      var matchGenre = genre === 'all' || cardGenre === genre;
+      var matchStatus = status === 'all' || cardStatus === status;
+
+      if (matchSearch && matchGenre && matchStatus) {
+        card.removeAttribute('data-hidden');
+      } else {
+        card.setAttribute('data-hidden', '');
+      }
+    });
+
+    // Sort visible cards
+    var visibleCards = cards.filter(function(c) {
+      return !c.hasAttribute('data-hidden');
+    });
+
+    var sortBy = sortSelect.value;
+
+    visibleCards.sort(function(a, b) {
+      var va, vb;
+      switch (sortBy) {
+        case 'name':
+          va = a.getAttribute('data-title');
+          vb = b.getAttribute('data-title');
+          return va.localeCompare(vb, 'zh-CN');
+        case 'words':
+          va = parseInt(a.getAttribute('data-words'), 10);
+          vb = parseInt(b.getAttribute('data-words'), 10);
+          return vb - va;
+        case 'created':
+          va = a.getAttribute('data-created');
+          vb = b.getAttribute('data-created');
+          return va < vb ? 1 : (va > vb ? -1 : 0);
+        case 'updated':
+        default:
+          va = a.getAttribute('data-updated');
+          vb = b.getAttribute('data-updated');
+          return va < vb ? 1 : (va > vb ? -1 : 0);
+      }
+    });
+
+    // Re-append in sorted order
+    visibleCards.forEach(function(card) {
+      grid.appendChild(card);
+    });
+
+    // Update count
+    workCount.textContent = visibleCards.length;
+
+    // Toggle empty state
+    if (cards.length > 0 && visibleCards.length === 0) {
+      emptyState.querySelector('.empty-title').textContent = '没有匹配结果';
+      emptyState.querySelector('.empty-sub').textContent = '试试其他关键词或筛选条件。';
+      emptyState.classList.add('visible');
+    } else {
+      emptyState.classList.remove('visible');
+    }
+  }
+
+  // ===== Context Menu =====
+  function closeAllMenus() {
+    document.querySelectorAll('.card-menu.open').forEach(function(m) {
+      m.classList.remove('open');
+      var toggle = m.closest('.card').querySelector('.menu-toggle');
+      if (toggle) toggle.classList.remove('active');
+    });
+  }
+
+  // Card clicks (delegated)
+  grid.addEventListener('click', function(e) {
+    // Menu toggle button
+    var toggle = e.target.closest('.menu-toggle');
+    if (toggle) {
+      e.stopPropagation();
+      var menu = toggle.parentElement.querySelector('.card-menu');
+      var isOpen = menu.classList.contains('open');
+      closeAllMenus();
+      if (!isOpen) {
+        menu.classList.add('open');
+        toggle.classList.add('active');
+      }
+      return;
+    }
+
+    // Menu item
+    var item = e.target.closest('.card-menu-item');
+    if (item) {
+      e.stopPropagation();
+      var action = item.getAttribute('data-action');
+      var card = item.closest('.card');
+      var title = card.getAttribute('data-title');
+
+      var labels = {
+        rename: '编辑作品名: ',
+        genre:  '更改体裁: ',
+        delete: '删除作品: ',
+        export: '导出: '
+      };
+      var msg = (labels[action] || '操作: ') + title;
+      if (action === 'delete') msg += ' (演示模式)';
+      showToast(msg);
+      closeAllMenus();
+      return;
+    }
+  });
+
+  // Close menus on outside click
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.card') || e.target.classList.contains('toast')) return;
+    closeAllMenus();
+  });
+
+  // ===== New Book Button =====
+  var newBtn = document.getElementById('newBookBtn');
+  newBtn.addEventListener('click', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      showToast('快速创建作品…');
+      return;
+    }
+    showToast('新建作品 (演示模式)');
+  });
+
+  // ===== Event listeners =====
+  searchInput.addEventListener('input', updateDisplay);
+  genreFilter.addEventListener('change', updateDisplay);
+  statusFilter.addEventListener('change', updateDisplay);
+  sortSelect.addEventListener('change', updateDisplay);
+
+  // ===== Init =====
+  if (SHOW_EMPTY_STATE) {
+    grid.style.display = 'none';
+    emptyState.classList.add('visible');
+  } else {
+    updateDisplay();
+  }
+
+})();
+</script>
+</body>
+</html>

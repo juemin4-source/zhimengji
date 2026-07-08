@@ -1,0 +1,681 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.2 — 新建项目向导</title>
+<style>
+  :root {
+    --bg-canvas: #0a0a0a;
+    --bg-surface: #141414;
+    --bg-raised: #1e1e1e;
+    --bg-header: #0e0e0e;
+    --accent: #B7FF00;
+    --accent-hover: #c8ff33;
+    --accent-soft: rgba(183, 255, 0, 0.1);
+    --border-default: #2a2a2a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --canon-core: #FFB74D;
+    --canon-project: #90CAF9;
+    --canon-draft: #CE93D8;
+    --canon-none: #666666;
+    --font-sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-modal: 0 25px 60px rgba(0,0,0,0.6);
+    --transition-fast: 0.18s ease;
+    --transition-modal: 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+  .bookshelf {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px 28px;
+    background: var(--bg-canvas);
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
+  }
+  .bookshelf-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0 16px;
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: 24px;
+  }
+  .bookshelf-logo {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--accent), #7fba00);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0a0a0a;
+    flex-shrink: 0;
+  }
+  .bookshelf-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); letter-spacing: 0.02em; }
+  .bookshelf-subtitle { font-size: 0.8rem; color: var(--text-secondary); margin-left: auto; }
+  .shelf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    flex: 1;
+    overflow-y: auto;
+    align-content: start;
+  }
+  .shelf-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 16px 14px;
+    aspect-ratio: 3 / 4;
+    display: flex;
+    flex-direction: column;
+  }
+  .shelf-card .tag {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    align-self: flex-start;
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+  }
+  .tag-core { background: rgba(255, 183, 77, 0.18); color: var(--canon-core); }
+  .tag-project { background: rgba(144, 202, 249, 0.18); color: var(--canon-project); }
+  .tag-draft { background: rgba(206, 147, 216, 0.18); color: var(--canon-draft); }
+  .shelf-card .name { font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
+  .shelf-card .meta { font-size: 0.7rem; color: var(--text-secondary); margin-top: auto; }
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+    padding: 20px;
+  }
+  .modal-overlay.active { opacity: 1; visibility: visible; }
+  .modal-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-modal);
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(40px) scale(0.97);
+    transition: transform var(--transition-modal);
+  }
+  .modal-overlay.active .modal-card { transform: translateY(0) scale(1); }
+  .modal-card::-webkit-scrollbar { width: 4px; }
+  .modal-card::-webkit-scrollbar-track { background: transparent; }
+  .modal-card::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 0;
+    position: sticky;
+    top: 0;
+    background: var(--bg-surface);
+    z-index: 2;
+  }
+  .modal-header h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.02em; }
+  .modal-close {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    position: relative;
+  }
+  .modal-close:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .modal-close .tooltip {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #222;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+    border: 1px solid var(--border-default);
+  }
+  .modal-close:hover .tooltip { opacity: 1; }
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .step-dot { display: inline-flex; align-items: center; gap: 6px; }
+  .step-dot .circle {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--border-default);
+    background: transparent;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+  .step-dot.active .circle { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 8px rgba(183, 255, 0, 0.35); }
+  .step-dot.done .circle { border-color: var(--accent); background: var(--accent); }
+  .step-dot .label { font-size: 0.7rem; color: var(--text-secondary); }
+  .step-dot.active .label { color: var(--accent); }
+  .step-connector { width: 28px; height: 1px; background: var(--border-default); position: relative; }
+  .step-connector::after { content: ''; position: absolute; left: 0; top: 0; height: 1px; background: var(--accent); width: 0; transition: width var(--transition-fast); }
+  .step-connector.done::after { width: 100%; }
+  .modal-body { padding: 20px 24px 24px; }
+  .step-panel { display: none; animation: fadeSlideIn 0.3s ease; }
+  .step-panel.active { display: block; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .input-field {
+    width: 100%; padding: 10px 14px;
+    font-family: var(--font-sans); font-size: 0.9rem;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .input-field::placeholder { color: #555; }
+  .input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .select-wrapper { position: relative; }
+  .select-wrapper::after {
+    content: '▾';
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    pointer-events: none;
+  }
+  .select-field {
+    width: 100%; padding: 10px 36px 10px 14px;
+    font-family: var(--font-sans); font-size: 0.9rem;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .select-field:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .select-field option { background: var(--bg-raised); color: var(--text-primary); }
+  .genre-preview { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border-default); transition: background 0.4s ease; }
+  .template-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 22px 0 14px;
+    font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 0.04em;
+  }
+  .template-divider::before,
+  .template-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-default); }
+  .template-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .template-card {
+    background: var(--bg-raised);
+    border: 1.5px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .template-card:hover { border-color: #444; background: #222; }
+  .template-card.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(183, 255, 0, 0.08);
+    transform: translateY(-1px);
+  }
+  .template-card .icon { font-size: 1.6rem; margin-bottom: 6px; line-height: 1.2; }
+  .template-card .tname { font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; }
+  .template-card .tdesc { font-size: 0.65rem; color: var(--text-secondary); line-height: 1.4; }
+  .template-card .check-mark {
+    position: absolute; top: 6px; right: 6px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); color: #0a0a0a;
+    font-size: 0.55rem;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(0.5);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+  }
+  .template-card.selected .check-mark { opacity: 1; transform: scale(1); }
+  .preview-panel {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    min-height: 60px;
+    transition: border-color var(--transition-fast);
+  }
+  .preview-panel.has-template { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-soft); }
+  .preview-panel .p-title { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; letter-spacing: 0.03em; }
+  .preview-panel .p-title .highlight { color: var(--accent); }
+  .preview-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+  .preview-list li {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    background: rgba(183, 255, 0, 0.07);
+    border: 1px solid rgba(183, 255, 0, 0.15);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .preview-list li::before { content: '\2726'; color: var(--accent); font-size: 0.55rem; }
+  .preview-empty { font-size: 0.75rem; color: #555; font-style: italic; }
+  .hint-area { text-align: center; font-size: 0.7rem; color: #444; margin-bottom: 16px; letter-spacing: 0.02em; }
+  .hint-area kbd {
+    display: inline-block; padding: 1px 6px;
+    font-family: var(--font-sans); font-size: 0.65rem;
+    background: var(--bg-raised); border: 1px solid var(--border-default);
+    border-radius: 3px; color: var(--text-secondary);
+  }
+  .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+  .btn {
+    padding: 9px 22px;
+    font-family: var(--font-sans); font-size: 0.82rem; font-weight: 500;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    letter-spacing: 0.02em;
+  }
+  .btn-secondary { background: transparent; border-color: var(--border-default); color: var(--text-secondary); }
+  .btn-secondary:hover { border-color: #444; color: var(--text-primary); background: var(--bg-raised); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #0a0a0a; font-weight: 600; }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 0 16px rgba(183, 255, 0, 0.2); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+  .confirm-card { background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
+  .confirm-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(42, 42, 42, 0.6); }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-row .clabel { font-size: 0.78rem; color: var(--text-secondary); }
+  .confirm-row .cvalue { font-size: 0.85rem; font-weight: 500; text-align: right; }
+  .confirm-template-preview { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-default); }
+  .confirm-template-preview .ctp-title { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 6px; }
+  .confirm-template-preview .ctp-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+  .confirm-template-preview .ctp-list li { font-size: 0.72rem; padding: 3px 10px; background: var(--accent-soft); border: 1px solid rgba(183, 255, 0, 0.15); border-radius: 4px; color: var(--text-secondary); }
+  .step2-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .btn-ghost { background: transparent; border: none; color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; padding: 6px 8px; transition: color var(--transition-fast); font-family: var(--font-sans); }
+  .btn-ghost:hover { color: var(--text-primary); }
+  .toast {
+    position: fixed; bottom: 40px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent); color: #0a0a0a;
+    font-size: 0.85rem; font-weight: 600;
+    padding: 12px 28px; border-radius: var(--radius-sm);
+    box-shadow: 0 8px 32px rgba(183, 255, 0, 0.25);
+    z-index: 2000;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+  }
+  .toast.active { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+  .validation-hint { font-size: 0.7rem; color: #666; margin-top: 4px; transition: color var(--transition-fast); }
+  .validation-hint.error { color: #ff6b6b; }
+  @media (max-width: 520px) {
+    .modal-card { max-width: 100%; border-radius: 0; max-height: 100vh; }
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal-card { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+    .template-grid { grid-template-columns: 1fr; }
+    .bookshelf { padding: 12px 16px; }
+    .shelf-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="bookshelf" id="bookshelf">
+  <div class="bookshelf-header">
+    <div class="bookshelf-logo">织</div>
+    <span class="bookshelf-title">织梦机</span>
+    <span class="bookshelf-subtitle">v1.2 · 世界观构建</span>
+  </div>
+  <div class="shelf-grid">
+    <div class="shelf-card"><span class="tag tag-core">核心</span><span class="name">星渊纪元</span><span class="meta">科幻 · 23 条目</span></div>
+    <div class="shelf-card"><span class="tag tag-project">项目</span><span class="name">风吟大陆</span><span class="meta">奇幻 · 18 条目</span></div>
+    <div class="shelf-card"><span class="tag tag-draft">草稿</span><span class="name">暗潮</span><span class="meta">悬疑 · 7 条目</span></div>
+    <div class="shelf-card"><span class="tag tag-project">项目</span><span class="name">长安月</span><span class="meta">历史 · 12 条目</span></div>
+    <div class="shelf-card"><span class="tag tag-core">核心</span><span class="name">归途</span><span class="meta">末世 · 9 条目</span></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card" id="modalCard">
+    <div class="modal-header">
+      <h2>新建作品</h2>
+      <button class="modal-close" id="closeBtn" aria-label="关闭">
+        ✕
+        <span class="tooltip">Ctrl+click 跳过向导</span>
+      </button>
+    </div>
+    <div class="step-indicator">
+      <span class="step-dot active" id="step1Dot">
+        <span class="circle"></span>
+        <span class="label">Step 1</span>
+      </span>
+      <span class="step-connector" id="stepConnector"></span>
+      <span class="step-dot" id="step2Dot">
+        <span class="circle"></span>
+        <span class="label">Step 2</span>
+      </span>
+    </div>
+    <div class="modal-body">
+      <div class="step-panel active" id="step1Panel">
+        <div class="form-group">
+          <label for="projectName">作品名</label>
+          <input type="text" class="input-field" id="projectName" placeholder="输入作品名称…" autofocus maxlength="40">
+          <div class="validation-hint" id="nameHint">至少 1 个字符</div>
+        </div>
+        <div class="form-group">
+          <label for="genreSelect">体裁</label>
+          <div class="select-wrapper">
+            <select class="select-field" id="genreSelect">
+              <option value="科幻">科幻</option>
+              <option value="奇幻">奇幻</option>
+              <option value="武侠">武侠</option>
+              <option value="悬疑">悬疑</option>
+              <option value="言情">言情</option>
+              <option value="历史">历史</option>
+              <option value="都市">都市</option>
+              <option value="末世">末世</option>
+              <option value="恐怖">恐怖</option>
+              <option value="其他" selected>其他</option>
+            </select>
+          </div>
+          <div class="genre-preview" id="genrePreview"></div>
+        </div>
+        <div class="template-divider">或选择初始模板</div>
+        <div class="template-grid">
+          <div class="template-card" data-template="blank" data-name="空白建立">
+            <span class="check-mark">&#10003;</span>
+            <div class="icon">&#x1F3D7;</div>
+            <div class="tname">空白建立</div>
+            <div class="tdesc">纯手工打造</div>
+          </div>
+          <div class="template-card" data-template="scifi" data-name="科幻模板">
+            <span class="check-mark">&#10003;</span>
+            <div class="icon">&#x1F680;</div>
+            <div class="tname">科幻模板</div>
+            <div class="tdesc">含世界观·主要科技·关键组织预设</div>
+          </div>
+          <div class="template-card" data-template="fantasy" data-name="奇幻模板">
+            <span class="check-mark">&#10003;</span>
+            <div class="icon">&#x1F9D9;</div>
+            <div class="tname">奇幻模板</div>
+            <div class="tdesc">含世界观·种族·魔法体系·关键组织预设</div>
+          </div>
+        </div>
+        <div class="preview-panel" id="previewPanel">
+          <div class="p-title">模板预览</div>
+          <div class="preview-empty" id="previewEmpty">未选择模板</div>
+          <ul class="preview-list" id="previewList" style="display:none;"></ul>
+        </div>
+        <div class="hint-area"><kbd>Ctrl</kbd> + click「新建作品」跳过向导</div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancelBtn">取消</button>
+          <button class="btn btn-primary" id="nextBtn" disabled>开始创作</button>
+        </div>
+      </div>
+      <div class="step-panel" id="step2Panel">
+        <div class="confirm-card">
+          <div class="confirm-row"><span class="clabel">作品名</span><span class="cvalue" id="confirmName">—</span></div>
+          <div class="confirm-row"><span class="clabel">体裁</span><span class="cvalue" id="confirmGenre">—</span></div>
+          <div class="confirm-row"><span class="clabel">模板</span><span class="cvalue" id="confirmTemplate">—</span></div>
+          <div class="confirm-template-preview" id="confirmPreviewSection" style="display:none;">
+            <div class="ctp-title">模板将创建以下条目</div>
+            <ul class="ctp-list" id="confirmPreviewList"></ul>
+          </div>
+        </div>
+        <div class="step2-actions">
+          <button class="btn-ghost" id="backBtn">&#x2190; 返回修改</button>
+          <div>
+            <button class="btn btn-secondary" id="cancelBtn2">取消</button>
+            <button class="btn btn-primary" id="createBtn">开始创作</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">&#x1F389; 项目已创建！</div>
+<script>
+(function() {
+  'use strict';
+  var overlay = document.getElementById('modalOverlay');
+  var closeBtn = document.getElementById('closeBtn');
+  var cancelBtns = [document.getElementById('cancelBtn'), document.getElementById('cancelBtn2')];
+  var nextBtn = document.getElementById('nextBtn');
+  var createBtn = document.getElementById('createBtn');
+  var backBtn = document.getElementById('backBtn');
+  var step1Panel = document.getElementById('step1Panel');
+  var step2Panel = document.getElementById('step2Panel');
+  var step1Dot = document.getElementById('step1Dot');
+  var step2Dot = document.getElementById('step2Dot');
+  var stepConnector = document.getElementById('stepConnector');
+  var projectName = document.getElementById('projectName');
+  var genreSelect = document.getElementById('genreSelect');
+  var genrePreview = document.getElementById('genrePreview');
+  var nameHint = document.getElementById('nameHint');
+  var templateCards = document.querySelectorAll('.template-card');
+  var previewPanel = document.getElementById('previewPanel');
+  var previewEmpty = document.getElementById('previewEmpty');
+  var previewList = document.getElementById('previewList');
+  var confirmName = document.getElementById('confirmName');
+  var confirmGenre = document.getElementById('confirmGenre');
+  var confirmTemplate = document.getElementById('confirmTemplate');
+  var confirmPreviewSection = document.getElementById('confirmPreviewSection');
+  var confirmPreviewList = document.getElementById('confirmPreviewList');
+  var toast = document.getElementById('toast');
+  var selectedTemplate = null;
+  var currentStep = 1;
+  var templatePresets = {
+    blank: { name: '空白建立', items: [] },
+    scifi: { name: '科幻模板', items: ['世界观', '主要科技', '关键组织'] },
+    fantasy: { name: '奇幻模板', items: ['世界观', '种族', '魔法体系', '关键组织'] }
+  };
+  var genreGradients = {
+    '科幻': 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+    '奇幻': 'linear-gradient(90deg, #B7FF00, #4CAF50)',
+    '武侠': 'linear-gradient(90deg, #D4A574, #8B4513)',
+    '悬疑': 'linear-gradient(90deg, #4a148c, #311b92)',
+    '言情': 'linear-gradient(90deg, #f48fb1, #ec407a)',
+    '历史': 'linear-gradient(90deg, #8d6e63, #5d4037)',
+    '都市': 'linear-gradient(90deg, #4fc3f7, #0288d1)',
+    '末世': 'linear-gradient(90deg, #757575, #424242)',
+    '恐怖': 'linear-gradient(90deg, #b71c1c, #880e4f)',
+    '其他': 'linear-gradient(90deg, #B7FF00, #7fba00)'
+  };
+  function updateGenrePreview() {
+    var g = genreSelect.value;
+    genrePreview.style.background = genreGradients[g] || genreGradients['其他'];
+  }
+  updateGenrePreview();
+  function validateStep1() {
+    var valid = projectName.value.trim().length > 0;
+    if (valid) { nameHint.textContent = '名称有效'; nameHint.className = 'validation-hint'; }
+    else { nameHint.textContent = '请输入作品名称'; nameHint.className = 'validation-hint error'; }
+    nextBtn.disabled = !valid;
+    return valid;
+  }
+  projectName.addEventListener('input', function() {
+    if (this.value.length > 40) this.value = this.value.slice(0, 40);
+    validateStep1();
+  });
+  genreSelect.addEventListener('change', updateGenrePreview);
+  templateCards.forEach(function(card) {
+    card.addEventListener('click', function() { selectTemplate(this.dataset.template); });
+  });
+  function selectTemplate(tpl) {
+    selectedTemplate = tpl;
+    templateCards.forEach(function(c) {
+      c.classList.remove('selected');
+      if (c.dataset.template === tpl) c.classList.add('selected');
+    });
+    updatePreview();
+    validateStep1();
+  }
+  function updatePreview() {
+    var preset = selectedTemplate ? templatePresets[selectedTemplate] : null;
+    if (!preset) {
+      previewEmpty.style.display = 'block';
+      previewList.style.display = 'none';
+      previewPanel.classList.remove('has-template');
+      return;
+    }
+    previewEmpty.style.display = 'none';
+    previewList.style.display = 'flex';
+    previewPanel.classList.add('has-template');
+    previewList.innerHTML = '';
+    if (preset.items.length === 0) {
+      var li = document.createElement('li');
+      li.textContent = '将创建一个空白项目';
+      previewList.appendChild(li);
+    } else {
+      preset.items.forEach(function(item) {
+        var li = document.createElement('li');
+        li.textContent = item;
+        previewList.appendChild(li);
+      });
+    }
+  }
+  function goToStep(step) {
+    currentStep = step;
+    if (step === 1) {
+      step1Panel.classList.add('active');
+      step2Panel.classList.remove('active');
+      step1Dot.className = 'step-dot active';
+      step2Dot.className = 'step-dot';
+      stepConnector.className = 'step-connector';
+      setTimeout(function() { projectName.focus(); }, 100);
+    } else {
+      step1Panel.classList.remove('active');
+      step2Panel.classList.add('active');
+      step1Dot.className = 'step-dot done';
+      step2Dot.className = 'step-dot active';
+      stepConnector.className = 'step-connector done';
+      var name = projectName.value.trim();
+      var genre = genreSelect.value;
+      var preset = selectedTemplate ? templatePresets[selectedTemplate] : null;
+      confirmName.textContent = name;
+      confirmGenre.textContent = genre;
+      confirmTemplate.textContent = preset ? preset.name : '空白建立';
+      if (preset && preset.items.length > 0) {
+        confirmPreviewSection.style.display = 'block';
+        confirmPreviewList.innerHTML = '';
+        preset.items.forEach(function(item) {
+          var li = document.createElement('li');
+          li.textContent = item;
+          confirmPreviewList.appendChild(li);
+        });
+      } else {
+        confirmPreviewSection.style.display = 'none';
+      }
+    }
+  }
+  nextBtn.addEventListener('click', function() { if (!this.disabled) goToStep(2); });
+  projectName.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); if (validateStep1()) goToStep(2); }
+  });
+  backBtn.addEventListener('click', function() { goToStep(1); });
+  function closeModal() {
+    overlay.classList.remove('active');
+    setTimeout(function() {
+      selectedTemplate = null;
+      templateCards.forEach(function(c) { c.classList.remove('selected'); });
+      previewEmpty.style.display = 'block';
+      previewList.style.display = 'none';
+      previewPanel.classList.remove('has-template');
+      projectName.value = '';
+      nameHint.textContent = '至少 1 个字符';
+      nameHint.className = 'validation-hint';
+      genreSelect.value = '其他';
+      updateGenrePreview();
+      nextBtn.disabled = true;
+      goToStep(1);
+    }, 300);
+  }
+  cancelBtns.forEach(function(b) { b.addEventListener('click', closeModal); });
+  closeBtn.addEventListener('click', function(e) {
+    if (e.ctrlKey) { showToast('已跳过向导，将创建空白项目'); closeModal(); return; }
+    closeModal();
+  });
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) closeModal();
+  });
+  createBtn.addEventListener('click', function() { showToast('项目已创建！'); closeModal(); });
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('active');
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(function() { toast.classList.remove('active'); }, 2200);
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      var tag = document.activeElement ? document.activeElement.tagName : '';
+      if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
+        overlay.classList.add('active');
+        setTimeout(function() { projectName.focus(); }, 350);
+      }
+    }
+  });
+  window.openNewProjectModal = function() {
+    overlay.classList.add('active');
+    setTimeout(function() { projectName.focus(); }, 350);
+  };
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      overlay.classList.add('active');
+      setTimeout(function() { projectName.focus(); }, 350);
+    }, 400);
+  });
+})();
+</script>
+</body>
+</html>

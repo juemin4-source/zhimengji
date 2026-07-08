@@ -1,0 +1,530 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.2 — 正典手册原型</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-canvas: #0a0a0a; --bg-surface: #141414; --bg-raised: #1e1e1e; --bg-header: #0e0e0e;
+    --accent: #B7FF00; --accent-hover: #c8ff33; --accent-soft: rgba(183,255,0,0.1);
+    --border-default: #2a2a2a; --text-primary: #e0e0e0; --text-secondary: #a0a0a0;
+    --canon-core: #FFB74D; --canon-project: #90CAF9; --canon-draft: #CE93D8; --canon-none: #666666;
+    --danger: #f44336; --safe: #4CAF50;
+    --font: -apple-system, PingFang SC, sans-serif;
+    --radius: 16px; --radius-sm: 8px;
+  }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font); background: var(--bg-canvas); color: var(--text-primary);
+    line-height: 1.6; min-height: 100vh;
+  }
+  .demo-tabs {
+    display: flex; gap: 0; background: var(--bg-header);
+    border-bottom: 1px solid var(--border-default);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: 48px;
+  }
+  .demo-tabs button {
+    flex: 1; border: none; background: transparent; color: var(--text-secondary);
+    font: 500 0.85rem var(--font); padding: 0 1rem; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .demo-tabs button:hover { color: var(--text-primary); background: var(--bg-raised); }
+  .demo-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-soft); }
+  .demo-tab-label { margin-left: auto; color: var(--text-secondary); font-size: 0.7rem; align-self: center; padding: 0 1rem; letter-spacing: 0.3px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .view-port { margin-top: 48px; min-height: calc(100vh - 48px); position: relative; }
+  .popup-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem;
+  }
+  .popup-card {
+    background: var(--bg-surface); border: 1px solid var(--border-default);
+    border-radius: var(--radius); max-width: 480px; width: 100%;
+    padding: 2rem 1.75rem; animation: slideUp 0.4s ease;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
+  .popup-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+  .popup-card h2 span { font-size: 1.6rem; }
+  .popup-intro { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.7; }
+  .level-row { display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.85rem 1rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; transition: background .2s; }
+  .level-row:hover { background: var(--bg-raised); }
+  .level-row .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 0.2rem; }
+  .level-row .dot.core { background: var(--canon-core); }
+  .level-row .dot.project { background: var(--canon-project); }
+  .level-row .dot.draft { background: var(--canon-draft); }
+  .level-row .dot.none { background: var(--canon-none); }
+  .level-row .info { flex: 1; min-width: 0; }
+  .level-row .info .name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.1rem; }
+  .level-row .info .desc { color: var(--text-secondary); font-size: 0.85rem; }
+  .level-row.tint-core { background: rgba(255,183,77,0.06); }
+  .level-row.tint-project { background: rgba(144,202,249,0.06); }
+  .level-row.tint-draft { background: rgba(206,147,216,0.06); }
+  .level-row.tint-none { background: rgba(102,102,102,0.06); }
+  .popup-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.2rem; border-radius: var(--radius-sm); font: 500 0.9rem var(--font); border: none; cursor: pointer; transition: all .2s; text-decoration: none; white-space: nowrap; }
+  .btn:active { transform: scale(0.97); }
+  .btn-secondary { background: transparent; color: var(--text-secondary); padding-left: 0.6rem; }
+  .btn-secondary:hover { color: var(--text-primary); }
+  .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .btn-outline:hover { background: var(--accent-soft); }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn .check-box { width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transition: all .2s; flex-shrink: 0; color: transparent; }
+  .btn .check-box.checked { background: var(--accent); border-color: var(--accent); color: #000; }
+  .btn-empty { flex: 1; min-width: 0; }
+  .popup-closed-state { display: flex; align-items: center; justify-content: center; min-height: 60vh; color: var(--text-secondary); font-size: 1rem; flex-direction: column; gap: 0.75rem; }
+  .popup-closed-state .btn-outline { margin-top: 0.5rem; }
+  .handbook { max-width: 780px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+  .handbook-nav { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.75rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-default); }
+  .handbook-nav .back-btn { background: transparent; border: none; color: var(--text-secondary); font: 500 0.9rem var(--font); cursor: pointer; display: flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.5rem; border-radius: 6px; transition: all .2s; }
+  .handbook-nav .back-btn:hover { color: var(--text-primary); background: var(--bg-raised); }
+  .handbook-nav h1 { font-size: 1.2rem; font-weight: 700; flex: 1; }
+  .handbook-nav .view-toggle-btn { background: transparent; border: 1px solid var(--border-default); color: var(--text-secondary); font: 400 0.8rem var(--font); padding: 0.35rem 0.85rem; border-radius: 6px; cursor: pointer; transition: all .2s; }
+  .handbook-nav .view-toggle-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .canon-section { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; transition: box-shadow .2s; }
+  .canon-section:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+  .canon-section-header { display: flex; align-items: center; gap: 0.65rem; padding: 1rem 1.25rem; cursor: pointer; user-select: none; transition: background .2s; }
+  .canon-section-header:hover { background: var(--bg-raised); }
+  .canon-section-header .icon { font-size: 1.3rem; }
+  .canon-section-header .section-title { font-weight: 700; font-size: 1rem; flex: 1; }
+  .canon-section-header .section-count { font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-raised); padding: 0.15rem 0.6rem; border-radius: 100px; }
+  .canon-section-header .collapse-icon { color: var(--text-secondary); font-size: 0.7rem; transition: transform .3s; }
+  .canon-section-header .collapse-icon.collapsed { transform: rotate(-90deg); }
+  .canon-section-body { padding: 0 1.25rem 1.25rem; }
+  .canon-section-body.collapsed { display: none; }
+  .canon-section-body .definition { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1rem; line-height: 1.7; }
+  .canon-section-body .object-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .object-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.85rem; border-radius: 100px; font-size: 0.85rem; font-weight: 500; background: var(--bg-raised); border: 1px solid var(--border-default); cursor: pointer; transition: all .2s; position: relative; }
+  .object-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .object-pill.core::before { background: var(--canon-core); }
+  .object-pill.project::before { background: var(--canon-project); }
+  .object-pill.draft::before { background: var(--canon-draft); }
+  .object-pill.none::before { background: var(--canon-none); }
+  .object-pill.core { border-color: rgba(255,183,77,0.3); }
+  .object-pill.project { border-color: rgba(144,202,249,0.3); }
+  .object-pill.draft { border-color: rgba(206,147,216,0.3); }
+  .object-pill.none { border-color: rgba(102,102,102,0.3); }
+  .object-pill:hover { border-color: var(--text-secondary); background: var(--bg-surface); transform: translateY(-1px); }
+  .tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 10; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  .object-pill:hover .tooltip { opacity: 1; }
+  .object-pill .tooltip .tt-name { color: var(--text-primary); font-weight: 600; }
+  .object-pill .tooltip .tt-level { display: block; font-size: 0.7rem; margin-top: 0.15rem; }
+  .canon-act { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .canon-act h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); }
+  .timeline-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .timeline-header h3 { font-size: 0.95rem; font-weight: 700; margin-right: 0.5rem; }
+  .timeline-header .filter-group { display: flex; gap: 0.25rem; }
+  .filter-btn { background: transparent; border: 1px solid var(--border-default); color: var(--text-secondary); font: 400 0.8rem var(--font); padding: 0.25rem 0.7rem; border-radius: 100px; cursor: pointer; transition: all .2s; }
+  .filter-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+  .filter-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .view-switch { margin-left: auto; background: transparent; border: 1px solid var(--border-default); color: var(--text-secondary); font: 400 0.75rem var(--font); padding: 0.25rem 0.65rem; border-radius: 6px; cursor: pointer; transition: all .2s; }
+  .view-switch:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .timeline { position: relative; }
+  .timeline::before { content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--border-default); }
+  .tl-item { display: flex; gap: 0.85rem; padding-bottom: 1.1rem; position: relative; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-dot { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; color: #000; font-weight: 700; }
+  .tl-dot.upgrade { background: var(--canon-core); }
+  .tl-dot.downgrade { background: var(--danger); }
+  .tl-dot.create { background: var(--safe); }
+  .tl-content { flex: 1; min-width: 0; padding-top: 0.1rem; }
+  .tl-content .tl-date { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.1rem; }
+  .tl-content .tl-action { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.1rem; }
+  .tl-content .tl-action .obj-name { color: var(--accent); }
+  .tl-content .tl-change { display: inline-flex; gap: 0.4rem; align-items: center; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
+  .tl-content .tl-change .tag { display: inline-block; padding: 0.08rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 500; }
+  .tl-content .tl-change .tag.from { background: rgba(102,102,102,0.15); color: var(--text-secondary); }
+  .tl-content .tl-change .tag.to-core { background: rgba(255,183,77,0.15); color: var(--canon-core); }
+  .tl-content .tl-change .tag.to-project { background: rgba(144,202,249,0.15); color: var(--canon-project); }
+  .tl-content .tl-change .tag.to-draft { background: rgba(206,147,216,0.15); color: var(--canon-draft); }
+  .tl-content .tl-change .arrow { color: var(--text-secondary); font-size: 0.7rem; }
+  .tl-content .tl-reason { font-size: 0.78rem; color: var(--text-secondary); opacity: 0.7; margin-top: 0.1rem; }
+  .tl-item.hidden { display: none; }
+  .tl-card-view .tl-item { display: flex; gap: 0.85rem; padding-bottom: 0.85rem; }
+  .tl-card-view .tl-card { flex: 1; background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: 0.75rem 1rem; }
+  .tl-card-view .tl-card .tl-date { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
+  .tl-card-view .tl-card .tl-action { font-size: 0.9rem; font-weight: 600; }
+  .tl-card-view .tl-card .tl-action .obj-name { color: var(--accent); }
+  .tl-card-view .tl-card .tl-change { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem; }
+  .tl-card-view .tl-card .tl-reason { font-size: 0.78rem; color: var(--text-secondary); opacity: 0.7; margin-top: 0.15rem; }
+  .tl-card-view.hidden { display: none; }
+  .badge-showcase { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 1.25rem; margin-top: 1.5rem; }
+  .badge-showcase h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; }
+  .badge-showcase .showcase-grid { display: flex; flex-direction: column; gap: 0.6rem; }
+  .badge-showcase .showcase-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); transition: background .2s; cursor: default; }
+  .badge-showcase .showcase-row:hover { background: var(--bg-raised); }
+  .badge-showcase .showcase-row .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600; border: 1px solid transparent; flex-shrink: 0; }
+  .badge-showcase .showcase-row .badge.core { background: rgba(255,183,77,0.12); color: var(--canon-core); border-color: rgba(255,183,77,0.25); }
+  .badge-showcase .showcase-row .badge.project { background: rgba(144,202,249,0.12); color: var(--canon-project); border-color: rgba(144,202,249,0.25); }
+  .badge-showcase .showcase-row .badge.draft { background: rgba(206,147,216,0.12); color: var(--canon-draft); border-color: rgba(206,147,216,0.25); }
+  .badge-showcase .showcase-row .badge.none { background: rgba(102,102,102,0.12); color: var(--text-secondary); border-color: rgba(102,102,102,0.25); }
+  .badge-showcase .showcase-row .example-name { font-weight: 500; font-size: 0.9rem; flex: 1; }
+  .badge-showcase .showcase-row .hint { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.6; transition: opacity .2s; }
+  .badge-showcase .showcase-row:hover .hint { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="demo-tabs">
+  <button class="active" data-view="popup">View 1: 首次弹出卡</button>
+  <button data-view="handbook">View 2: 正典手册</button>
+  <span class="demo-tab-label">织梦机 v1.2 原型</span>
+</div>
+
+<div id="view-popup" class="view active">
+  <div class="view-port" id="popup-container">
+    <div class="popup-backdrop" id="popup-backdrop">
+      <div class="popup-card" id="popup-card">
+        <h2><span>&#x1F310;</span> 世界构建入门</h2>
+        <p class="popup-intro">织梦机用「正典」来管理你的设定稳定性。每个设定有四个等级：</p>
+        <div class="level-row tint-none">
+          <div class="dot none"></div>
+          <div class="info"><div class="name">未收录</div><div class="desc">灵感笔记，尚未确认</div></div>
+        </div>
+        <div class="level-row tint-draft">
+          <div class="dot draft"></div>
+          <div class="info"><div class="name">草案正典</div><div class="desc">初步认定，还在打磨</div></div>
+        </div>
+        <div class="level-row tint-project">
+          <div class="dot project"></div>
+          <div class="info"><div class="name">项目正典</div><div class="desc">团队认可，纳入正典</div></div>
+        </div>
+        <div class="level-row tint-core">
+          <div class="dot core"></div>
+          <div class="info"><div class="name">核心正典</div><div class="desc">不可更改的基石设定</div></div>
+        </div>
+        <div class="popup-actions">
+          <button class="btn btn-secondary" id="btn-dismiss">
+            <span class="check-box" id="dismiss-check">&#x2713;</span> 不再显示
+          </button>
+          <button class="btn btn-outline" id="btn-handbook">进入手册 &rarr;</button>
+          <button class="btn btn-primary" id="btn-start">开始使用</button>
+        </div>
+      </div>
+    </div>
+    <div class="popup-closed-state" id="popup-closed" style="display:none;">
+      <span style="font-size:2rem;">&#x1F3E0;</span>
+      <span>正典系统已就绪，开始构建你的世界吧。</span>
+      <button class="btn btn-outline" onclick="document.getElementById('btn-handbook').click()">进入正典手册 &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div id="view-handbook" class="view">
+  <div class="view-port">
+    <div class="handbook">
+      <div class="handbook-nav">
+        <button class="back-btn" id="btn-back">&#x2190; 返回</button>
+        <h1>正典手册</h1>
+        <button class="view-toggle-btn" id="timeline-view-toggle">切换视图</button>
+      </div>
+      <div class="canon-section" data-section="core">
+        <div class="canon-section-header" data-toggle>
+          <span class="icon">&#x1F31F;</span>
+          <span class="section-title">核心正典</span>
+          <span class="section-count">2 个对象</span>
+          <span class="collapse-icon">&#x25BC;</span>
+        </div>
+        <div class="canon-section-body">
+          <div class="definition">定义：不可更改的基石设定。一旦锁定为核心正典，修改需要经过完整的正典裁决流程。</div>
+          <div class="object-list">
+            <div class="object-pill core">张三<span class="tooltip"><span class="tt-name">张三</span><span class="tt-level">核心正典</span></span></div>
+            <div class="object-pill core">乐园机制<span class="tooltip"><span class="tt-name">乐园机制</span><span class="tt-level">核心正典</span></span></div>
+          </div>
+          <div style="margin-top:0.75rem; font-size:0.78rem; color:var(--text-secondary); opacity:0.7;">正典裁决：每项变更需记录原因并确认</div>
+        </div>
+      </div>
+      <div class="canon-section" data-section="project">
+        <div class="canon-section-header" data-toggle>
+          <span class="icon">&#x1F4D8;</span>
+          <span class="section-title">项目正典</span>
+          <span class="section-count">3 个对象</span>
+          <span class="collapse-icon">&#x25BC;</span>
+        </div>
+        <div class="canon-section-body">
+          <div class="definition">定义：团队/个人认可的正典设定。修改需要记录判断原因。</div>
+          <div class="object-list">
+            <div class="object-pill project">李四<span class="tooltip"><span class="tt-name">李四</span><span class="tt-level">项目正典</span></span></div>
+            <div class="object-pill project">中央数据库<span class="tooltip"><span class="tt-name">中央数据库</span><span class="tt-level">项目正典</span></span></div>
+            <div class="object-pill project">人造人组织<span class="tooltip"><span class="tt-name">人造人组织</span><span class="tt-level">项目正典</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="canon-section" data-section="draft">
+        <div class="canon-section-header" data-toggle>
+          <span class="icon">&#x1F7E3;</span>
+          <span class="section-title">草案正典</span>
+          <span class="section-count">4 个对象</span>
+          <span class="collapse-icon">&#x25BC;</span>
+        </div>
+        <div class="canon-section-body">
+          <div class="definition">定义：初步认定，还在打磨。可以自由修改。</div>
+          <div class="object-list">
+            <div class="object-pill draft">替换计划<span class="tooltip"><span class="tt-name">替换计划</span><span class="tt-level">草案正典</span></span></div>
+            <div class="object-pill draft">AX系列<span class="tooltip"><span class="tt-name">AX系列</span><span class="tt-level">草案正典</span></span></div>
+            <div class="object-pill draft">地下设施<span class="tooltip"><span class="tt-name">地下设施</span><span class="tt-level">草案正典</span></span></div>
+            <div class="object-pill draft">赵五<span class="tooltip"><span class="tt-name">赵五</span><span class="tt-level">草案正典</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="canon-section" data-section="none">
+        <div class="canon-section-header" data-toggle>
+          <span class="icon">&#x26AA;</span>
+          <span class="section-title">未收录</span>
+          <span class="section-count">7 个对象</span>
+          <span class="collapse-icon">&#x25BC;</span>
+        </div>
+        <div class="canon-section-body">
+          <div class="definition">定义：灵感笔记，尚未确认。自由编辑，不影响正典体系。</div>
+          <div class="object-list">
+            <div class="object-pill none">时崎<span class="tooltip"><span class="tt-name">时崎</span><span class="tt-level">未收录</span></span></div>
+            <div class="object-pill none">第三设施<span class="tooltip"><span class="tt-name">第三设施</span><span class="tt-level">未收录</span></span></div>
+            <div class="object-pill none">代号X<span class="tooltip"><span class="tt-name">代号X</span><span class="tt-level">未收录</span></span></div>
+            <div class="object-pill none">未知组织<span class="tooltip"><span class="tt-name">未知组织</span><span class="tt-level">未收录</span></span></div>
+            <div class="object-pill none">实验记录<span class="tooltip"><span class="tt-name">实验记录</span><span class="tt-level">未收录</span></span></div>
+            <div class="object-pill none">废弃方案<span class="tooltip"><span class="tt-name">废弃方案</span><span class="tt-level">未收录</span></span></div>
+            <div class="object-pill none">远方来信<span class="tooltip"><span class="tt-name">远方来信</span><span class="tt-level">未收录</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="canon-act">
+        <div class="timeline-header">
+          <h3>&#x1F4C3; 判断记录时间线</h3>
+          <div class="filter-group" id="tl-filters">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="upgrade">提升</button>
+            <button class="filter-btn" data-filter="downgrade">降级</button>
+            <button class="filter-btn" data-filter="create">创建</button>
+          </div>
+          <button class="view-switch" id="tl-view-card">卡片视图</button>
+        </div>
+        <div class="timeline" id="tl-timeline">
+          <div class="tl-item" data-type="upgrade">
+            <div class="tl-dot upgrade">&#x25B2;</div>
+            <div class="tl-content">
+              <div class="tl-date">&#x25CF; 2天前</div>
+              <div class="tl-action"><span class="obj-name">张三</span> 提升为核心正典</div>
+              <div class="tl-change"><span class="tag from">草案正典</span><span class="arrow"> &rarr; </span><span class="tag to-core">核心正典</span></div>
+              <div class="tl-reason">原因：故事核心角色，设定稳定</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="upgrade">
+            <div class="tl-dot upgrade">&#x25B2;</div>
+            <div class="tl-content">
+              <div class="tl-date">&#x25CF; 5天前</div>
+              <div class="tl-action"><span class="obj-name">张三</span> 从草案升级为项目正典</div>
+              <div class="tl-change"><span class="tag from">草案正典</span><span class="arrow"> &rarr; </span><span class="tag to-project">项目正典</span></div>
+              <div class="tl-reason">原因：完成人物小传</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="create">
+            <div class="tl-dot create">+</div>
+            <div class="tl-content">
+              <div class="tl-date">&#x25CF; 2周前</div>
+              <div class="tl-action"><span class="obj-name">张三</span> 创建为草案正典</div>
+              <div class="tl-change"><span class="tag from">未收录</span><span class="arrow"> &rarr; </span><span class="tag to-draft">草案正典</span></div>
+              <div class="tl-reason">原因：初步设定确认</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="upgrade">
+            <div class="tl-dot upgrade">&#x25B2;</div>
+            <div class="tl-content">
+              <div class="tl-date">&#x25CF; 3周前</div>
+              <div class="tl-action"><span class="obj-name">乐园机制</span> 提升为核心正典</div>
+              <div class="tl-change"><span class="tag from">项目正典</span><span class="arrow"> &rarr; </span><span class="tag to-core">核心正典</span></div>
+              <div class="tl-reason">原因：世界核心规则，不可轻易改动</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="downgrade">
+            <div class="tl-dot downgrade">&#x25BC;</div>
+            <div class="tl-content">
+              <div class="tl-date">&#x25CF; 4周前</div>
+              <div class="tl-action"><span class="obj-name">旧设定稿</span> 降级为草案正典</div>
+              <div class="tl-change"><span class="tag from">项目正典</span><span class="arrow"> &rarr; </span><span class="tag to-draft">草案正典</span></div>
+              <div class="tl-reason">原因：设定冲突，需要重新打磨</div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-card-view hidden" id="tl-cards">
+          <div class="tl-item" data-type="upgrade">
+            <div class="tl-dot upgrade">&#x25B2;</div>
+            <div class="tl-card">
+              <div class="tl-date">&#x25CF; 2天前</div>
+              <div class="tl-action"><span class="obj-name">张三</span> &#x2192; 核心正典</div>
+              <div class="tl-change">草案正典 &#x2192; 核心正典</div>
+              <div class="tl-reason">故事核心角色，设定稳定</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="upgrade">
+            <div class="tl-dot upgrade">&#x25B2;</div>
+            <div class="tl-card">
+              <div class="tl-date">&#x25CF; 5天前</div>
+              <div class="tl-action"><span class="obj-name">张三</span> &#x2192; 项目正典</div>
+              <div class="tl-change">草案正典 &#x2192; 项目正典</div>
+              <div class="tl-reason">完成人物小传</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="create">
+            <div class="tl-dot create">+</div>
+            <div class="tl-card">
+              <div class="tl-date">&#x25CF; 2周前</div>
+              <div class="tl-action"><span class="obj-name">张三</span> &#x2192; 草案正典</div>
+              <div class="tl-change">未收录 &#x2192; 草案正典</div>
+              <div class="tl-reason">初步设定确认</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="upgrade">
+            <div class="tl-dot upgrade">&#x25B2;</div>
+            <div class="tl-card">
+              <div class="tl-date">&#x25CF; 3周前</div>
+              <div class="tl-action"><span class="obj-name">乐园机制</span> &#x2192; 核心正典</div>
+              <div class="tl-change">项目正典 &#x2192; 核心正典</div>
+              <div class="tl-reason">世界核心规则，不可轻易改动</div>
+            </div>
+          </div>
+          <div class="tl-item" data-type="downgrade">
+            <div class="tl-dot downgrade">&#x25BC;</div>
+            <div class="tl-card">
+              <div class="tl-date">&#x25CF; 4周前</div>
+              <div class="tl-action"><span class="obj-name">旧设定稿</span> &#x2192; 草案正典</div>
+              <div class="tl-change">项目正典 &#x2192; 草案正典</div>
+              <div class="tl-reason">设定冲突，需要重新打磨</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="badge-showcase">
+        <h3>&#x1F3F7; 对象名前的正典徽章</h3>
+        <div class="showcase-grid">
+          <div class="showcase-row">
+            <span class="badge core">&#x2605; 核心</span>
+            <span class="example-name">张三</span>
+            <span class="hint">故事核心角色，不可变更</span>
+          </div>
+          <div class="showcase-row">
+            <span class="badge project">&#x25C9; 项目</span>
+            <span class="example-name">中央数据库</span>
+            <span class="hint">团队认可的设定</span>
+          </div>
+          <div class="showcase-row">
+            <span class="badge draft">&#x25CB; 草案</span>
+            <span class="example-name">替换计划</span>
+            <span class="hint">仍可自由修改</span>
+          </div>
+          <div class="showcase-row">
+            <span class="badge none">&mdash;</span>
+            <span class="example-name">时崎</span>
+            <span class="hint">灵感笔记，尚未确认</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  const tabBtns = document.querySelectorAll('.demo-tabs button[data-view]');
+  const views = { popup: document.getElementById('view-popup'), handbook: document.getElementById('view-handbook') };
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const view = this.dataset.view;
+      Object.keys(views).forEach(k => views[k].classList.toggle('active', k === view));
+      if (view === 'handbook') reopenPopup();
+    });
+  });
+  const backdrop = document.getElementById('popup-backdrop');
+  const popupCard = document.getElementById('popup-card');
+  const popupClosed = document.getElementById('popup-closed');
+  const dismissBtn = document.getElementById('btn-dismiss');
+  const dismissCheck = document.getElementById('dismiss-check');
+  const handbookBtn = document.getElementById('btn-handbook');
+  const startBtn = document.getElementById('btn-start');
+  const backBtn = document.getElementById('btn-back');
+  let isDismissed = false;
+  function closePopup(showClosedState) {
+    backdrop.style.display = 'none';
+    popupClosed.style.display = showClosedState ? 'flex' : 'none';
+  }
+  function reopenPopup() {
+    backdrop.style.display = 'flex';
+    popupClosed.style.display = 'none';
+    popupCard.style.animation = 'none';
+    requestAnimationFrame(function() { popupCard.style.animation = 'slideUp 0.4s ease'; });
+  }
+  dismissBtn.addEventListener('click', function() {
+    isDismissed = !isDismissed;
+    dismissCheck.classList.toggle('checked', isDismissed);
+  });
+  startBtn.addEventListener('click', function() {
+    closePopup(true);
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabBtns[0].classList.add('active');
+    Object.keys(views).forEach(k => views[k].classList.toggle('active', k === 'popup'));
+  });
+  handbookBtn.addEventListener('click', function() {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabBtns[1].classList.add('active');
+    Object.keys(views).forEach(k => views[k].classList.toggle('active', k === 'handbook'));
+  });
+  backBtn.addEventListener('click', function() {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabBtns[0].classList.add('active');
+    Object.keys(views).forEach(k => views[k].classList.toggle('active', k === 'popup'));
+  });
+  backdrop.addEventListener('click', function(e) {
+    if (e.target === backdrop) {
+      closePopup(true);
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabBtns[0].classList.add('active');
+      Object.keys(views).forEach(k => views[k].classList.toggle('active', k === 'popup'));
+    }
+  });
+  document.querySelectorAll('.canon-section-header[data-toggle]').forEach(function(header) {
+    header.addEventListener('click', function() {
+      var body = this.nextElementSibling;
+      var icon = this.querySelector('.collapse-icon');
+      body.classList.toggle('collapsed');
+      icon.classList.toggle('collapsed');
+    });
+  });
+  var filterBtns = document.querySelectorAll('#tl-filters .filter-btn');
+  function filterTimeline(filter) {
+    document.querySelectorAll('#tl-timeline .tl-item, #tl-cards .tl-item').forEach(function(item) {
+      item.classList.toggle('hidden', filter !== 'all' && item.dataset.type !== filter);
+    });
+  }
+  filterBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      filterBtns.forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      filterTimeline(this.dataset.filter);
+    });
+  });
+  var viewToggleBtn = document.getElementById('tl-view-card');
+  var tlTimeline = document.getElementById('tl-timeline');
+  var tlCards = document.getElementById('tl-cards');
+  var isCardView = false;
+  viewToggleBtn.addEventListener('click', function() {
+    isCardView = !isCardView;
+    tlTimeline.classList.toggle('hidden', isCardView);
+    tlCards.classList.toggle('hidden', !isCardView);
+    this.textContent = isCardView ? '时间线视图' : '卡片视图';
+    var ht = document.getElementById('timeline-view-toggle');
+    if (ht) ht.textContent = isCardView ? '时间线视图' : '切换视图';
+  });
+  var handbookToggle = document.getElementById('timeline-view-toggle');
+  if (handbookToggle) {
+    handbookToggle.addEventListener('click', function() { viewToggleBtn.click(); });
+  }
+})();
+</script>
+</body>
+</html>

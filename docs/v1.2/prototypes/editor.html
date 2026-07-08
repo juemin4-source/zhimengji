@@ -1,0 +1,470 @@
+﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.2 — 编辑器原型</title>
+<style>
+:root {
+  --bg-canvas: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-raised: #1e1e1e;
+  --bg-header: #0e0e0e;
+  --accent: #B7FF00;
+  --accent-hover: #c8ff33;
+  --accent-soft: rgba(183, 255, 0, 0.1);
+  --border-default: #2a2a2a;
+  --border-light: #333;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --canon-core: #FFB74D;
+  --canon-project: #90CAF9;
+  --canon-draft: #CE93D8;
+  --canon-none: #666;
+  --danger: #f44336;
+  --success: #4CAF50;
+  --warning: #FFC107;
+  --font-sans: -apple-system, "PingFang SC", sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.9375rem;line-height:1.6;color:var(--text-primary);background:var(--bg-canvas);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:0 0}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::selection{background:rgba(183,255,0,.25)}
+.nav-bar{height:44px;background:var(--bg-header);border-bottom:1px solid var(--border-default);display:flex;align-items:center;padding:0 16px;gap:12px;user-select:none}
+.nav-back{display:flex;align-items:center;gap:4px;color:var(--text-secondary);font-size:.8125rem;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
+.nav-back:hover{color:var(--text-primary);background:var(--bg-raised)}
+.nav-back svg{width:16px;height:16px}
+.nav-divider{width:1px;height:20px;background:var(--border-default);flex-shrink:0}
+.nav-project{font-size:.875rem;font-weight:600;color:var(--text-primary);flex-shrink:0}
+.nav-modes{display:flex;margin-left:auto;background:var(--bg-surface);border-radius:6px;padding:2px;border:1px solid var(--border-default)}
+.nav-mode-btn{padding:3px 14px;font-size:.75rem;border:none;background:0 0;color:var(--text-secondary);cursor:pointer;border-radius:4px;transition:all .15s;font-family:var(--font-sans);letter-spacing:.3px}
+.nav-mode-btn:hover{color:var(--text-primary)}
+.nav-mode-btn.active{background:var(--accent-soft);color:var(--accent);box-shadow:0 0 0 1px rgba(183,255,0,.2)}
+.nav-badges{display:flex;align-items:center;gap:8px;margin-left:12px}
+.nav-badge{display:flex;align-items:center;gap:4px;font-size:.75rem;padding:2px 8px;border-radius:4px;background:var(--bg-raised);border:1px solid var(--border-default);color:var(--text-secondary)}
+.nav-badge .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.toolbar{height:40px;background:var(--bg-surface);border-bottom:1px solid var(--border-default);display:flex;align-items:center;padding:0 12px;gap:2px;user-select:none}
+.toolbar-group{display:flex;align-items:center;gap:1px}
+.toolbar-divider{width:1px;height:20px;background:var(--border-default);margin:0 6px;flex-shrink:0}
+.toolbar-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:0 0;color:var(--text-secondary);cursor:pointer;border-radius:4px;font-size:.75rem;font-family:var(--font-sans);transition:all .12s}
+.toolbar-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
+.toolbar-btn .mono{font-family:var(--font-mono);font-size:.7rem}
+.toolbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.toolbar-badge{display:flex;align-items:center;gap:5px;font-size:.75rem;padding:2px 10px;border-radius:4px;background:var(--bg-raised);border:1px solid var(--border-default);color:var(--text-secondary)}
+.toolbar-badge .badge-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.toolbar-badge.clickable{cursor:pointer}
+.toolbar-badge.clickable:hover{border-color:var(--accent);color:var(--text-primary)}
+.main-layout{display:flex;height:calc(100vh - 112px)}
+.sidebar{width:220px;min-width:220px;background:var(--bg-surface);border-right:1px solid var(--border-default);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:10px 12px 8px;font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border-default)}
+.sidebar-search{position:relative;padding:8px 12px}
+.sidebar-search input{width:100%;padding:5px 8px 5px 28px;background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:4px;color:var(--text-primary);font-size:.8125rem;font-family:var(--font-sans);outline:none;transition:border-color .15s}
+.sidebar-search input:focus{border-color:var(--accent)}
+.sidebar-search input::placeholder{color:var(--text-muted)}
+.sidebar-search svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none}
+.sidebar-content{flex:1;overflow-y:auto;padding:4px 0}
+.outline-section{margin-bottom:2px}
+.outline-section-header{display:flex;align-items:center;gap:6px;padding:5px 12px;cursor:pointer;font-size:.75rem;font-weight:600;color:var(--text-secondary);transition:color .12s;user-select:none}
+.outline-section-header:hover{color:var(--text-primary)}
+.outline-section-header .collapse-icon{width:14px;height:14px;flex-shrink:0;transition:transform .15s;color:var(--text-muted)}
+.outline-section-header .collapse-icon.collapsed{transform:rotate(-90deg)}
+.outline-section-header .section-count{margin-left:auto;font-size:.6875rem;color:var(--text-muted);font-weight:400}
+.outline-items{transition:max-height .2s ease;overflow:hidden}
+.outline-items.collapsed{max-height:0!important}
+.outline-item{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 20px;cursor:pointer;transition:all .1s;border-left:3px solid transparent;user-select:none}
+.outline-item:hover{background:rgba(255,255,255,.03)}
+.outline-item.active{background:var(--accent-soft);border-left-color:var(--accent)!important}
+.outline-item.disabled{opacity:.45;cursor:default}
+.outline-item.disabled:hover{background:0 0}
+.outline-canon-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.outline-item-name{font-size:.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.outline-item .item-tag{margin-left:auto;font-size:.625rem;padding:1px 5px;border-radius:3px;background:var(--bg-raised);color:var(--text-muted);flex-shrink:0}
+.editor-area{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg-canvas);position:relative}
+.editor-scroll{flex:1;overflow-y:auto;padding:24px 32px}
+.editor-source{font-family:var(--font-mono);font-size:.875rem;line-height:1.7;white-space:pre-wrap;word-wrap:break-word;min-height:100%}
+.editor-source .md-line{display:block;min-height:1.7em}
+.editor-source .md-empty{display:block;height:1em}
+.md-syntax{color:#5f7a4a}
+.md-heading{display:block;font-weight:700;color:var(--text-primary);margin:.6em 0 .3em}
+.md-h1{font-size:1.6rem;line-height:1.3}
+.md-h2{font-size:1.3rem;line-height:1.35}
+.md-h3{font-size:1.1rem;line-height:1.4}
+.md-bold{font-weight:700;color:var(--text-primary)}
+.md-italic{font-style:italic;color:var(--text-primary)}
+.md-wikilink{color:var(--canon-project);text-decoration:underline;text-decoration-color:rgba(144,202,249,.3);text-underline-offset:2px;cursor:pointer;padding:0 1px;transition:background .12s}
+.md-wikilink:hover{background:rgba(144,202,249,.12)}
+.md-list-item{display:block;padding-left:.5em}
+.md-blockquote{display:block;border-left:3px solid #5f7a4a;padding:4px 12px;margin:8px 0;color:var(--text-secondary);background:rgba(95,122,74,.06);border-radius:0 4px 4px 0}
+.editor-preview{font-family:var(--font-sans);font-size:.9375rem;line-height:1.7;color:var(--text-primary);min-height:100%}
+.editor-preview h1{font-size:1.6rem;font-weight:700;margin:.8em 0 .3em}
+.editor-preview h2{font-size:1.3rem;font-weight:700;margin:.7em 0 .3em}
+.editor-preview h3{font-size:1.1rem;font-weight:600;margin:.6em 0 .2em}
+.editor-preview p{margin:.5em 0}
+.editor-preview strong{font-weight:700;color:#fff}
+.editor-preview em{font-style:italic}
+.editor-preview blockquote{border-left:3px solid var(--accent);padding:8px 16px;margin:12px 0;color:var(--text-secondary);background:rgba(183,255,0,.04);border-radius:0 4px 4px 0}
+.editor-preview ul{list-style:none;padding:0;margin:.5em 0}
+.editor-preview li{padding:2px 0 2px 1.2em;position:relative}
+.editor-preview li::before{content:"-";position:absolute;left:0;color:var(--accent);font-weight:700}
+.editor-preview .wiki-link{color:var(--canon-project);text-decoration:underline;text-decoration-color:rgba(144,202,249,.3);cursor:pointer;transition:background .12s}
+.editor-preview .wiki-link:hover{background:rgba(144,202,249,.12)}
+.editor-wysiwyg{font-family:var(--font-sans);font-size:.9375rem;line-height:1.7;color:var(--text-primary);min-height:100%;outline:none;cursor:text}
+.editor-wysiwyg h1{font-size:1.6rem;font-weight:700;margin:.8em 0 .3em}
+.editor-wysiwyg h2{font-size:1.3rem;font-weight:700;margin:.7em 0 .3em}
+.editor-wysiwyg h3{font-size:1.1rem;font-weight:600;margin:.6em 0 .2em}
+.editor-wysiwyg p{margin:.5em 0}
+.editor-wysiwyg strong{font-weight:700;color:#fff}
+.editor-wysiwyg em{font-style:italic}
+.editor-wysiwyg blockquote{border-left:3px solid var(--accent);padding:8px 16px;margin:12px 0;color:var(--text-secondary);background:rgba(183,255,0,.04);border-radius:0 4px 4px 0}
+.editor-wysiwyg ul{list-style:none;padding:0;margin:.5em 0}
+.editor-wysiwyg li{padding:2px 0 2px 1.2em;position:relative}
+.editor-wysiwyg li::before{content:"-";position:absolute;left:0;color:var(--accent);font-weight:700}
+.editor-mode-hidden{display:none!important}
+.inspector{width:280px;min-width:280px;background:var(--bg-surface);border-left:1px solid var(--border-default);display:flex;flex-direction:column;overflow:hidden}
+.inspector-header{padding:10px 14px 8px;font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-default)}
+.inspector-scroll{flex:1;overflow-y:auto;padding:12px 14px 20px}
+.inspector-section{margin-bottom:16px}
+.inspector-section-title{font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.inspector-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:.8125rem}
+.inspector-row .label{color:var(--text-muted);width:70px;flex-shrink:0}
+.inspector-row .value{color:var(--text-primary);display:flex;align-items:center;gap:5px}
+.inspector-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:3px;font-size:.75rem;background:var(--bg-raised);border:1px solid var(--border-default)}
+.inspector-badge.core{border-color:#FFB74D;color:#FFB74D}
+.inspector-badge.project{border-color:#90CAF9;color:#90CAF9}
+.inspector-badge.draft{border-color:#CE93D8;color:#CE93D8}
+.inspector-timestamp{font-size:.75rem;color:var(--text-muted);padding:3px 0}
+.inspector-timestamp span{color:var(--text-secondary)}
+.inspector-link-card{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:6px;cursor:pointer;transition:all .12s;margin-bottom:6px}
+.inspector-link-card:hover{border-color:var(--accent);background:var(--accent-soft)}
+.inspector-link-card .link-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8125rem;background:var(--bg-surface);flex-shrink:0}
+.inspector-link-card .link-info{flex:1;min-width:0}
+.inspector-link-card .link-name{font-size:.8125rem;font-weight:500;color:var(--text-primary)}
+.inspector-link-card .link-desc{font-size:.7rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inspector-link-card .link-type-tag{font-size:.625rem;padding:1px 6px;border-radius:3px;background:var(--bg-surface);color:var(--text-muted);border:1px solid #333}
+.judgment-timeline{position:relative;padding-left:16px}
+.judgment-timeline::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;width:1px;background:var(--border-default)}
+.judgment-item{position:relative;padding:5px 0 5px 16px;font-size:.75rem}
+.judgment-item::before{content:"";position:absolute;left:-12px;top:10px;width:7px;height:7px;border-radius:50%;background:#333;border:2px solid var(--bg-surface)}
+.judgment-item:first-child::before{background:var(--accent);box-shadow:0 0 0 2px rgba(183,255,0,.2)}
+.judgment-item .j-action{color:var(--text-primary);font-weight:500}
+.judgment-item .j-date{color:var(--text-muted);font-size:.6875rem;margin-top:1px}
+.status-bar{height:28px;background:var(--bg-header);border-top:1px solid var(--border-default);display:flex;align-items:center;padding:0 14px;font-size:.6875rem;color:var(--text-muted);user-select:none}
+.status-left{display:flex;align-items:center;gap:6px}
+.status-save{cursor:pointer;padding:1px 6px;border-radius:3px;transition:background .12s}
+.status-save:hover{background:var(--bg-raised)}
+.status-save.saved{color:var(--success)}
+.status-save.saving{color:var(--warning)}
+.status-save.unsaved{color:var(--danger)}
+.status-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.status-right .sep{color:var(--border-default)}
+.status-right .stat-value{color:var(--text-secondary)}
+.canon-popup{position:fixed;z-index:1000;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:6px;min-width:160px;display:none}
+.canon-popup.visible{display:block}
+.canon-option{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:4px;cursor:pointer;font-size:.8125rem;color:var(--text-primary);transition:background .1s}
+.canon-option:hover{background:var(--accent-soft)}
+.canon-option .co-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.canon-option.active{background:var(--accent-soft);color:var(--accent)}
+.custom-tooltip{position:fixed;z-index:999;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:10px 13px;min-width:180px;max-width:260px;pointer-events:none;display:none;font-family:var(--font-sans)}
+.custom-tooltip.visible{display:block}
+.custom-tooltip .tt-header{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.custom-tooltip .tt-name{font-size:.875rem;font-weight:600;color:var(--text-primary)}
+.custom-tooltip .tt-type{font-size:.6875rem;padding:1px 6px;border-radius:3px;background:var(--bg-surface);color:var(--text-muted);border:1px solid #333}
+.custom-tooltip .tt-status{display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--text-secondary);margin-bottom:4px}
+.custom-tooltip .tt-desc{font-size:.75rem;color:var(--text-muted);line-height:1.4}
+</style>
+</head>
+<body>
+<nav class="nav-bar">
+  <div class="nav-back" id="backBtn" title="返回书架">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>书架
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-project">觉醒纪元</div>
+  <div class="nav-modes">
+    <button class="nav-mode-btn active" data-mode="source">源码</button>
+    <button class="nav-mode-btn" data-mode="preview">预览</button>
+    <button class="nav-mode-btn" data-mode="wysiwyg">WYSIWYG</button>
+  </div>
+  <div class="nav-badges">
+    <span class="nav-badge">👤 人物</span>
+    <span class="nav-badge"><span class="dot" style="background:#FFB74D"></span>核心正典</span>
+  </div>
+</nav>
+<div class="toolbar">
+  <div class="toolbar-group">
+    <button class="toolbar-btn" title="标题1"><span class="mono">H1</span></button>
+    <button class="toolbar-btn" title="标题2"><span class="mono">H2</span></button>
+    <button class="toolbar-btn" title="标题3"><span class="mono">H3</span></button>
+  </div>
+  <div class="toolbar-divider"></div>
+  <div class="toolbar-group">
+    <button class="toolbar-btn" title="加粗"><strong>B</strong></button>
+    <button class="toolbar-btn" title="斜体"><em>I</em></button>
+    <button class="toolbar-btn" title="下划线"><span style="text-decoration:underline">U</span></button>
+    <button class="toolbar-btn" title="删除线"><span style="text-decoration:line-through">S</span></button>
+  </div>
+  <div class="toolbar-divider"></div>
+  <div class="toolbar-group">
+    <button class="toolbar-btn" title="引用">❝</button>
+    <button class="toolbar-btn" title="代码">&lt;/&gt;</button>
+    <button class="toolbar-btn" title="列表">≡</button>
+  </div>
+  <div class="toolbar-divider"></div>
+  <div class="toolbar-group">
+    <button class="toolbar-btn" title="插入链接">🔗</button>
+    <button class="toolbar-btn" title="插入图片">🖼</button>
+  </div>
+  <div class="toolbar-right">
+    <div class="toolbar-badge">👤 人物</div>
+    <div class="toolbar-badge clickable" id="canonBadge"><span class="badge-dot" style="background:#FFB74D"></span>核心正典</div>
+    <div class="toolbar-badge"><span class="badge-dot" style="background:#4CAF50"></span>活跃</div>
+  </div>
+</div>
+<div class="main-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header"><span>大纲</span><span id="outlineCount">5 项</span></div>
+    <div class="sidebar-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="搜索大纲..." autocomplete="off">
+    </div>
+    <div class="sidebar-content" id="outlineContainer"></div>
+  </aside>
+  <main class="editor-area">
+    <div class="editor-scroll" id="editorScroll">
+      <div class="editor-source" id="editorSource"></div>
+      <div class="editor-preview editor-mode-hidden" id="editorPreview"></div>
+      <div class="editor-wysiwyg editor-mode-hidden" id="editorWysiwyg" contenteditable="true"></div>
+    </div>
+  </main>
+  <aside class="inspector">
+    <div class="inspector-header">检查器</div>
+    <div class="inspector-scroll" id="inspectorContent"></div>
+  </aside>
+</div>
+<div class="status-bar">
+  <div class="status-left"><span class="status-save saved" id="saveIndicator">已保存 ✓</span></div>
+  <div class="status-right">
+    <span>字数: <span class="stat-value" id="wordCount">1,234</span></span><span class="sep">|</span>
+    <span>链接: <span class="stat-value" id="linkCount">12</span></span><span class="sep">|</span>
+    <span class="stat-value" style="color:#FFB74D">核心正典</span><span class="sep">|</span>
+    <span id="lastUpdate">刚刚更新</span>
+  </div>
+</div>
+<div class="canon-popup" id="canonPopup">
+  <div class="canon-option active" data-canon="core"><span class="co-dot" style="background:#FFB74D"></span>核心正典</div>
+  <div class="canon-option" data-canon="project"><span class="co-dot" style="background:#90CAF9"></span>项目正典</div>
+  <div class="canon-option" data-canon="draft"><span class="co-dot" style="background:#CE93D8"></span>草案</div>
+  <div class="canon-option" data-canon="none"><span class="co-dot" style="background:#666"></span>无</div>
+</div>
+<div class="custom-tooltip" id="tooltip">
+  <div class="tt-header"><span class="tt-name" id="ttName"></span><span class="tt-type" id="ttType"></span></div>
+  <div class="tt-status" id="ttStatus"><span class="badge-dot" style="width:6px;height:6px;border-radius:50%;display:inline-block"></span><span id="ttStatusText"></span></div>
+  <div class="tt-desc" id="ttDesc"></div>
+</div>
+<script>
+var CANON={core:{label:"核心正典",color:"#FFB74D",cls:"core"},project:{label:"项目正典",color:"#90CAF9",cls:"project"},draft:{label:"草案",color:"#CE93D8",cls:"draft"},none:{label:"无",color:"#666",cls:"none"}};
+var OBJECTS={};
+var OUTLINE=[{id:"discard",name:"废弃",items:["旧设定草案"],color:"#666",collapsed:false},{id:"draft",name:"草稿",items:["替换计划"],color:"#CE93D8",collapsed:false},{id:"body",name:"正文",items:["张三","李四"],color:null,collapsed:false},{id:"setting",name:"设定",items:["乐园机制"],color:null,collapsed:false}];
+var currentObj="张三",currentMode="source",saveState=0;OBJECTS["张三"]={type:"人物",typeIcon:"👤",canon:"core",status:"活跃",statusColor:"#4CAF50",created:"2026-06-24",updated:"2026-07-06",summary:"人造人，负责中央数据库日常运维，具有数据分析与记忆回溯能力。",links:[{name:"李四",type:"人物",desc:"搭档，负责外勤任务"},{name:"乐园机制",type:"设定",desc:"创造者，也是枷锁"}],judgments:[{action:"提升为核心正典",date:"2天前"},{action:"从草案升级为项目正典",date:"5天前"},{action:"创建对象",date:"2周前"}],content:"## 基本信息\n\n**姓名**：张三    **年龄**：28    **身份**：人造人\n\n**所属**：[[乐园机制]]  \n**状态**：活跃\n\n## 外貌\n\n高个子，黑色短发，瞳孔带有微弱荧光（人造人特征）。\n通常穿着深灰色制服，左臂有编号 **AX-7** 的烙印。\n\n## 能力\n\n- **数据分析**：可以实时处理大量信息流\n- **记忆回溯**：能够读取 72 小时内的短期记忆\n- **弱点**：体温低于常人，容易被检测出人造人身份\n\n## 背景\n\n张三是在 [[乐园机制]] 启动后第一批被激活的人造人之一。\n他的主要职责是维持 [[中央数据库]] 的日常运维。\n\n> \"我不是在活着，我只是在执行程序。\"\n> — 张三\n\n### 关键关系\n\n- **[[李四]]**：搭档，负责外勤任务\n- **[[乐园机制]]**：创造者，也是枷锁"};
+OBJECTS["李四"]={type:"人物",typeIcon:"👤",canon:"project",status:"活跃",statusColor:"#4CAF50",created:"2026-06-25",updated:"2026-07-05",summary:"外勤特工，擅长格斗与潜入，与张三搭档三年。",links:[{name:"张三",type:"人物",desc:"搭档，人造人"},{name:"乐园机制",type:"设定",desc:"上级机构"}],judgments:[{action:"升级为项目正典",date:"5天前"},{action:"从草案提升",date:"1周前"},{action:"创建对象",date:"2周前"}],content:"## 基本信息\n\n**姓名**：李四    **年龄**：32    **身份**：外勤特工\n\n**所属**：[[乐园机制]]  \n**状态**：活跃\n\n## 外貌\n\n中等身材，短发，常戴墨镜。\n通常穿着黑色便装，佩戴隐藏式通讯设备。\n\n## 能力\n\n- **格斗技巧**：高级近身格斗术\n- **潜入**：精通各种潜入和侦察技术\n- **弱点**：对 [[张三]] 有情感依赖，影响判断\n\n## 背景\n\n李四是 [[乐园机制]] 的外勤特工，负责实地调查和回收任务。\n他与 [[张三]] 搭档已有三年。\n\n> \"有时候我真希望他只是个普通人。\"\n> — 李四\n\n### 关键关系\n\n- **[[张三]]**：搭档，人造人\n- **[[乐园机制]]**：上级机构"};
+OBJECTS["乐园机制"]={type:"设定",typeIcon:"⚙️",canon:"core",status:"运行中",statusColor:"#4CAF50",created:"2026-06-20",updated:"2026-07-07",summary:"掌控地下设施的核心系统，负责人造人管理与任务分配。",links:[{name:"张三",type:"人物",desc:"人造人，系统运维员"},{name:"李四",type:"人物",desc:"外勤特工"}],judgments:[{action:"设定为核心正典",date:"1周前"},{action:"从草案升级",date:"2周前"},{action:"创建对象",date:"3周前"}],content:"## 基本信息\n\n**类型**：系统    **状态**：运行中\n\n## 概述\n\n乐园机制是掌控整个地下设施的核心系统。\n它负责管理所有人造人的激活、任务分配和回收。\n\n## 功能\n\n- **激活协议**：控制人造人的启动和休眠\n- **任务分配**：根据需求分配外勤和内部任务\n- **数据管理**：维护中央数据库\n- **回收程序**：处理失效或叛逃的人造人\n\n## 子系统\n\n- **中央数据库**：存储所有操作记录\n- **监控网络**：实时追踪所有特工位置\n- **维护单元**：负责人造人的硬件维护\n\n> \"系统就是系统。没有感情，没有偏差。\"\n> — 系统日志"};
+OBJECTS["替换计划"]={type:"事件",typeIcon:"📋",canon:"draft",status:"草案",statusColor:"#CE93D8",created:"2026-06-28",updated:"2026-07-01",summary:"针对乐园机制核心系统失效的应急预案（草案阶段）。",links:[{name:"乐园机制",type:"设定",desc:"预案目标系统"}],judgments:[{action:"创建草案",date:"1周前"}],content:"## 基本信息\n\n**状态**：草案    **类型**：事件\n\n## 概述\n\n替换计划是一项假设性的应急预案，\n针对 [[乐园机制]] 核心系统失效的情况。\n\n## 触发条件\n\n- 核心系统连续宕机超过 72 小时\n- 人造人集体失控\n- 外部入侵成功\n\n## 执行步骤（草案）\n\n待补充"};
+OBJECTS["旧设定草案"]={type:"设定",typeIcon:"📄",canon:"none",status:"废弃",statusColor:"#666",created:"2026-06-15",updated:"2026-06-22",summary:"早期世界观设定草案，已被新版取代。",links:[],judgments:[{action:"标记为废弃",date:"1周前"},{action:"创建初版设定",date:"3周前"}],content:"## 基本信息\n\n**状态**：废弃\n\n## 说明\n\n本设定为早期版本，已被新版取代。\n\n## 废弃原因\n\n与原设定冲突，且不符合当前世界观发展方向。"};
+
+function updateMode(m){currentMode=m;document.querySelectorAll(".nav-mode-btn").forEach(function(b){b.classList.toggle("active",b.dataset.mode===m)});document.getElementById("editorSource").classList.toggle("editor-mode-hidden",m!=="source");document.getElementById("editorPreview").classList.toggle("editor-mode-hidden",m!=="preview");document.getElementById("editorWysiwyg").classList.toggle("editor-mode-hidden",m!=="wysiwyg");var o=OBJECTS[currentObj];if(o){var c=CANON[o.canon];document.querySelector(".nav-badges").innerHTML="<span class='nav-badge'>"+o.typeIcon+" "+o.type+"</span><span class='nav-badge'><span class='dot' style='background:"+c.color+"'>"+c.label+"</span>"}}
+
+function renderOutline(){
+var c=document.getElementById("outlineContainer");
+var q=document.getElementById("searchInput").value.toLowerCase().trim();
+var n=0,h="";
+for(var s=0;s<OUTLINE.length;s++){
+var sec=OUTLINE[s];var its=[];
+for(var i=0;i<sec.items.length;i++){
+var nm=sec.items[i];
+if(!q||nm.toLowerCase().indexOf(q)!==-1){its.push(nm)}}
+if(its.length===0&&q)continue;n+=its.length;
+var cl=sec.collapsed?"collapsed":"";
+h+="<div class='outline-section' data-section='"+sec.id+"'>";
+h+="<div class='outline-section-header' data-section='"+sec.id+"'>";
+h+="<svg class='collapse-icon "+cl+"' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>";
+h+="<span>"+sec.name+"</span><span class='section-count'>"+its.length+"</span></div>";
+h+="<div class='outline-items "+cl+"' data-section='"+sec.id+"'>";
+for(var i=0;i<its.length;i++){
+var nm=its[i];var o=OBJECTS[nm];if(!o)continue;
+var cc=getCanonColor(nm);var ia=nm===currentObj;
+var dc=o.status==="废弃"?"disabled":"";
+var bc=sec.color?sec.color:(o.canon==="core"?CANON.core.color:(o.canon==="project"?CANON.project.color:(o.canon==="draft"?CANON.draft.color:CANON.none.color)));
+h+="<div class='outline-item "+(ia?"active ":"")+dc+"' data-name='"+nm+"' style='border-left-color:"+bc+"'>";
+h+="<span class='outline-canon-dot' style='background:"+cc+"'></span>";
+h+="<span class='outline-item-name'>"+o.typeIcon+" "+nm+"</span>";
+if(sec.color){h+="<span class='item-tag' style='color:"+sec.color+"'>"+sec.name+"</span>"}h+="</div>"}
+h+="</div></div>"}
+c.innerHTML=h;document.getElementById("outlineCount").textContent=n+" 项";
+c.querySelectorAll(".outline-section-header").forEach(function(h){
+h.addEventListener("click",function(){
+var id=h.dataset.section;
+for(var i=0;i<OUTLINE.length;i++){if(OUTLINE[i].id===id){OUTLINE[i].collapsed=!OUTLINE[i].collapsed;renderOutline();break}}
+})});
+c.querySelectorAll(".outline-item:not(.disabled)").forEach(function(it){
+it.addEventListener("click",function(){var nm=it.dataset.name;if(nm&&OBJECTS[nm])selectObject(nm)})});}
+function getCanonColor(n){return getCanonInfo(n).color}
+function renderInspector(){
+var o=OBJECTS[currentObj];var c=document.getElementById("inspectorContent");
+if(!o){c.innerHTML="<div style='padding:20px;text-align:center;color:var(--text-muted);font-size:.8125rem'>未选中对象</div>";return}
+var cn=CANON[o.canon]||CANON.none;var h="";
+h+="<div class='inspector-section'><div class='inspector-section-title'>基本信息</div>";
+h+="<div class='inspector-row'><span class='label'>类型</span><span class='value'>"+o.typeIcon+" "+o.type+"</span></div>";
+h+="<div class='inspector-row'><span class='label'>正典</span><span class='value'><span class='inspector-badge "+cn.cls+"'><span class='badge-dot' style='width:6px;height:6px;border-radius:50%;display:inline-block;background:"+cn.color+";margin-right:3px'></span>"+cn.label+"</span></span></div>";
+h+="<div class='inspector-row'><span class='label'>状态</span><span class='value'><span class='inspector-badge' style='border-color:"+o.statusColor+";color:"+o.statusColor+"'><span class='badge-dot' style='width:6px;height:6px;border-radius:50%;display:inline-block;background:"+o.statusColor+";margin-right:3px'></span>"+o.status+"</span></span></div>";
+h+="<div class='inspector-timestamp'>创建: <span>"+o.created+"</span></div>";
+h+="<div class='inspector-timestamp'>更新: <span>"+o.updated+"</span></div></div>";
+
+h+="<div class='inspector-section'><div class='inspector-section-title'>关联对象 ("+o.links.length+")</div>";
+for(var i=0;i<o.links.length;i++){var lk=o.links[i];var lo=OBJECTS[lk.name];
+var li=lo?lo.typeIcon:"📄";
+h+="<div class='inspector-link-card' data-link='"+lk.name+"'><div class='link-icon'>"+li+"</div>";
+h+="<div class='link-info'><div class='link-name'>"+lk.name+"</div><div class='link-desc'>"+lk.desc+"</div></div>";
+h+="<span class='link-type-tag'>"+lk.type+"</span></div>"}
+if(o.links.length===0){h+="<div style='color:var(--text-muted);font-size:.75rem;padding:4px 0'>暂无关联对象</div>"}
+h+="</div><div class='inspector-section'><div class='inspector-section-title'>判断记录</div><div class='judgment-timeline'>";
+for(var i=0;i<o.judgments.length;i++){var j=o.judgments[i];
+h+="<div class='judgment-item'><div class='j-action'>"+j.action+"</div><div class='j-date'>"+j.date+"</div></div>"}
+h+="</div></div>";c.innerHTML=h;
+c.querySelectorAll(".inspector-link-card").forEach(function(cd){
+cd.addEventListener("click",function(){var nm=cd.dataset.link;if(nm&&OBJECTS[nm])selectObject(nm)})})}
+
+function updateStatusBar(){var o=OBJECTS[currentObj];if(!o)return;
+var t=o.content.replace(/[#*\\[\\]>-]/g,"").trim();
+var w=t?t.split(/\\s+/).length:0;
+document.getElementById("wordCount").textContent=w.toLocaleString();
+var lm=o.content.match(/\\[\\[([^\\]]+)\\]\\]/g);
+var lc=lm?lm.length:0;document.getElementById("linkCount").textContent=lc;
+document.getElementById("lastUpdate").textContent="刚刚更新"}
+
+function selectObject(nm){
+if(currentObj===nm||!OBJECTS[nm])return;
+if(OBJECTS[nm].status==="废弃")return;
+currentObj=nm;updateEditor();renderOutline();renderInspector();
+var o=OBJECTS[nm];var cn=CANON[o.canon]||CANON.none;
+document.querySelector(".nav-badges").innerHTML="<span class='nav-badge'>"+o.typeIcon+" "+o.type+"</span><span class='nav-badge'><span class='dot' style='background:"+cn.color+"'>"+cn.label+"</span>";updateToolbarBadges();document.getElementById("editorScroll").scrollTop=0}
+
+function updateToolbarBadges(){
+var o=OBJECTS[currentObj];if(!o)return;
+var cn=CANON[o.canon]||CANON.none;
+document.querySelector(".toolbar-right").innerHTML="<div class='toolbar-badge'>"+o.typeIcon+" "+o.type+"</div><div class='toolbar-badge clickable' id='canonBadge'><span class='badge-dot' style='background:"+cn.color+"'>"+cn.label+"</div><div class='toolbar-badge'><span class='badge-dot' style='background:"+o.statusColor+"'>"+o.status+"</div>";
+document.getElementById("canonBadge").addEventListener("click",toggleCanonPopup)}
+
+function toggleCanonPopup(e){e.stopPropagation();
+var p=document.getElementById("canonPopup");
+var r=e.currentTarget.getBoundingClientRect();
+p.style.top=(r.bottom+4)+"px";p.style.left=r.left+"px";
+var v=p.classList.contains("visible");
+document.querySelectorAll(".canon-popup.visible").forEach(function(x){x.classList.remove("visible")});
+if(!v){p.classList.add("visible");
+var o=OBJECTS[currentObj];
+p.querySelectorAll(".canon-option").forEach(function(opt){opt.classList.toggle("active",opt.dataset.canon===o.canon)})}}
+
+var tooltipEl=document.getElementById("tooltip");var tooltipTimeout=null;
+function showTooltip(e,nm){var o=OBJECTS[nm];if(!o)return;
+document.getElementById("ttName").textContent=nm;
+document.getElementById("ttType").textContent=o.type;
+document.getElementById("ttStatusText").textContent=o.status;
+document.getElementById("ttStatus").querySelector(".badge-dot").style.background=o.statusColor;
+document.getElementById("ttDesc").textContent=o.summary;
+var r=e.target.getBoundingClientRect();
+tooltipEl.style.top=(r.bottom+8)+"px";
+tooltipEl.style.left=Math.min(r.left,window.innerWidth-280)+"px";
+tooltipEl.classList.add("visible")}
+function hideTooltip(){tooltipEl.classList.remove("visible")}
+
+function renderPreview(md){
+var L=md.split('\\n'),h='',inP=false,inL=false;
+function fP(){if(inP){h+='</p>';inP=false}}
+function fL(){if(inL){h+='</ul>';inL=false}}
+function ri(t){var r=escapeHtml(t);
+r=r.replace(/\[\[([^\]]+)\]\]/g,'<a class="wiki-link" data-link="$1">$1</a>');
+r=r.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+r=r.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g,'<em>$1</em>');return r}
+for(var i=0;i<L.length;i++){var l=L[i];
+if(l.startsWith('### ')){fP();fL();h+='<h3>'+ri(l.slice(4))+'</h3>'}else 
+if(l.startsWith('## ')){fP();fL();h+='<h2>'+ri(l.slice(3))+'</h2>'}else 
+if(l.startsWith('# ')){fP();fL();h+='<h1>'+ri(l.slice(2))+'</h1>'}else 
+if(l.startsWith('> ')){fP();fL();h+='<blockquote>'+ri(l.slice(2))+'</blockquote>'}else 
+if(l.startsWith('- ')){fP();if(!inL){h+='<ul>';inL=true}h+='<li>'+ri(l.slice(2))+'</li>'}else 
+if(l.trim()===''){fP();fL()}else{
+fL();if(!inP){h+='<p>';inP=true}else{h+='<br>'}h+=ri(l)}}
+fP();fL();return h}
+
+function cycleSave(){
+var el=document.getElementById('saveIndicator');
+saveState=(saveState+1)%3;
+if(saveState===0){el.className='status-save saved';el.textContent='已保存 ✓';
+setTimeout(function(){if(saveState===0){document.getElementById('lastUpdate').textContent='刚刚更新'}},500)}else 
+if(saveState===1){el.className='status-save saving';el.textContent='保存中... ⟳';
+setTimeout(function(){if(saveState===1){saveState=0;el.className='status-save saved';el.textContent='已保存 ✓';document.getElementById('lastUpdate').textContent='刚刚更新'}},1200)}else 
+{el.className='status-save unsaved';el.textContent='未保存 ●'}}
+
+document.getElementById('searchInput').addEventListener('input',function(){renderOutline()});
+document.querySelectorAll('.nav-mode-btn').forEach(function(b){
+b.addEventListener('click',function(){updateMode(b.dataset.mode)})});
+
+function init(){
+renderOutline();renderInspector();updateEditor();updateMode('source');
+document.getElementById('backBtn').addEventListener('click',function(){});
+document.getElementById('saveIndicator').addEventListener('click',cycleSave);
+document.getElementById('canonBadge').addEventListener('click',toggleCanonPopup);
+
+document.querySelectorAll('.canon-option').forEach(function(opt){
+opt.addEventListener('click',function(e){
+e.stopPropagation();var nc=opt.dataset.canon;var o=OBJECTS[currentObj];
+if(o){o.canon=nc;renderOutline();renderInspector();updateToolbarBadges();
+var cn=CANON[nc]||CANON.none;
+document.querySelector('.nav-badges').innerHTML='<span class='nav-badge'>'+o.typeIcon+' '+o.type+'</span><span class='nav-badge'><span class='dot' style='background:'+cn.color+''></span>'+cn.label+'</span>'}
+document.getElementById('canonPopup').classList.remove('visible')})});
+
+document.addEventListener('click',function(e){
+if(!e.target.closest('.canon-popup')&&!e.target.closest('#canonBadge')){
+document.getElementById('canonPopup').classList.remove('visible')}});
+document.addEventListener('mouseover',function(e){
+var w=e.target.closest('.md-wikilink,.wiki-link');
+if(w){clearTimeout(tooltipTimeout);var ln=w.dataset.link||w.textContent;
+tooltipTimeout=setTimeout(function(){showTooltip(e,ln)},300)}});
+document.addEventListener('mouseout',function(e){
+if(e.target.closest('.md-wikilink,.wiki-link,.custom-tooltip'))return;
+clearTimeout(tooltipTimeout);hideTooltip()});
+document.getElementById('editorScroll').addEventListener('scroll',hideTooltip);
+document.querySelectorAll('.toolbar-btn').forEach(function(b){
+b.addEventListener('click',function(){b.style.background='var(--accent-soft)';setTimeout(function(){b.style.background=''},150)})});
+}
+
+document.addEventListener('DOMContentLoaded',init);
+
+function escapeHtml(t){
+var m={amp:'&amp;',lt:'&lt;',gt:'&gt;',quot:'&quot;',apos:'&#039;'};
+return t.replace(/[&<>]/g,function(c){var r=m[c];return r===undefined?c:r})}
+
+function parseInline(t){
+var r=escapeHtml(t);
+r=r.replace(/\[\[([^\]]+)\]\]/g,'<span class="md-syntax">[[</span><span class="md-wikilink" data-link="$1">$1</span><span class="md-syntax">]]</span>');
+r=r.replace(/\*\*([^*]+)\*\*/g,'<span class="md-syntax">**</span><span class="md-bold">$1</span><span class="md-syntax">**</span>');
+r=r.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g,'<span class="md-syntax">*</span><span class="md-italic">$1</span><span class="md-syntax">*</span>');
+return r}
+
+function renderSource(md){
+var L=md.split('\\n'),h='';
+for(var i=0;i<L.length;i++){var l=L[i];
+if(l.startsWith('### ')){h+='<span class="md-line md-heading md-h3"><span class="md-syntax">### </span>'+parseInline(l.slice(4))+'</span>'}else 
+if(l.startsWith('## ')){h+='<span class="md-line md-heading md-h2"><span class="md-syntax">## </span>'+parseInline(l.slice(3))+'</span>'}else 
+if(l.startsWith('# ')){h+='<span class="md-line md-heading md-h1"><span class="md-syntax"># </span>'+parseInline(l.slice(2))+'</span>'}else 
+if(l.startsWith('> ')){h+='<span class="md-line md-blockquote"><span class="md-syntax">> </span>'+parseInline(l.slice(2))+'</span>'}else 
+if(l.startsWith('- ')){h+='<span class="md-line md-list-item"><span class="md-syntax">- </span>'+parseInline(l.slice(2))+'</span>'}else 
+if(l.trim()===''){h+='<span class="md-empty"></span>'}else 
+{h+='<span class="md-line">'+parseInline(l)+'</span>'}}return h}
+
+</script>
+</body>
+</html>

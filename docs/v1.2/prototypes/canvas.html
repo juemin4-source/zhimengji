@@ -1,0 +1,407 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织梦机 v1.2 — 画布</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg-canvas:#0a0a0a;--bg-surface:#141414;--bg-raised:#1e1e1e;--bg-header:#0e0e0e;--accent:#B7FF00;--accent-hover:#c8ff33;--accent-soft:rgba(183,255,0,0.1);--border-default:#2a2a2a;--text-primary:#e0e0e0;--text-secondary:#a0a0a0;--canon-core:#FFB74D;--canon-project:#90CAF9;--canon-draft:#CE93D8;--canon-none:#666;--danger:#f44336;--font:-apple-system,PingFang SC,"Microsoft YaHei",sans-serif;--fs:0.9375rem;--lh:1.6;--header-h:48px;--tool-w:48px;--pool-w:220px}
+html,body{height:100%;overflow:hidden;font-family:var(--font);font-size:var(--fs);line-height:var(--lh);color:var(--text-primary);background:var(--bg-canvas)}
+button{font-family:inherit;font-size:inherit;border:none;background:none;color:inherit;cursor:pointer;outline:none}
+button:focus-visible{outline:1px solid var(--accent)}
+input{font-family:inherit;font-size:0.8125rem}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-default);border-radius:2px}
+#app{display:flex;flex-direction:column;height:100vh}
+.top-header{height:var(--header-h);background:var(--bg-header);border-bottom:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;user-select:none}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-link{display:flex;align-items:center;gap:4px;font-size:0.8125rem;color:var(--text-secondary);padding:4px 8px;border-radius:4px;cursor:pointer;transition:color .15s,background .15s}
+.back-link:hover{color:var(--text-primary);background:var(--bg-raised)}
+.project-name{font-size:0.9375rem;font-weight:600;color:var(--text-primary)}
+.header-right{display:flex;align-items:center;gap:2px}
+.tab-btn{padding:6px 14px;font-size:0.8125rem;color:var(--text-secondary);border-radius:6px;transition:all .15s;position:relative}
+.tab-btn:hover{color:var(--text-primary);background:var(--bg-raised)}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active::after{content:"";position:absolute;bottom:-2px;left:8px;right:8px;height:2px;background:var(--accent);border-radius:1px}
+.main-layout{display:flex;flex:1;overflow:hidden;position:relative}
+.tool-panel{width:var(--tool-w);background:var(--bg-surface);border-right:1px solid var(--border-default);display:flex;flex-direction:column;align-items:center;padding:6px 0;flex-shrink:0;user-select:none;z-index:10}
+.tool-group{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tool-btn{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:1rem;transition:all .12s;position:relative;margin:1px 0}
+.tool-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
+.tool-btn.active{background:var(--accent-soft);color:var(--accent)}
+.tool-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tool-separator{width:28px;height:1px;background:var(--border-default);margin:6px 0}
+.tool-spacer{flex:1}
+.tool-group-bottom{display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:6px}
+[data-tooltip]{position:relative}
+[data-tooltip]::after{content:attr(data-tooltip);position:absolute;left:44px;top:50%;transform:translateY(-50%);background:var(--bg-raised);color:var(--text-primary);font-size:0.75rem;padding:3px 8px;border-radius:4px;border:1px solid var(--border-default);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:100}
+[data-tooltip]:hover::after{opacity:1}
+.canvas-viewport{flex:1;position:relative;overflow:hidden;background:var(--bg-canvas);cursor:grab}
+.canvas-viewport.panning{cursor:grabbing}
+.canvas-viewport.marquee-active{cursor:crosshair}
+.canvas-content{position:absolute;top:0;left:0;width:4000px;height:3000px;transform-origin:0 0;background-color:var(--bg-canvas);background-image:linear-gradient(to right,rgba(20,20,20,0.7) 1px,transparent 1px),linear-gradient(to bottom,rgba(20,20,20,0.7) 1px,transparent 1px),linear-gradient(to right,rgba(26,26,26,0.8) 1px,transparent 1px),linear-gradient(to bottom,rgba(26,26,26,0.8) 1px,transparent 1px);background-size:10px 10px,10px 10px,100px 100px,100px 100px;background-position:0 0;will-change:transform}
+.canvas-content *{pointer-events:auto}
+.connections-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.connections-svg line{stroke:var(--text-secondary);stroke-width:1.5}
+.connections-svg .conn-label{fill:var(--text-secondary);font-size:11px;font-family:var(--font)}
+.node-card{position:absolute;width:170px;background:var(--bg-surface);border-radius:8px;border:2px solid var(--canon-none);padding:0;cursor:pointer;transition:box-shadow .15s,border-color .15s;user-select:none;z-index:2;overflow:hidden}
+.node-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+.node-card.selected{box-shadow:0 0 0 2px var(--accent),0 4px 20px rgba(0,0,0,0.5)}
+.node-card.canon-core{border-color:var(--canon-core)}
+.node-card.canon-project{border-color:var(--canon-project)}
+.node-card.canon-draft{border-color:var(--canon-draft);border-style:dashed}
+.node-card-header{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}
+.node-card-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.875rem;flex-shrink:0}
+.node-card-icon.core{background:rgba(255,183,77,0.15)}
+.node-card-icon.project{background:rgba(144,202,249,0.15)}
+.node-card-icon.draft{background:rgba(206,147,216,0.15)}
+.node-card-name{font-size:0.875rem;font-weight:600;color:var(--text-primary);flex:1}
+.node-card-desc{padding:0 12px 8px;font-size:0.75rem;color:var(--text-secondary)}
+.node-card-footer{display:flex;align-items:center;gap:6px;padding:4px 12px 8px}
+.status-dot{width:6px;height:6px;border-radius:50%}
+.status-dot.active{background:#4CAF50;box-shadow:0 0 6px rgba(76,175,80,0.5)}
+.status-label{font-size:0.6875rem;color:var(--text-secondary)}
+.canon-badge{font-size:0.625rem;padding:1px 6px;border-radius:3px;border:1px solid currentColor;color:var(--canon-none);margin-left:auto}
+.canon-badge.core{color:var(--canon-core)}
+.canon-badge.project{color:var(--canon-project)}
+.canon-badge.draft{color:var(--canon-draft)}
+.marquee-rect{position:absolute;background:rgba(144,202,249,0.12);border:1.5px dashed #90CAF9;border-radius:2px;pointer-events:none;z-index:5}
+.zoom-controls{position:absolute;bottom:20px;right:20px;display:flex;align-items:center;gap:2px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:3px;z-index:20;user-select:none}
+.zoom-btn{width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.9375rem;transition:all .12s}
+.zoom-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
+.zoom-label{min-width:44px;text-align:center;font-size:0.75rem;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.zoom-fit-btn{font-size:0.8125rem}
+.pool-drawer{position:absolute;top:0;right:0;bottom:0;width:var(--pool-w);background:var(--bg-surface);border-left:1px solid var(--border-default);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;z-index:15;overflow:hidden}
+.pool-drawer.open{transform:translateX(0)}
+.pool-search{padding:10px 12px;border-bottom:1px solid var(--border-default)}
+.pool-search input{width:100%;padding:6px 10px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:6px;color:var(--text-primary);outline:none;transition:border-color .15s}
+.pool-search input:focus{border-color:var(--accent)}
+.pool-search input::placeholder{color:var(--text-secondary)}
+.pool-list{flex:1;overflow-y:auto;padding:8px 0}
+.pool-group{margin-bottom:4px}
+.pool-group-title{padding:6px 12px;font-size:0.6875rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
+.pool-item{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:grab;transition:background .12s;border-left:2px solid transparent}
+.pool-item:hover{background:var(--bg-raised)}
+.pool-item .grip{color:var(--border-default);font-size:0.75rem;flex-shrink:0}
+.pool-item .item-name{font-size:0.8125rem;color:var(--text-primary);flex:1}
+.pool-item .item-type{font-size:0.6875rem;color:var(--text-secondary)}
+.pool-item.core{border-left-color:var(--canon-core)}
+.pool-item.project{border-left-color:var(--canon-project)}
+.pool-item.draft{border-left-color:var(--canon-draft)}
+.timeline-view{flex:1;display:none;position:relative;overflow:hidden;background:var(--bg-canvas)}
+.timeline-view.active{display:flex;flex-direction:column}
+.timeline-header{padding:16px 24px;text-align:center;border-bottom:1px solid var(--border-default)}
+.timeline-title{font-size:0.8125rem;font-weight:600;color:var(--text-primary)}
+.timeline-subtitle{font-size:0.6875rem;color:var(--text-secondary);margin-top:2px}
+.timeline-body{flex:1;display:flex;overflow:hidden;position:relative}
+.timeline-track-area{flex:1;position:relative;overflow:hidden}
+.timeline-track{position:absolute;left:60px;right:60px;top:50%;transform:translateY(-50%);height:4px;background:var(--border-default);border-radius:2px}
+.timeline-year-marker{position:absolute;top:50%;transform:translateX(-50%);text-align:center}
+.timeline-year-marker .year-dot{width:10px;height:10px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--text-secondary);margin:0 auto 4px}
+.timeline-year-marker .year-label{font-size:0.6875rem;color:var(--text-secondary);margin-top:4px}
+.timeline-event-card{position:absolute;width:160px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.timeline-event-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,0.3)}
+.timeline-event-card .event-date{font-size:0.6875rem;color:var(--accent);margin-bottom:2px}
+.timeline-event-card .event-name{font-size:0.8125rem;font-weight:500;color:var(--text-primary)}
+.timeline-event-card .event-type{font-size:0.6875rem;color:var(--text-secondary);margin-top:6px;display:inline-block;padding:1px 6px;border-radius:3px;background:var(--bg-raised)}
+.timeline-sidebar{width:200px;border-left:1px solid var(--border-default);background:var(--bg-surface);display:flex;flex-direction:column;flex-shrink:0}
+.timeline-sidebar-title{padding:14px 16px 8px;font-size:0.75rem;font-weight:600;color:var(--text-secondary);border-bottom:1px solid var(--border-default)}
+.timeline-sidebar-list{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar-event{padding:10px 16px;cursor:grab;border-left:2px solid var(--border-default);margin:2px 0;transition:background .12s}
+.sidebar-event:hover{background:var(--bg-raised)}
+.sidebar-event .se-date{font-size:0.6875rem;color:var(--canon-none)}
+.sidebar-event .se-name{font-size:0.8125rem;color:var(--text-primary)}
+.canvas-hint{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:0.75rem;color:var(--canon-none);pointer-events:none;opacity:0.6}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top-header">
+    <div class="header-left">
+      <span class="back-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> 书架</span>
+      <span class="project-name">觉醒纪元</span>
+    </div>
+    <div class="header-right">
+      <button class="tab-btn active" data-tab="relation">关系图</button>
+      <button class="tab-btn" data-tab="timeline">时间线</button>
+      <button class="tab-btn" data-tab="deduction">推演图</button>
+    </div>
+  </header>
+  <div class="main-layout">
+    <div class="tool-panel">
+      <div class="tool-group">
+        <button class="tool-btn active" data-tool="select" data-tooltip="选择 (V)"><svg viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51z" stroke="currentColor" fill="none"/><path d="M13 13l6 6" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="marquee" data-tooltip="框选 (M)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="connect" data-tooltip="连线 (L)"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5" stroke="currentColor"/><polyline points="14 5 19 5 19 10" stroke="currentColor"/><polyline points="10 19 5 19 5 14" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="pool" data-tooltip="对象池 (P)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="template" data-tooltip="模板 (T)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor"/><polyline points="14 2 14 8 20 8" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="text" data-tooltip="文本 (X)"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7" stroke="currentColor"/><line x1="9" y1="20" x2="15" y2="20" stroke="currentColor"/><line x1="12" y1="4" x2="12" y2="20" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="sticky" data-tooltip="便签 (N)"><svg viewBox="0 0 24 24"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z" stroke="currentColor"/><polyline points="16 3 16 8 21 8" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="partition" data-tooltip="分区 (Z)"><svg viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor"/></svg></button>
+      </div>
+      <div class="tool-separator"></div>
+      <div class="tool-group">
+        <button class="tool-btn" data-tool="fit" data-tooltip="适应"><svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9" stroke="currentColor"/><polyline points="9 21 3 21 3 15" stroke="currentColor"/><line x1="21" y1="3" x2="14" y2="10" stroke="currentColor"/><line x1="3" y1="21" x2="10" y2="14" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="layout" data-tooltip="布局"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor"/></svg></button>
+      </div>
+      <div class="tool-spacer"></div>
+      <div class="tool-group-bottom">
+        <button class="tool-btn" data-tool="undo" data-tooltip="撤销 (Ctrl+Z)"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10" stroke="currentColor"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" stroke="currentColor"/></svg></button>
+        <button class="tool-btn" data-tool="redo" data-tooltip="重做 (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10" stroke="currentColor"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke="currentColor"/></svg></button>
+      </div>
+    </div>
+    <div class="canvas-viewport" id="canvasViewport">
+      <div class="canvas-content" id="canvasContent">
+        <svg class="connections-svg" id="connectionsSvg">
+          <line x1="330" y1="263" x2="420" y2="243" stroke="var(--text-secondary)" stroke-width="1.5"/>
+          <text x="375" y="248" class="conn-label" text-anchor="middle">搭档</text>
+          <line x1="245" y1="220" x2="360" y2="156" stroke="var(--text-secondary)" stroke-width="1.5"/>
+          <text x="302" y="183" class="conn-label" text-anchor="middle">受制于</text>
+          <line x1="245" y1="306" x2="210" y2="440" stroke="var(--text-secondary)" stroke-width="1.5"/>
+          <text x="218" y="378" class="conn-label" text-anchor="middle">运维</text>
+          <line x1="505" y1="286" x2="545" y2="420" stroke="var(--text-secondary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+          <text x="531" y="358" class="conn-label" text-anchor="middle">调查</text>
+          <line x1="590" y1="243" x2="680" y2="320" stroke="#f44336" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="635" y="276" class="conn-label" text-anchor="middle" fill="#f44336">冲突</text>
+        </svg>
+        <div class="node-card canon-core" data-node="zhangsan" style="left:160px;top:220px;" onclick="selectNode(this)">
+          <div class="node-card-header">
+            <div class="node-card-icon core">👤</div>
+            <span class="node-card-name">张三</span>
+            <span class="canon-badge core">元设定</span>
+          </div>
+          <div class="node-card-desc">人造人，AX-7 型</div>
+          <div class="node-card-footer">
+            <span class="status-dot active"></span>
+            <span class="status-label">活跃</span>
+            <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">人物</span>
+          </div>
+        </div>
+        <div class="node-card canon-project" data-node="lisi" style="left:420px;top:200px;" onclick="selectNode(this)">
+          <div class="node-card-header">
+            <div class="node-card-icon project">👤</div>
+            <span class="node-card-name">李四</span>
+            <span class="canon-badge project">设定</span>
+          </div>
+          <div class="node-card-desc">外勤特工，觉醒者</div>
+          <div class="node-card-footer">
+            <span class="status-dot active"></span>
+            <span class="status-label">活跃</span>
+            <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">人物</span>
+          </div>
+        </div>
+        <div class="node-card canon-core" data-node="paradise" style="left:270px;top:70px;" onclick="selectNode(this)">
+          <div class="node-card-header">
+            <div class="node-card-icon core">⚙️</div>
+            <span class="node-card-name">乐园机制</span>
+            <span class="canon-badge core">元设定</span>
+          </div>
+          <div class="node-card-desc">世界运行核心规则</div>
+          <div class="node-card-footer">
+            <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">规则</span>
+          </div>
+        </div>
+        <div class="node-card canon-draft" data-node="database" style="left:120px;top:440px;" onclick="selectNode(this)">
+          <div class="node-card-header">
+            <div class="node-card-icon draft">📍</div>
+            <span class="node-card-name">中央数据库</span>
+            <span class="canon-badge draft">草稿</span>
+          </div>
+          <div class="node-card-desc">地下 12 层 · 核心枢纽</div>
+          <div class="node-card-footer">
+            <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">地点</span>
+          </div>
+        </div>
+        <div class="node-card canon-project" data-node="org" style="left:450px;top:420px;" onclick="selectNode(this)">
+          <div class="node-card-header">
+            <div class="node-card-icon project">🏛️</div>
+            <span class="node-card-name">人造人组织</span>
+            <span class="canon-badge project">设定</span>
+          </div>
+          <div class="node-card-desc">秘密团体，暗处活动</div>
+          <div class="node-card-footer">
+            <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">组织</span>
+          </div>
+        </div>
+        <div class="node-card canon-project" data-node="zhaowu" style="left:680px;top:280px;" onclick="selectNode(this)">
+          <div class="node-card-header">
+            <div class="node-card-icon project">👤</div>
+            <span class="node-card-name">赵五</span>
+            <span class="canon-badge project">设定</span>
+          </div>
+          <div class="node-card-desc">敌对特工</div>
+          <div class="node-card-footer">
+            <span class="status-dot" style="background:var(--danger)"></span>
+            <span class="status-label">威胁</span>
+            <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">人物</span>
+          </div>
+        </div>
+        <div class="marquee-rect" id="marqueeDemo" style="left:380px;top:250px;width:240px;height:130px;display:none;"></div>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomOut" title="缩小">−</button>
+        <span class="zoom-label" id="zoomLabel">100%</span>
+        <button class="zoom-btn" id="zoomIn" title="放大">+</button>
+        <span class="zoom-btn zoom-fit-btn" id="zoomFit" title="适应画布">⊞</span>
+      </div>
+      <div class="canvas-hint">拖拽空白区域平移 · 滚轮缩放</div>
+    </div>
+    <div class="pool-drawer" id="poolDrawer">
+      <div class="pool-search">
+        <input type="text" placeholder="搜索节点..." id="poolSearch">
+      </div>
+      <div class="pool-list">
+        <div class="pool-group">
+          <div class="pool-group-title">人物</div>
+          <div class="pool-item core"><span class="grip">⠿</span><span class="item-name">张三</span><span class="item-type">元设定</span></div>
+          <div class="pool-item project"><span class="grip">⠿</span><span class="item-name">李四</span><span class="item-type">设定</span></div>
+          <div class="pool-item project"><span class="grip">⠿</span><span class="item-name">赵五</span><span class="item-type">设定</span></div>
+          <div class="pool-item draft"><span class="grip">⠿</span><span class="item-name">王六</span><span class="item-type">草稿</span></div>
+        </div>
+        <div class="pool-group">
+          <div class="pool-group-title">地点</div>
+          <div class="pool-item draft"><span class="grip">⠿</span><span class="item-name">中央数据库</span><span class="item-type">草稿</span></div>
+          <div class="pool-item project"><span class="grip">⠿</span><span class="item-name">乐园地表</span><span class="item-type">设定</span></div>
+        </div>
+        <div class="pool-group">
+          <div class="pool-group-title">组织</div>
+          <div class="pool-item project"><span class="grip">⠿</span><span class="item-name">人造人组织</span><span class="item-type">设定</span></div>
+        </div>
+        <div class="pool-group">
+          <div class="pool-group-title">规则</div>
+          <div class="pool-item core"><span class="grip">⠿</span><span class="item-name">乐园机制</span><span class="item-type">元设定</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-view" id="timelineView">
+      <div class="timeline-header">
+        <div class="timeline-title">觉醒纪元 · 时间线</div>
+        <div class="timeline-subtitle">纪元 001 — 012 年</div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-track-area">
+          <div class="timeline-track"></div>
+          <div class="timeline-year-marker" style="left:12%;top:50%;"><div class="year-dot"></div><div class="year-label">001年</div></div>
+          <div class="timeline-year-marker" style="left:30%;top:50%;"><div class="year-dot"></div><div class="year-label">003年</div></div>
+          <div class="timeline-year-marker" style="left:48%;top:50%;"><div class="year-dot"></div><div class="year-label">005年</div></div>
+          <div class="timeline-year-marker" style="left:66%;top:50%;"><div class="year-dot"></div><div class="year-label">008年</div></div>
+          <div class="timeline-year-marker" style="left:84%;top:50%;"><div class="year-dot"></div><div class="year-label">012年</div></div>
+          <div class="timeline-event-card" style="left:12%;top:50%;transform:translate(-50%,-100%) translateY(-24px);">
+            <div class="event-date">001年</div>
+            <div class="event-name">乐园机制启动</div>
+            <div class="event-type">核心事件</div>
+          </div>
+          <div class="timeline-event-card" style="left:30%;top:50%;transform:translate(-50%,0) translateY(24px);">
+            <div class="event-date">003年</div>
+            <div class="event-name">张三被激活</div>
+            <div class="event-type">角色登场</div>
+          </div>
+          <div class="timeline-event-card" style="left:48%;top:50%;transform:translate(-50%,-100%) translateY(-24px);">
+            <div class="event-date">005年</div>
+            <div class="event-name">李四加入</div>
+            <div class="event-type">角色登场</div>
+          </div>
+          <div class="timeline-event-card" style="left:66%;top:50%;transform:translate(-50%,0) translateY(24px);">
+            <div class="event-date">008年</div>
+            <div class="event-name">中央数据库事件</div>
+            <div class="event-type">核心事件</div>
+          </div>
+        </div>
+        <div class="timeline-sidebar">
+          <div class="timeline-sidebar-title">待排事件 (3)</div>
+          <div class="timeline-sidebar-list">
+            <div class="sidebar-event"><div class="se-date">未排期</div><div class="se-name">赵五登场</div></div>
+            <div class="sidebar-event"><div class="se-date">未排期</div><div class="se-name">人造人组织浮出水面</div></div>
+            <div class="sidebar-event"><div class="se-date">未排期</div><div class="se-name">乐园机制失控</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var zoom=100,panX=-60,panY=-40,isPanning=false,poolOpen=false;
+  var panStartX,panStartY,panStartOX,panStartOY;
+  var vp=document.getElementById('canvasViewport');
+  var ct=document.getElementById('canvasContent');
+  var pd=document.getElementById('poolDrawer');
+  var zl=document.getElementById('zoomLabel');
+  var md=document.getElementById('marqueeDemo');
+  function u(){
+    var s=zoom/100;
+    ct.style.transform='translate('+panX+'px,'+panY+'px) scale('+s+')';
+    var f=10/s,m=100/s;
+    ct.style.backgroundSize=f+'px '+f+'px,'+f+'px '+f+'px,'+m+'px '+m+'px,'+m+'px '+m+'px';
+    zl.textContent=Math.round(zoom)+'%';
+  }
+  function setTool(t){
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b){b.classList.toggle('active',b.dataset.tool===t);});
+    vp.classList.toggle('marquee-active',t==='marquee');
+    md.style.display=t==='marquee'?'block':'none';
+    if(t==='pool'){togglePool();document.querySelector('.tool-btn[data-tool="pool"]').classList.remove('active');}
+    if(t==='fit'){resetView();document.querySelector('.tool-btn[data-tool="fit"]').classList.remove('active');}
+    if(t==='layout'){autoLayout();document.querySelector('.tool-btn[data-tool="layout"]').classList.remove('active');}
+    if(t==='undo'||t==='redo'){document.querySelector('.tool-btn[data-tool="'+t+'"]').classList.remove('active');}
+  }
+  function setTab(t){
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===t);});
+    var cvp=document.querySelector('.canvas-viewport');
+    var tlv=document.getElementById('timelineView');
+    var dp=document.querySelector('.deduction-ph');
+    if(t==='timeline'){cvp.style.display='none';tlv.classList.add('active');pd.classList.remove('open');if(dp)dp.style.display='none';}
+    else if(t==='deduction'){
+      cvp.style.display='block';tlv.classList.remove('active');
+      if(!dp){dp=document.createElement('div');dp.className='deduction-ph';dp.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-canvas);z-index:50;gap:16px;';dp.innerHTML='<div style="font-size:2.5rem;opacity:0.3;">🔮</div><div style="font-size:1rem;color:var(--text-secondary);">推演图模式</div><div style="font-size:0.8125rem;color:var(--canon-none);">在画布上创建假设场景，推演剧情走向</div>';cvp.appendChild(dp);}
+      dp.style.display='flex';
+    }else{cvp.style.display='block';tlv.classList.remove('active');if(dp)dp.style.display='none';}
+  }
+  window.selectNode=function(el){
+    document.querySelectorAll('.node-card').forEach(function(n){n.classList.remove('selected');});
+    el.classList.add('selected');
+  };
+  function togglePool(){poolOpen=!poolOpen;pd.classList.toggle('open',poolOpen);}
+  function resetView(){zoom=100;panX=-60;panY=-40;u();}
+  function autoLayout(){
+    var ps=[{l:160,t:220},{l:420,t:200},{l:270,t:70},{l:120,t:440},{l:450,t:420},{l:680,t:280}];
+    document.querySelectorAll('.node-card').forEach(function(c,i){
+      if(i<ps.length){c.style.transition='left 0.6s ease,top 0.6s ease';c.style.left=ps[i].l+'px';c.style.top=ps[i].t+'px';setTimeout(function(){c.style.transition='';},700);}
+    });
+  }
+  vp.addEventListener('mousedown',function(e){
+    if(e.target.closest('.node-card')||e.target.closest('svg')||e.target.closest('.zoom-controls'))return;
+    isPanning=true;panStartX=e.clientX;panStartY=e.clientY;panStartOX=panX;panStartOY=panY;
+    vp.classList.add('panning');e.preventDefault();
+  });
+  document.addEventListener('mousemove',function(e){
+    if(!isPanning)return;
+    panX=panStartOX+(e.clientX-panStartX);panY=panStartOY+(e.clientY-panStartY);u();
+  });
+  document.addEventListener('mouseup',function(){if(isPanning){isPanning=false;vp.classList.remove('panning');}});
+  document.getElementById('zoomOut').addEventListener('click',function(){zoom=Math.max(25,zoom-25);u();});
+  document.getElementById('zoomIn').addEventListener('click',function(){zoom=Math.min(400,zoom+25);u();});
+  document.getElementById('zoomFit').addEventListener('click',resetView);
+  vp.addEventListener('wheel',function(e){
+    if(e.ctrlKey||e.metaKey){e.preventDefault();zoom=Math.max(25,Math.min(400,zoom+(e.deltaY>0?-25:25)));u();}
+  },{passive:false});
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b){b.addEventListener('click',function(){setTool(this.dataset.tool);});});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){setTab(this.dataset.tab);});});
+  pd.addEventListener('click',function(e){if(!poolOpen&&e.target===pd)togglePool();});
+  document.getElementById('poolSearch').addEventListener('input',function(){
+    var q=this.value.toLowerCase();
+    document.querySelectorAll('.pool-item').forEach(function(it){
+      var n=it.querySelector('.item-name').textContent.toLowerCase();
+      it.style.display=q===''||n.includes(q)?'flex':'none';
+    });
+    document.querySelectorAll('.pool-group').forEach(function(g){
+      var vs=Array.from(g.querySelectorAll('.pool-item')).filter(function(i){return i.style.display!=='none';});
+      g.style.display=vs.length>0||q===''?'block':'none';
+    });
+  });
+  u();
+})();
+</script>
+</body>
+</html>

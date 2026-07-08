@@ -503,6 +503,38 @@
   .card-menu-item.danger { color: var(--danger); }
   .card-menu-item.danger:hover { background: rgba(244,67,54,0.1); }
 
+  /* ===== Cover Edit Button (prominent, over gradient) ===== */
+  .cover-edit-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.85);
+    z-index: 5;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: rgba(0,0,0,0.45);
+    color: var(--accent);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+  }
+  .card:hover .cover-edit-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .cover-edit-btn:hover {
+    background: rgba(183,255,0,0.2);
+    box-shadow: 0 0 24px rgba(183,255,0,0.35);
+  }
+
   /* ===== Empty State ===== */
   .empty-state {
     display: none;
@@ -687,6 +719,7 @@
     <!-- Card 1: 觉醒纪元 — 科幻 / 草稿中 -->
     <div class="card" data-title="觉醒纪元" data-genre="科幻" data-status="草稿中" data-words="12430" data-created="2025-12-01" data-updated="2026-06-28">
       <div class="card-gradient grad-sci-fi"></div>
+      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色">&#x270F;</button>
       <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
       <div class="card-menu">
         <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
@@ -716,6 +749,7 @@
     <!-- Card 2: 星空彼岸 — 奇幻 / 构思中 -->
     <div class="card" data-title="星空彼岸" data-genre="奇幻" data-status="构思中" data-words="3800" data-created="2026-02-14" data-updated="2026-05-10">
       <div class="card-gradient grad-fantasy"></div>
+      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色">&#x270F;</button>
       <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
       <div class="card-menu">
         <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
@@ -743,6 +777,7 @@
     <!-- Card 3: 江湖行 — 武侠 / 修改中 -->
     <div class="card" data-title="江湖行" data-genre="武侠" data-status="修改中" data-words="28987" data-created="2025-08-20" data-updated="2026-07-05">
       <div class="card-gradient grad-wuxia"></div>
+      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色">&#x270F;</button>
       <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
       <div class="card-menu">
         <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
@@ -981,3 +1016,4 @@
 </script>
 </body>
 </html>
+

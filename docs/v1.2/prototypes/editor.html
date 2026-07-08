@@ -465,6 +465,17 @@ if(l.startsWith('- ')){h+='<span class="md-line md-list-item"><span class="md-sy
 if(l.trim()===''){h+='<span class="md-empty"></span>'}else 
 {h+='<span class="md-line">'+parseInline(l)+'</span>'}}return h}
 
+
+function updateEditor(){
+var o=OBJECTS[currentObj];
+if(!o){
+document.getElementById('editorSource').innerHTML='';
+document.getElementById('editorPreview').innerHTML='';
+document.getElementById('editorWysiwyg').innerHTML='';return}
+document.getElementById('editorSource').innerHTML=renderSource(o.content);
+document.getElementById('editorPreview').innerHTML=renderPreview(o.content);
+document.getElementById('editorWysiwyg').innerHTML=renderPreview(o.content);
+updateStatusBar()}
 </script>
 </body>
 </html>

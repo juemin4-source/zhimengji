@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -178,38 +178,7 @@
     border: 1px solid var(--border-default);
   }
   .modal-close:hover .tooltip { opacity: 1; }
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 14px 24px 0;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-  }
-  .step-dot { display: inline-flex; align-items: center; gap: 6px; }
-  .step-dot .circle {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    border: 2px solid var(--border-default);
-    background: transparent;
-    transition: all var(--transition-fast);
-    flex-shrink: 0;
-  }
-  .step-dot.active .circle { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 8px rgba(183, 255, 0, 0.35); }
-  .step-dot.done .circle { border-color: var(--accent); background: var(--accent); }
-  .step-dot .label { font-size: 0.7rem; color: var(--text-secondary); }
-  .step-dot.active .label { color: var(--accent); }
-  .step-connector { width: 28px; height: 1px; background: var(--border-default); position: relative; }
-  .step-connector::after { content: ''; position: absolute; left: 0; top: 0; height: 1px; background: var(--accent); width: 0; transition: width var(--transition-fast); }
-  .step-connector.done::after { width: 100%; }
   .modal-body { padding: 20px 24px 24px; }
-  .step-panel { display: none; animation: fadeSlideIn 0.3s ease; }
-  .step-panel.active { display: block; }
-  @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
   .form-group { margin-bottom: 18px; }
   .form-group label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
   .input-field {
@@ -226,7 +195,7 @@
   .input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   .select-wrapper { position: relative; }
   .select-wrapper::after {
-    content: '▾';
+    content: '\25BE';
     position: absolute; right: 12px; top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
@@ -272,7 +241,7 @@
   .template-card.selected {
     border-color: var(--accent);
     background: var(--accent-soft);
-    box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(183, 255, 0, 0.08);
+    box-shadow: 0 0 0 1.5px var(--accent), 0 0 24px rgba(183, 255, 0, 0.18);
     transform: translateY(-1px);
   }
   .template-card .icon { font-size: 1.6rem; margin-bottom: 6px; line-height: 1.2; }
@@ -334,18 +303,6 @@
   .btn-primary { background: var(--accent); border-color: var(--accent); color: #0a0a0a; font-weight: 600; }
   .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 0 16px rgba(183, 255, 0, 0.2); }
   .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-  .confirm-card { background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
-  .confirm-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(42, 42, 42, 0.6); }
-  .confirm-row:last-child { border-bottom: none; }
-  .confirm-row .clabel { font-size: 0.78rem; color: var(--text-secondary); }
-  .confirm-row .cvalue { font-size: 0.85rem; font-weight: 500; text-align: right; }
-  .confirm-template-preview { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-default); }
-  .confirm-template-preview .ctp-title { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 6px; }
-  .confirm-template-preview .ctp-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
-  .confirm-template-preview .ctp-list li { font-size: 0.72rem; padding: 3px 10px; background: var(--accent-soft); border: 1px solid rgba(183, 255, 0, 0.15); border-radius: 4px; color: var(--text-secondary); }
-  .step2-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-  .btn-ghost { background: transparent; border: none; color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; padding: 6px 8px; transition: color var(--transition-fast); font-family: var(--font-sans); }
-  .btn-ghost:hover { color: var(--text-primary); }
   .toast {
     position: fixed; bottom: 40px; left: 50%;
     transform: translateX(-50%) translateY(20px);
@@ -394,110 +351,72 @@
         <span class="tooltip">Ctrl+click 跳过向导</span>
       </button>
     </div>
-    <div class="step-indicator">
-      <span class="step-dot active" id="step1Dot">
-        <span class="circle"></span>
-        <span class="label">Step 1</span>
-      </span>
-      <span class="step-connector" id="stepConnector"></span>
-      <span class="step-dot" id="step2Dot">
-        <span class="circle"></span>
-        <span class="label">Step 2</span>
-      </span>
-    </div>
     <div class="modal-body">
-      <div class="step-panel active" id="step1Panel">
-        <div class="form-group">
-          <label for="projectName">作品名</label>
-          <input type="text" class="input-field" id="projectName" placeholder="输入作品名称…" autofocus maxlength="40">
-          <div class="validation-hint" id="nameHint">至少 1 个字符</div>
+      <div class="form-group">
+        <label for="projectName">作品名</label>
+        <input type="text" class="input-field" id="projectName" placeholder="输入作品名称…" autofocus maxlength="40">
+        <div class="validation-hint" id="nameHint">至少 1 个字符</div>
+      </div>
+      <div class="form-group">
+        <label for="genreSelect">体裁</label>
+        <div class="select-wrapper">
+          <select class="select-field" id="genreSelect">
+            <option value="科幻">科幻</option>
+            <option value="奇幻">奇幻</option>
+            <option value="武侠">武侠</option>
+            <option value="悬疑">悬疑</option>
+            <option value="言情">言情</option>
+            <option value="历史">历史</option>
+            <option value="都市">都市</option>
+            <option value="末世">末世</option>
+            <option value="恐怖">恐怖</option>
+            <option value="其他" selected>其他</option>
+          </select>
         </div>
-        <div class="form-group">
-          <label for="genreSelect">体裁</label>
-          <div class="select-wrapper">
-            <select class="select-field" id="genreSelect">
-              <option value="科幻">科幻</option>
-              <option value="奇幻">奇幻</option>
-              <option value="武侠">武侠</option>
-              <option value="悬疑">悬疑</option>
-              <option value="言情">言情</option>
-              <option value="历史">历史</option>
-              <option value="都市">都市</option>
-              <option value="末世">末世</option>
-              <option value="恐怖">恐怖</option>
-              <option value="其他" selected>其他</option>
-            </select>
-          </div>
-          <div class="genre-preview" id="genrePreview"></div>
+        <div class="genre-preview" id="genrePreview"></div>
+      </div>
+      <div class="template-divider">或选择初始模板</div>
+      <div class="template-grid">
+        <div class="template-card" data-template="blank" data-name="从零开始">
+          <span class="check-mark">✓</span>
+          <div class="icon">🌱</div>
+          <div class="tname">从零开始</div>
+          <div class="tdesc">一步步搭建你的世界，适合第一次使用</div>
         </div>
-        <div class="template-divider">或选择初始模板</div>
-        <div class="template-grid">
-          <div class="template-card" data-template="blank" data-name="空白建立">
-            <span class="check-mark">&#10003;</span>
-            <div class="icon">&#x1F3D7;</div>
-            <div class="tname">空白建立</div>
-            <div class="tdesc">纯手工打造</div>
-          </div>
-          <div class="template-card" data-template="scifi" data-name="科幻模板">
-            <span class="check-mark">&#10003;</span>
-            <div class="icon">&#x1F680;</div>
-            <div class="tname">科幻模板</div>
-            <div class="tdesc">含世界观·主要科技·关键组织预设</div>
-          </div>
-          <div class="template-card" data-template="fantasy" data-name="奇幻模板">
-            <span class="check-mark">&#10003;</span>
-            <div class="icon">&#x1F9D9;</div>
-            <div class="tname">奇幻模板</div>
-            <div class="tdesc">含世界观·种族·魔法体系·关键组织预设</div>
-          </div>
+        <div class="template-card" data-template="quick" data-name="快速起稿">
+          <span class="check-mark">✓</span>
+          <div class="icon">✏</div>
+          <div class="tname">快速起稿</div>
+          <div class="tdesc">预设分类和标签框架，内容你自己填</div>
         </div>
-        <div class="preview-panel" id="previewPanel">
-          <div class="p-title">模板预览</div>
-          <div class="preview-empty" id="previewEmpty">未选择模板</div>
-          <ul class="preview-list" id="previewList" style="display:none;"></ul>
-        </div>
-        <div class="hint-area"><kbd>Ctrl</kbd> + click「新建作品」跳过向导</div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" id="cancelBtn">取消</button>
-          <button class="btn btn-primary" id="nextBtn" disabled>开始创作</button>
+        <div class="template-card" data-template="empty" data-name="空白画布">
+          <span class="check-mark">✓</span>
+          <div class="icon">⬜</div>
+          <div class="tname">空白画布</div>
+          <div class="tdesc">没有任何预设，完全自由创作</div>
         </div>
       </div>
-      <div class="step-panel" id="step2Panel">
-        <div class="confirm-card">
-          <div class="confirm-row"><span class="clabel">作品名</span><span class="cvalue" id="confirmName">—</span></div>
-          <div class="confirm-row"><span class="clabel">体裁</span><span class="cvalue" id="confirmGenre">—</span></div>
-          <div class="confirm-row"><span class="clabel">模板</span><span class="cvalue" id="confirmTemplate">—</span></div>
-          <div class="confirm-template-preview" id="confirmPreviewSection" style="display:none;">
-            <div class="ctp-title">模板将创建以下条目</div>
-            <ul class="ctp-list" id="confirmPreviewList"></ul>
-          </div>
-        </div>
-        <div class="step2-actions">
-          <button class="btn-ghost" id="backBtn">&#x2190; 返回修改</button>
-          <div>
-            <button class="btn btn-secondary" id="cancelBtn2">取消</button>
-            <button class="btn btn-primary" id="createBtn">开始创作</button>
-          </div>
-        </div>
+      <div class="preview-panel" id="previewPanel">
+        <div class="p-title">模板预览</div>
+        <div class="preview-empty" id="previewEmpty">未选择模板</div>
+        <ul class="preview-list" id="previewList" style="display:none;"></ul>
+      </div>
+      <div class="hint-area"><kbd>Ctrl</kbd> + click「新建作品」跳过向导</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelBtn">取消</button>
+        <button class="btn btn-primary" id="createBtn" disabled>开始创作</button>
       </div>
     </div>
   </div>
 </div>
-<div class="toast" id="toast">&#x1F389; 项目已创建！</div>
+<div class="toast" id="toast">🎉 项目已创建！</div>
 <script>
 (function() {
   'use strict';
   var overlay = document.getElementById('modalOverlay');
   var closeBtn = document.getElementById('closeBtn');
-  var cancelBtns = [document.getElementById('cancelBtn'), document.getElementById('cancelBtn2')];
-  var nextBtn = document.getElementById('nextBtn');
+  var cancelBtn = document.getElementById('cancelBtn');
   var createBtn = document.getElementById('createBtn');
-  var backBtn = document.getElementById('backBtn');
-  var step1Panel = document.getElementById('step1Panel');
-  var step2Panel = document.getElementById('step2Panel');
-  var step1Dot = document.getElementById('step1Dot');
-  var step2Dot = document.getElementById('step2Dot');
-  var stepConnector = document.getElementById('stepConnector');
   var projectName = document.getElementById('projectName');
   var genreSelect = document.getElementById('genreSelect');
   var genrePreview = document.getElementById('genrePreview');
@@ -506,18 +425,12 @@
   var previewPanel = document.getElementById('previewPanel');
   var previewEmpty = document.getElementById('previewEmpty');
   var previewList = document.getElementById('previewList');
-  var confirmName = document.getElementById('confirmName');
-  var confirmGenre = document.getElementById('confirmGenre');
-  var confirmTemplate = document.getElementById('confirmTemplate');
-  var confirmPreviewSection = document.getElementById('confirmPreviewSection');
-  var confirmPreviewList = document.getElementById('confirmPreviewList');
   var toast = document.getElementById('toast');
   var selectedTemplate = null;
-  var currentStep = 1;
   var templatePresets = {
-    blank: { name: '空白建立', items: [] },
-    scifi: { name: '科幻模板', items: ['世界观', '主要科技', '关键组织'] },
-    fantasy: { name: '奇幻模板', items: ['世界观', '种族', '魔法体系', '关键组织'] }
+    blank: { name: '从零开始', items: ['世界观核心', '主角', '关键地点'] },
+    quick: { name: '快速起稿', items: ['默认分类体系', '标签集', '正典等级'] },
+    empty: { name: '空白画布', items: [] }
   };
   var genreGradients = {
     '科幻': 'linear-gradient(90deg, #6366f1, #8b5cf6)',
@@ -536,16 +449,16 @@
     genrePreview.style.background = genreGradients[g] || genreGradients['其他'];
   }
   updateGenrePreview();
-  function validateStep1() {
+  function validateForm() {
     var valid = projectName.value.trim().length > 0;
     if (valid) { nameHint.textContent = '名称有效'; nameHint.className = 'validation-hint'; }
     else { nameHint.textContent = '请输入作品名称'; nameHint.className = 'validation-hint error'; }
-    nextBtn.disabled = !valid;
+    createBtn.disabled = !valid;
     return valid;
   }
   projectName.addEventListener('input', function() {
     if (this.value.length > 40) this.value = this.value.slice(0, 40);
-    validateStep1();
+    validateForm();
   });
   genreSelect.addEventListener('change', updateGenrePreview);
   templateCards.forEach(function(card) {
@@ -558,7 +471,7 @@
       if (c.dataset.template === tpl) c.classList.add('selected');
     });
     updatePreview();
-    validateStep1();
+    validateForm();
   }
   function updatePreview() {
     var preset = selectedTemplate ? templatePresets[selectedTemplate] : null;
@@ -574,7 +487,7 @@
     previewList.innerHTML = '';
     if (preset.items.length === 0) {
       var li = document.createElement('li');
-      li.textContent = '将创建一个空白项目';
+      li.textContent = '无预设内容';
       previewList.appendChild(li);
     } else {
       preset.items.forEach(function(item) {
@@ -584,45 +497,6 @@
       });
     }
   }
-  function goToStep(step) {
-    currentStep = step;
-    if (step === 1) {
-      step1Panel.classList.add('active');
-      step2Panel.classList.remove('active');
-      step1Dot.className = 'step-dot active';
-      step2Dot.className = 'step-dot';
-      stepConnector.className = 'step-connector';
-      setTimeout(function() { projectName.focus(); }, 100);
-    } else {
-      step1Panel.classList.remove('active');
-      step2Panel.classList.add('active');
-      step1Dot.className = 'step-dot done';
-      step2Dot.className = 'step-dot active';
-      stepConnector.className = 'step-connector done';
-      var name = projectName.value.trim();
-      var genre = genreSelect.value;
-      var preset = selectedTemplate ? templatePresets[selectedTemplate] : null;
-      confirmName.textContent = name;
-      confirmGenre.textContent = genre;
-      confirmTemplate.textContent = preset ? preset.name : '空白建立';
-      if (preset && preset.items.length > 0) {
-        confirmPreviewSection.style.display = 'block';
-        confirmPreviewList.innerHTML = '';
-        preset.items.forEach(function(item) {
-          var li = document.createElement('li');
-          li.textContent = item;
-          confirmPreviewList.appendChild(li);
-        });
-      } else {
-        confirmPreviewSection.style.display = 'none';
-      }
-    }
-  }
-  nextBtn.addEventListener('click', function() { if (!this.disabled) goToStep(2); });
-  projectName.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); if (validateStep1()) goToStep(2); }
-  });
-  backBtn.addEventListener('click', function() { goToStep(1); });
   function closeModal() {
     overlay.classList.remove('active');
     setTimeout(function() {
@@ -636,11 +510,10 @@
       nameHint.className = 'validation-hint';
       genreSelect.value = '其他';
       updateGenrePreview();
-      nextBtn.disabled = true;
-      goToStep(1);
+      createBtn.disabled = true;
     }, 300);
   }
-  cancelBtns.forEach(function(b) { b.addEventListener('click', closeModal); });
+  cancelBtn.addEventListener('click', closeModal);
   closeBtn.addEventListener('click', function(e) {
     if (e.ctrlKey) { showToast('已跳过向导，将创建空白项目'); closeModal(); return; }
     closeModal();

@@ -1,2 +1,0 @@
-﻿
-function escapeHtml(t){var m={amp:"&amp;",lt:"&lt;",gt:"&gt;",quot:"&quot;",apos:"&#039;"};return t.replace(/[&<>""']/g,function(c){return m[c]})}

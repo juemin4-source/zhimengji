@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import type { WorldObject } from '../types/world';
-import { STATUS_DISPLAY, CANON_LEVELS } from '../types/world';
+import { STATUS_DISPLAY, CANON_LEVELS, CANON_COLORS } from '../types/world';
 
 interface InspectorProps {
   object: WorldObject | null;
@@ -10,7 +10,6 @@ interface InspectorProps {
   onAction: (action: string, objectId: string, extra?: string) => void;
 }
 
-// ── Reason Dialog (AC4) ──
 function ReasonDialog({
   actionName, objectName, onConfirm, onCancel,
 }: {
@@ -21,40 +20,23 @@ function ReasonDialog({
 }) {
   const [reason, setReason] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
+  useEffect(() => { inputRef.current?.focus(); }, []);
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') onCancel();
     if (e.key === 'Enter' && reason.trim()) onConfirm(reason.trim());
   };
-
   return (
     <div className="dialog-overlay" onClick={onCancel}>
       <div className="dialog-box" onClick={e => e.stopPropagation()}>
         <h4>{actionName}「{objectName}」</h4>
         <p style={{ fontSize: 13, color: '#888', margin: '4px 0 12px' }}>请填写操作原因：</p>
-        <input
-          ref={inputRef}
-          type="text"
-          value={reason}
-          onChange={e => setReason(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="输入原因..."
-          className="dialog-input"
-        />
+        <input ref={inputRef} type="text" value={reason} onChange={e => setReason(e.target.value)}
+          onKeyDown={handleKeyDown} placeholder="输入原因..." className="dialog-input" />
         <div className="dialog-actions">
           <button className="ia-btn" onClick={onCancel}>取消</button>
-          <button
-            className="ia-btn"
+          <button className="ia-btn"
             style={{ background: actionName === '废弃' ? '#B71C1C' : '#1B5E20', opacity: reason.trim() ? 1 : 0.5 }}
-            disabled={!reason.trim()}
-            onClick={() => onConfirm(reason.trim())}
-          >
-            确认{actionName}
-          </button>
+            disabled={!reason.trim()} onClick={() => onConfirm(reason.trim())}>确认{actionName}</button>
         </div>
       </div>
     </div>
@@ -64,8 +46,6 @@ function ReasonDialog({
 export default function Inspector({ object, allObjects, allBoardTabs, onNavigate, onAction }: InspectorProps) {
   const [showBoardMenu, setShowBoardMenu] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
-
-  // ── AC4: reason dialog state ──
   const [pendingAction, setPendingAction] = useState<{ action: string; label: string } | null>(null);
 
   useEffect(() => {
@@ -81,7 +61,6 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
     allObjects.forEach(o => o.selectedBoards.forEach(b => allBoards.add(b)));
     const totalSettings = allObjects.filter(o => o.canonLevel !== '未收录').length;
     const totalJudgments = allObjects.reduce((sum, o) => sum + o.judgmentHistory.length, 0);
-
     return (
       <div className="inspector-panel inspector-empty">
         <h3>项目总览</h3>
@@ -102,7 +81,6 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
   const isDiscarded = object.status === '废弃';
   const isUncollected = object.canonLevel === '未收录';
   const allBoardsCovered = allBoardTabs.length > 0 && allBoardTabs.every(b => object.selectedBoards.includes(b));
-
   const handleLockClick = () => setPendingAction({ action: '锁定', label: '锁定' });
   const handleDiscardClick = () => setPendingAction({ action: '废弃', label: '废弃' });
   const handleUnlockClick = () => setPendingAction({ action: '解锁', label: '解锁' });
@@ -111,21 +89,26 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
     <div className="inspector-panel">
       <h3 style={{ borderBottom: `2px solid ${sd.border.split(' ')[1]}`, paddingBottom: 8 }}>{object.name}</h3>
 
-      <div className="inspector-actions">
-        <button className="ia-btn" disabled={!isUncollected} onClick={() => onAction('收录为设定', object.id)} title={isUncollected ? '将对象收录为设定（正典等级提升为草案正典）' : '已收录为设定'}>收录为设定</button>
+      <div className="inspector-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 0 12px', borderBottom: '1px solid #222', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button className="ia-btn" disabled={!isUncollected} onClick={() => onAction('收录为设定', object.id)}
+            title={isUncollected ? '将对象收录为设定（正典等级提升为草案正典）' : '已收录为设定'}>收录为设定</button>
+          <span style={{ fontSize: 13, cursor: 'help', color: '#888' }}
+            title="正典等级：未收录(灰色) → 草案正典(紫色) → 项目正典(蓝色) → 核心正典(金色)">ⓘ</span>
+        </div>
         <div className="ia-btn-wrapper" ref={boardRef}>
           <button className="ia-btn" disabled={allBoardsCovered || allBoardTabs.length === 0} onClick={() => setShowBoardMenu(v => !v)} title="放入画板">放入画板</button>
           {showBoardMenu && !allBoardsCovered && (
             <div className="ia-board-menu">
               {allBoardTabs.map(board => (
-                <div key={board} className={`ia-board-item${object.selectedBoards.includes(board) ? ' checked' : ''}`} onClick={() => { onAction('放入画板', object.id, board); setShowBoardMenu(false); }}>
+                <div key={board} className={`ia-board-item${object.selectedBoards.includes(board) ? ' checked' : ''}`}
+                  onClick={() => { onAction('放入画板', object.id, board); setShowBoardMenu(false); }}>
                   {object.selectedBoards.includes(board) ? '✓ ' : ''}{board}
                 </div>
               ))}
             </div>
           )}
         </div>
-        {/* AC2: Unlock button for locked objects */}
         {isLocked ? (
           <button className="ia-btn" onClick={handleUnlockClick} title="解锁回退到待验证">解锁</button>
         ) : (
@@ -149,7 +132,7 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
           {CANON_LEVELS.indexOf(object.canonLevel) >= 0 ? (
             <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: 3,
               background: object.canonLevel === '核心正典' ? '#3E2723' : object.canonLevel === '项目正典' ? '#1A237E' : object.canonLevel === '草案正典' ? '#4A148C' : '#333',
-              color: object.canonLevel === '核心正典' ? '#FFB74D' : object.canonLevel === '项目正典' ? '#90CAF9' : object.canonLevel === '草案正典' ? '#CE93D8' : '#999', fontSize: 12 }}>
+              color: CANON_COLORS[object.canonLevel] || '#999', fontSize: 12 }}>
               {object.canonLevel}
             </span>
           ) : '未收录'}
@@ -196,15 +179,11 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
         </div>
       )}
 
-      {/* AC4: Reason Dialog */}
       {pendingAction && (
         <ReasonDialog
           actionName={pendingAction.label}
           objectName={object.name}
-          onConfirm={(reason) => {
-            onAction(pendingAction.action, object.id, reason);
-            setPendingAction(null);
-          }}
+          onConfirm={(reason) => { onAction(pendingAction.action, object.id, reason); setPendingAction(null); }}
           onCancel={() => setPendingAction(null)}
         />
       )}

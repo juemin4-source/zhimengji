@@ -1,9 +1,13 @@
 ﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation } from './types/world';
-import { CANVAS_TABS, OBJECT_TYPES, CANON_LEVELS, OBJECT_STATUSES } from './types/world';
-import { TEMPLATES } from './data/seed';
+import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
+import { CANVAS_TABS, CANON_LEVELS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
+import { TEMPLATES } from './data/seed';
+
 import * as api from './tauri-api';
+import { countWords, isHtmlContent, htmlToMarkdown } from './utils/markdown';
+import { SyncManager } from './lib/SyncManager';
+import { Changelog } from './lib/Changelog';
 
 import Bookshelf from './components/Bookshelf';
 import DocumentView from './components/DocumentView';
@@ -11,6 +15,11 @@ import CanvasView from './components/CanvasView';
 import SettingCollection from './components/SettingCollection';
 import JudgmentRecords from './components/JudgmentRecords';
 import Inspector from './components/Inspector';
+import StatusBar from './components/StatusBar';
+import CreationWizard from './components/CreationWizard';
+import FirstLaunchGuide, { shouldShowGuide, markGuideDone } from './components/FirstLaunchGuide';
+import CanonGuideCard, { shouldShowCanonGuide } from './components/CanonGuideCard';
+import GlobalSearch from './components/GlobalSearch';
 import { ToastProvider, useToast } from './components/Toast';
 import './styles/global.css';
 import './styles/variables.css';
@@ -54,7 +63,9 @@ function mapProjectToCreate(name: string, genre?: string): Promise<api.ProjectDT
   return api.createProject(name, genre || '未分类', 'conceiving', 0, '["#6366f1","#8b5cf6"]');
 }
 
-// ===== App Component =====
+const syncManager = new SyncManager();
+const changelog = new Changelog();
+
 export default function App() {
   return (
     <ToastProvider>
@@ -64,12 +75,11 @@ export default function App() {
 }
 
 function AppInner() {
-  const { showToast, dismissToast } = useToast();
+  const { showToast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [activeBookId, setActiveBookId] = useState<string | null>(null);
 
-  // Live state for the active book
   const [objects, setObjects] = useState<WorldObject[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
@@ -77,6 +87,132 @@ function AppInner() {
   const [canvasStates, setCanvasStates] = useState<Record<CanvasTab, CanvasTabState>>(createDefaultCanvasStates);
   const canvasStatesRef = useRef(canvasStates);
   useEffect(() => { canvasStatesRef.current = canvasStates; }, [canvasStates]);
+
+  // v1.2: Save status
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const [contentDirty, setContentDirty] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // v1.2: Modal states
+  const [showCreationWizard, setShowCreationWizard] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [showCanonGuide, setShowCanonGuide] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [lastGenre, setLastGenre] = useState('科幻');
+
+  // v1.2: Object count for canon guide trigger
+  const prevObjectCountRef = useRef(0);
+
+  // ── SyncManager setup ──
+  useEffect(() => {
+    syncManager.startPing();
+    syncManager.onSaveStatusChange((status) => {
+      setSaveStatus(status);
+    });
+    return () => { syncManager.stopPing(); };
+  }, []);
+
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      if (isCtrl && e.key === 'k') {
+        e.preventDefault();
+        setShowGlobalSearch(prev => !prev);
+        return;
+      }
+      if (isCtrl && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      if (isCtrl && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+      if (isCtrl && e.key === 'Z') {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [objects, connections, canvasStates, selectedObjectId]);
+
+  // ── Undo/Redo handlers ──
+  const handleUndo = useCallback(() => {
+    const entry = changelog.undo();
+    if (!entry) {
+      showToast('没有可撤销的操作', 'info');
+      return;
+    }
+    switch (entry.action) {
+      case 'delete_object':
+        setObjects(prev => [...prev, entry.snapshot as WorldObject]);
+        setSelectedObjectId(entry.objectId);
+        break;
+      case 'create_object':
+        setObjects(prev => prev.filter(o => o.id !== entry.objectId));
+        if (selectedObjectId === entry.objectId) setSelectedObjectId(null);
+        break;
+      case 'move_canvas_node':
+      case 'update_canvas_state':
+        setCanvasStates(prev => {
+          const next = { ...prev };
+          for (const tab of CANVAS_TABS) {
+            if (entry.snapshot[tab]) {
+              next[tab] = entry.snapshot[tab] as CanvasTabState;
+            }
+          }
+          return next;
+        });
+        break;
+      case 'create_connection':
+        setConnections(prev => prev.filter(c => c.id !== entry.objectId));
+        break;
+      case 'delete_connection':
+        setConnections(prev => [...prev, entry.snapshot as Connection]);
+        break;
+    }
+  }, [objects, selectedObjectId, showToast]);
+
+  const handleRedo = useCallback(() => {
+    const entry = changelog.redo();
+    if (!entry) {
+      showToast('没有可重做的操作', 'info');
+      return;
+    }
+    switch (entry.action) {
+      case 'delete_object':
+        setObjects(prev => prev.filter(o => o.id !== entry.objectId));
+        if (selectedObjectId === entry.objectId) setSelectedObjectId(null);
+        break;
+      case 'create_object':
+        setObjects(prev => [...prev, entry.snapshot as WorldObject]);
+        setSelectedObjectId(entry.objectId);
+        break;
+      case 'move_canvas_node':
+      case 'update_canvas_state':
+        setCanvasStates(prev => {
+          const next = { ...prev };
+          for (const tab of CANVAS_TABS) {
+            if (entry.snapshot[tab]) {
+              next[tab] = entry.snapshot[tab] as CanvasTabState;
+            }
+          }
+          return next;
+        });
+        break;
+      case 'create_connection':
+        setConnections(prev => [...prev, entry.snapshot as Connection]);
+        break;
+      case 'delete_connection':
+        setConnections(prev => prev.filter(c => c.id !== entry.objectId));
+        break;
+    }
+  }, [objects, selectedObjectId, showToast]);
 
   // Load projects on mount
   useEffect(() => {
@@ -101,7 +237,31 @@ function AppInner() {
     [objects]
   );
 
-  // Load project data from backend when entering a project
+  // ── Canon guide trigger ──
+  useEffect(() => {
+    const prev = prevObjectCountRef.current;
+    const current = objects.length;
+    if (prev < 3 && current >= 3 && activeBookId && shouldShowCanonGuide(activeBookId)) {
+      setShowCanonGuide(true);
+    }
+    prevObjectCountRef.current = current;
+  }, [objects.length, activeBookId]);
+
+  // ── Auto-save ──
+  const triggerAutoSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveStatus('unsaved');
+    setContentDirty(true);
+    saveTimerRef.current = setTimeout(() => {
+      setSaveStatus('saving');
+      // The actual save is triggered via SyncManager on each write operation
+      setTimeout(() => {
+        setSaveStatus('saved');
+        setContentDirty(false);
+      }, 800);
+    }, 500);
+  }, []);
+
   const loadProjectData = useCallback(async (projectId: string) => {
     try {
       const [objs, conns, canvases] = await Promise.all([
@@ -109,16 +269,23 @@ function AppInner() {
         api.listConnections(projectId),
         api.listCanvasTabStates(projectId),
       ]);
-      setObjects(objs);
+      // v1.2: Auto-migrate HTML content to Markdown
+      const migratedObjs = objs.map(obj => {
+        if (isHtmlContent(obj.content)) {
+          return { ...obj, content: htmlToMarkdown(obj.content) };
+        }
+        return obj;
+      });
+      setObjects(migratedObjs);
       setConnections(conns);
-      // Build canvas states from backend
       const cs: Record<string, CanvasTabState> = {};
       for (const tab of CANVAS_TABS) {
         const found = canvases.find(c => c.tabId === tab);
         cs[tab] = found || { tabId: tab, positions: {}, stickyNotes: [], connections: [], scale: 1, panX: 0, panY: 0 };
       }
       setCanvasStates(cs as Record<CanvasTab, CanvasTabState>);
-      setSelectedObjectId(objs.length > 0 ? objs[0].id : null);
+      setSelectedObjectId(migratedObjs.length > 0 ? migratedObjs[0].id : null);
+      changelog.clear();
     } catch (e) {
       console.error('Failed to load project data', e);
       showToast('加载项目数据失败', 'error');
@@ -129,7 +296,6 @@ function AppInner() {
     }
   }, [showToast]);
 
-  // Refresh project list from backend
   const refreshProjects = useCallback(async () => {
     try {
       const dtos = await api.listProjects();
@@ -144,6 +310,10 @@ function AppInner() {
     setActiveBookId(project.id);
     setActiveNavTab('文档');
     await loadProjectData(project.id);
+    // Show first launch guide if needed
+    if (shouldShowGuide(project.id)) {
+      setShowGuide(true);
+    }
   }, [loadProjectData]);
 
   const handleBackToBookshelf = useCallback(() => {
@@ -151,20 +321,54 @@ function AppInner() {
     setSelectedObjectId(null);
     setObjects([]);
     setConnections([]);
+    changelog.clear();
   }, []);
 
-  const handleCreateProject = useCallback(async () => {
+  // ── Creation Wizard ──
+  const handleCreateProjectClick = useCallback(() => {
+    setShowCreationWizard(true);
+  }, []);
+
+  const handleCreateProjectFromWizard = useCallback(async (title: string, genre: string, templateId: string | null) => {
     try {
-      const dto = await mapProjectToCreate('新作品');
+      setLastGenre(genre);
+      const dto = await mapProjectToCreate(title, genre);
       const project = mapDTOtoProject(dto);
+
+      // Create preset objects if template selected
+      if (templateId) {
+        
+        
+      const tmpl = PROJECT_TEMPLATES.find(t => t.id === templateId);
+        if (tmpl && tmpl.presetObjectTypes.length > 0) {
+          for (const preset of tmpl.presetObjectTypes) {
+            const now = Date.now();
+            const newObj: WorldObject = {
+              id: uid(), projectId: dto.id, name: preset.name,
+              type: preset.type, status: '草稿' as ObjectStatus,
+              canonLevel: '未收录' as CanonLevel,
+              tags: [preset.type], aliases: [], selectedBoards: [],
+              content: `# ${preset.name}\n\n`,
+              referencesCount: 0, judgmentHistory: [],
+              createdAt: now, updatedAt: now,
+            };
+            try {
+              await api.createWorldObject(newObj);
+            } catch { /* ignore individual failures */ }
+          }
+        }
+      }
+
       await refreshProjects();
+      setShowCreationWizard(false);
       setActiveBookId(project.id);
       setActiveNavTab('文档');
       setObjects([]);
       setConnections([]);
       setCanvasStates(createDefaultCanvasStates());
       setSelectedObjectId(null);
-      showToast('作品创建成功', 'success');
+      setShowGuide(true);
+      showToast(`作品「${title}」已创建`, 'success');
     } catch (e) {
       console.error('Failed to create project', e);
       showToast('创建作品失败', 'error');
@@ -172,8 +376,7 @@ function AppInner() {
   }, [refreshProjects, showToast]);
 
   // ══════════════════════════════════════════
-  //  Judgment Operations (sync to backend)
-  //  NOTE: defined BEFORE CRUD so onUpdateObject can reference addJudgment
+  //  Judgment Operations
   // ══════════════════════════════════════════
 
   const addJudgment = useCallback(async (objectId: string, operationType: JudgmentOperation, reason: string, prevValue: string, newValue: string) => {
@@ -189,19 +392,17 @@ function AppInner() {
       o.id === objectId
         ? {
             ...o,
-            // Only overwrite status for status-type operations
             ...(statusOps.includes(operationType) ? { status: newValue as ObjectStatus } : {}),
             judgmentHistory: [...o.judgmentHistory, record],
             updatedAt: now,
           }
         : o
     ));
-    api.appendJudgmentRecord(record)
-      .then(() => showToast(`${operationType}成功`, 'success'))
-      .catch(e => {
-        console.error('Failed to append judgment', e);
-        showToast(`${operationType}失败`, 'error');
-      });
+    syncManager.enqueue('appendJudgment', record).catch(() => {});
+    api.appendJudgmentRecord(record).catch(e => {
+      console.error('Failed to append judgment', e);
+      showToast(`${operationType}失败`, 'error');
+    });
   }, [objects, showToast]);
 
   const onLockObject = useCallback((objectId: string, reason: string) => {
@@ -220,11 +421,10 @@ function AppInner() {
   }, [objects, addJudgment]);
 
   // ══════════════════════════════════════════
-  //  WorldObject CRUD (sync to backend)
+  //  WorldObject CRUD (via SyncManager)
   // ══════════════════════════════════════════
 
   const onUpdateObject = useCallback(async (id: string, updates: Partial<WorldObject>) => {
-    // Handle judgment creation BEFORE state updater
     const before = objects.find(o => o.id === id);
     if (before) {
       if (updates.status && updates.status !== before.status) {
@@ -242,11 +442,16 @@ function AppInner() {
       const target = updated.find(o => o.id === id);
       if (target && activeBookId) {
         const objWithProject = { ...target, projectId: activeBookId };
-        api.updateWorldObject(objWithProject).catch(e => { console.error('Failed to update object', e); showToast('保存失败', 'error'); });
+        syncManager.enqueue('updateObject', objWithProject).catch(() => {});
+        api.updateWorldObject(objWithProject).catch(e => {
+          console.error('Failed to update object', e);
+          showToast('保存失败', 'error');
+        });
       }
       return updated;
     });
-  }, [activeBookId, objects, addJudgment, showToast]);
+    triggerAutoSave();
+  }, [activeBookId, objects, addJudgment, showToast, triggerAutoSave]);
 
   const onCreateObject = useCallback(async (templateType: ObjectType) => {
     const template = TEMPLATES.find(t => t.type === templateType);
@@ -259,16 +464,18 @@ function AppInner() {
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
+    // Record for undo
+    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
     if (activeBookId) {
+      syncManager.enqueue('createObject', newObj).catch(() => {});
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建${templateType}`, 'success'))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
     }
   }, [activeBookId, showToast]);
-
 
   const onCreateNamedObject = useCallback(async (name: string, objectType: ObjectType) => {
     const template = TEMPLATES.find(t => t.type === objectType);
@@ -281,10 +488,12 @@ function AppInner() {
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
+    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
     if (activeBookId) {
+      syncManager.enqueue('createObject', newObj).catch(() => {});
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建「${name}」`, 'success'))
         .catch(e => { console.error('Failed to create named object', e); showToast('创建对象失败', 'error'); });
@@ -292,8 +501,13 @@ function AppInner() {
   }, [activeBookId, showToast]);
 
   const onDeleteObject = useCallback(async (id: string) => {
+    const obj = objects.find(o => o.id === id);
+    if (obj) {
+      changelog.push({ timestamp: Date.now(), action: 'delete_object', objectId: id, snapshot: { ...obj } });
+    }
     setObjects(prev => prev.filter(o => o.id !== id));
     if (selectedObjectId === id) setSelectedObjectId(null);
+    syncManager.enqueue('deleteObject', { id }).catch(() => {});
     api.deleteWorldObject(id)
       .then(() => showToast('对象已删除', 'success'))
       .catch(e => { console.error('Failed to delete object', e); showToast('删除对象失败', 'error'); });
@@ -313,6 +527,7 @@ function AppInner() {
       if (o.id !== objectId || o.selectedBoards.includes(board)) return o;
       const updated = { ...o, selectedBoards: [...o.selectedBoards, board], updatedAt: Date.now() };
       if (activeBookId) {
+        syncManager.enqueue('updateObject', { ...updated, projectId: activeBookId }).catch(() => {});
         api.updateWorldObject({ ...updated, projectId: activeBookId })
           .then(() => showToast(`已放入「${board}」`, 'success'))
           .catch(e => { console.error('Failed to update board', e); showToast('加入画板失败', 'error'); });
@@ -346,7 +561,7 @@ function AppInner() {
   }, [objects, onAddToBoard, onLockObject, onDiscardObject, onUnlockObject, addJudgment, onNavigate]);
 
   // ══════════════════════════════════════════
-  //  Canvas Operations (sync to backend)
+  //  Canvas Operations
   // ══════════════════════════════════════════
 
   const saveCanvasState = useCallback(async (tabId: CanvasTab, state: Partial<CanvasTabState>) => {
@@ -354,18 +569,31 @@ function AppInner() {
     const current = canvasStates[tabId];
     const merged: CanvasTabState = { ...current, ...state };
     setCanvasStates(prev => ({ ...prev, [tabId]: merged }));
-    // Persist to backend — use the tabId as the DB id for upsert
-    const canvasRecord: CanvasTabState = {
-      ...merged,
-      tabId,
-    };
-    // We need an id; use projectId:tabId as convention
+    const canvasRecord: CanvasTabState = { ...merged, tabId };
     const canvasId = `${activeBookId}:${tabId}`;
-    api.saveCanvasTabState({ ...canvasRecord, id: canvasId, projectId: activeBookId })
+    const version = Date.now();
+    syncManager.enqueue('saveCanvasState', { ...canvasRecord, id: canvasId, projectId: activeBookId, version }).catch(() => {});
+    api.saveCanvasTabState({ ...canvasRecord, id: canvasId, projectId: activeBookId, version })
+      .then((resp: any) => {
+        if (resp && resp.error === 'VERSION_CONFLICT') {
+          showToast('版本冲突，已重新加载画板状态', 'error');
+          loadProjectData(activeBookId);
+        }
+      })
       .catch(e => { console.error('Failed to save canvas state', e); showToast('画板保存失败', 'error'); });
-  }, [activeBookId, canvasStates, showToast]);
+  }, [activeBookId, canvasStates, showToast, loadProjectData]);
 
   const onUpdateCanvasState = useCallback((tabId: CanvasTab, state: Partial<CanvasTabState>) => {
+    // Record for undo if positions changed
+    if (state.positions) {
+      const current = canvasStatesRef.current[tabId];
+      changelog.push({
+        timestamp: Date.now(),
+        action: 'update_canvas_state',
+        objectId: tabId,
+        snapshot: { [tabId]: { ...current } },
+      });
+    }
     saveCanvasState(tabId, state);
   }, [saveCanvasState]);
 
@@ -386,6 +614,7 @@ function AppInner() {
       }
       return next;
     });
+    syncManager.enqueue('createConnection', newConn).catch(() => {});
     api.createConnection(newConn).catch(e => { console.error('Failed to create connection', e); showToast('创建连线失败', 'error'); });
   }, [activeBookId, showToast]);
 
@@ -395,10 +624,6 @@ function AppInner() {
       [tabId]: { ...prev[tabId], stickyNotes: [...prev[tabId].stickyNotes, { id: `sticky_${_nextId++}`, text, x: 100, y: 100, width: 160, height: 100, color: '#3E2723' }] }
     }));
   }, []);
-
-  // ══════════════════════════════════════════
-  //  Canvas Object Creation (AC1: double-click to create at position)
-  // ══════════════════════════════════════════
 
   const onCanvasCreateObject = useCallback((templateType: ObjectType, x: number, y: number, tabId: CanvasTab) => {
     const template = TEMPLATES.find(t => t.type === templateType);
@@ -411,27 +636,21 @@ function AppInner() {
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
+    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
-    // Stay on canvas — do NOT navigate away
     if (activeBookId) {
+      syncManager.enqueue('createObject', newObj).catch(() => {});
       api.createWorldObject(newObj)
         .then(() => showToast(`已创建${templateType}`, 'success'))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
     }
-    // Set the position immediately on the canvas
     setCanvasStates(prev => {
       const tab = prev[tabId];
       if (!tab) return prev;
       return {
         ...prev,
-        [tabId]: {
-          ...tab,
-          positions: {
-            ...tab.positions,
-            [newObj.id]: { objectId: newObj.id, x, y },
-          },
-        },
+        [tabId]: { ...tab, positions: { ...tab.positions, [newObj.id]: { objectId: newObj.id, x, y } } },
       } as Record<CanvasTab, CanvasTabState>;
     });
   }, [activeBookId, showToast]);
@@ -440,9 +659,26 @@ function AppInner() {
 
   const renderMainContent = () => {
     switch (activeNavTab) {
-      case '文档': return <DocumentView currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard} onLockObject={onLockObject} onDiscardObject={onDiscardObject} onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject} />;
-      case '画板': return <CanvasView allObjects={objects} connections={connections} canvasStates={canvasStates} selectedObjectId={selectedObjectId} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState} onAddConnection={onAddConnection} onAddSticky={onAddSticky} onAddToBoard={onAddToBoard} onCreateObject={onCreateObject} onCanvasCreateObject={onCanvasCreateObject} />;
-      case '设定集': return <SettingCollection allObjects={objects} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateObject={onUpdateObject} onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected} />;
+      case '文档': return <DocumentView
+        currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs}
+        onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard}
+        onLockObject={onLockObject} onDiscardObject={onDiscardObject}
+        onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject}
+        saveStatus={saveStatus} onTriggerSave={triggerAutoSave}
+      />;
+      case '画板': return <CanvasView
+        allObjects={objects} connections={connections} canvasStates={canvasStates}
+        selectedObjectId={selectedObjectId} onSelectObject={onSelectObject}
+        onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState}
+        onAddConnection={onAddConnection} onAddSticky={onAddSticky}
+        onAddToBoard={onAddToBoard} onCreateObject={onCreateObject}
+        onCanvasCreateObject={onCanvasCreateObject}
+      />;
+      case '设定集': return <SettingCollection
+        allObjects={objects} onSelectObject={onSelectObject}
+        onNavigate={onNavigate} onUpdateObject={onUpdateObject}
+        onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected}
+      />;
       case '判断记录': return <JudgmentRecords allObjects={objects} onNavigate={onNavigate} />;
       default: return null;
     }
@@ -457,10 +693,15 @@ function AppInner() {
     );
   }
 
+  // Compute total word count for status bar
+  const totalWordCount = useMemo(() => {
+    return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
+  }, [objects]);
+
   return (
     <div className="app-layout">
       {activeBookId === null ? (
-        <Bookshelf projects={bookshelfProjects} onEnterProject={handleEnterProject} onCreateProject={handleCreateProject} />
+        <Bookshelf projects={bookshelfProjects} onEnterProject={handleEnterProject} onCreateProject={handleCreateProjectClick} />
       ) : (
         <>
           <nav className="nav-bar">
@@ -469,13 +710,64 @@ function AppInner() {
             {NAV_TABS.map(tab => (
               <button key={tab} className={`nav-tab ${activeNavTab === tab ? 'active' : ''}`} onClick={() => setActiveNavTab(tab)}>{tab}</button>
             ))}
+            <div style={{ flex: 1 }} />
+            {/* Search button */}
+            <button className="tb-btn" onClick={() => setShowGlobalSearch(true)} title="全局搜索 (Ctrl+K)" style={{ fontSize: 13, gap: 4 }}>
+              🔍 <kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
+            </button>
           </nav>
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>
             <Inspector object={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onNavigate={onNavigate} onAction={onInspectorAction} />
           </div>
+          {/* Bottom StatusBar */}
+          <StatusBar
+            saveStatus={saveStatus}
+            wordCount={totalWordCount}
+            onRetrySave={() => { syncManager.retryFailed(); }}
+          />
         </>
       )}
+
+      {/* Creation Wizard (P1-01) */}
+      {showCreationWizard && (
+        <CreationWizard
+          lastGenre={lastGenre}
+          onConfirm={(title, genre, templateId) => handleCreateProjectFromWizard(title, genre, templateId)}
+          onCancel={() => setShowCreationWizard(false)}
+        />
+      )}
+
+      {/* First Launch Guide (P1-02) */}
+      {showGuide && activeBookId && (
+        <FirstLaunchGuide
+          projectId={activeBookId}
+          onDismiss={() => {
+            setShowGuide(false);
+            if (activeBookId) markGuideDone(activeBookId);
+          }}
+        />
+      )}
+
+      {/* Canon Guide Card (P1-07) */}
+      {showCanonGuide && activeBookId && (
+        <CanonGuideCard
+          onDismiss={(dontShowAgain) => {
+            setShowCanonGuide(false);
+            if (dontShowAgain && activeBookId) {
+              try { localStorage.setItem(`zhimengji-canon-guide-done-${activeBookId}`, 'true'); } catch {}
+            }
+          }}
+        />
+      )}
+
+      {/* Global Search (P1-08) */}
+      <GlobalSearch
+        objects={objects}
+        isOpen={showGlobalSearch}
+        onClose={() => setShowGlobalSearch(false)}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-mod commands;
+﻿mod commands;
 mod db;
 mod models;
 
@@ -42,6 +42,10 @@ pub fn run() {
             commands::list_canvas_tab_states,
             commands::save_canvas_tab_state,
             commands::delete_canvas_tab_state,
+            // v1.2 commands
+            commands::ping,
+            commands::export_project,
+            commands::import_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

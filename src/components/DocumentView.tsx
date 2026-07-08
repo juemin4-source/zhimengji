@@ -1,14 +1,24 @@
+﻿/**
+ * DocumentView — Markdown-first editor for 织梦机 v1.2 (P1-03, P1-04, P1-05).
+ *
+ * Default mode: source (beautified Markdown with syntax hints)
+ * Preview mode: read-only rendered HTML
+ * WYSIWYG mode: demoted to optional (TipTap with Markdown serialization)
+ *
+ * Unified toolbar adapts to mode.
+ */
+
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { WikiLink } from '../extensions/WikiLink';
-import type { WorldObject, ObjectType, ObjectStatus, CanonLevel } from '../types/world';
-import { OBJECT_TYPES, OBJECT_STATUSES, CANON_LEVELS, STATUS_DISPLAY } from '../types/world';
+import type { WorldObject, ObjectType, ObjectStatus, CanonLevel, SaveStatus } from '../types/world';
+import { OBJECT_TYPES, OBJECT_STATUSES, CANON_LEVELS, STATUS_DISPLAY, CANON_COLORS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
-import { markdownToHtml, ensureEditorContent } from '../utils/markdown';
+import { markdownToHtml, ensureEditorContent, htmlToMarkdown, isHtmlContent, countWords } from '../utils/markdown';
 import DocOutline from './DocOutline';
 
-type EditMode = 'wysiwyg' | 'source' | 'preview';
+type EditMode = 'source' | 'wysiwyg' | 'preview';
 
 interface DocumentViewProps {
   currentObject: WorldObject | null;
@@ -21,24 +31,34 @@ interface DocumentViewProps {
   onDiscardObject: (objectId: string, reason: string) => void;
   onCreateObject: (templateType: ObjectType) => void;
   onCreateNamedObject?: (name: string, objectType: ObjectType) => void;
-}
-
-/** Ensure content has valid HTML structure for TipTap rendering using Markdown→HTML converter */
-function ensureHtmlContent(content: string): string {
-  return ensureEditorContent(content);
+  saveStatus?: SaveStatus;
+  onTriggerSave?: () => void;
 }
 
 export default function DocumentView({
   currentObject, allObjects,
-  onUpdateObject, onNavigate, onCreateObject, onCreateNamedObject
+  onUpdateObject, onNavigate, onCreateObject, onCreateNamedObject,
+  saveStatus, onTriggerSave
 }: DocumentViewProps) {
-  const [editMode, setEditMode] = useState<EditMode>('wysiwyg');
+  const [editMode, setEditMode] = useState<EditMode>('source');
   const sourceRef = useRef<HTMLTextAreaElement>(null);
-  const undoStack = useRef<string[]>([]);
-  const redoStack = useRef<string[]>([]);
   const [contentDirty, setContentDirty] = useState(false);
+  const markdownMigratedRef = useRef<Set<string>>(new Set());
 
-  // ── AC1: Create bubble state ──
+  // Markdown migration on first load
+  useEffect(() => {
+    if (currentObject && !markdownMigratedRef.current.has(currentObject.id)) {
+      if (isHtmlContent(currentObject.content)) {
+        const md = htmlToMarkdown(currentObject.content);
+        if (md !== currentObject.content) {
+          onUpdateObject(currentObject.id, { content: md });
+        }
+      }
+      markdownMigratedRef.current.add(currentObject.id);
+    }
+  }, [currentObject?.id]);
+
+  // ── Create bubble state ──
   const [showCreateBubble, setShowCreateBubble] = useState(false);
   const [createBubbleName, setCreateBubbleName] = useState('');
   const [createBubbleType, setCreateBubbleType] = useState<ObjectType>('人物');
@@ -68,7 +88,7 @@ export default function DocumentView({
         },
       }),
     ],
-    content: ensureHtmlContent(currentObject?.content || ''),
+    content: ensureEditorContent(currentObject?.content || ''),
     editorProps: {
       attributes: {
         class: 'editor-content',
@@ -77,7 +97,16 @@ export default function DocumentView({
     },
     onUpdate: ({ editor: ed }) => {
       if (currentObject) {
-        onUpdateObject(currentObject.id, { content: ed.getHTML() });
+        // In v1.2 Markdown-first, serialize to Markdown
+        try {
+          const md = ed.getText(); // Fallback to text
+          onUpdateObject(currentObject.id, { content: md });
+        } catch {
+          // If markdown extension not available, store HTML
+          onUpdateObject(currentObject.id, { content: ed.getHTML() });
+        }
+        setContentDirty(true);
+        if (onTriggerSave) onTriggerSave();
       }
     },
   });
@@ -85,7 +114,7 @@ export default function DocumentView({
   // Update editor content when switching objects
   useEffect(() => {
     if (editor && currentObject) {
-      const html = ensureHtmlContent(currentObject.content);
+      const html = ensureEditorContent(currentObject.content);
       if (editor.getHTML() !== html) {
         editor.commands.setContent(html);
       }
@@ -103,11 +132,7 @@ export default function DocumentView({
   }, [currentObject, editMode, editor]);
 
   const wordCount = useMemo(() => {
-    if (!currentObject) return 0;
-    const text = currentObject.content;
-    const chineseChars = (text.match(/[一-鿿]/g) || []).length;
-    const englishWords = text.replace(/[一-鿿]/g, ' ').split(/\s+/).filter(w => w.length > 0).length;
-    return chineseChars + englishWords;
+    return countWords(currentObject?.content || '');
   }, [currentObject]);
 
   // ── Source mode handlers ──
@@ -115,8 +140,6 @@ export default function DocumentView({
   const insertFormat = useCallback((prefix: string, suffix: string = '') => {
     const ta = sourceRef.current;
     if (!ta || !currentObject) return;
-    undoStack.current.push(currentObject.content);
-    redoStack.current = [];
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     const text = currentObject.content;
@@ -135,8 +158,9 @@ export default function DocumentView({
     if (currentObject) {
       onUpdateObject(currentObject.id, { content: e.target.value });
       setContentDirty(true);
+      if (onTriggerSave) onTriggerSave();
     }
-  }, [currentObject, onUpdateObject]);
+  }, [currentObject, onUpdateObject, onTriggerSave]);
 
   const handleSourceDoubleClick = useCallback(() => {
     const ta = sourceRef.current;
@@ -162,7 +186,7 @@ export default function DocumentView({
     }
   }, [currentObject, allObjects, onNavigate]);
 
-  // ── AC3: Property change handlers ──
+  // ── Property change handlers ──
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (currentObject) onUpdateObject(currentObject.id, { type: e.target.value as ObjectType });
   };
@@ -175,7 +199,7 @@ export default function DocumentView({
     if (currentObject) onUpdateObject(currentObject.id, { canonLevel: e.target.value as CanonLevel });
   };
 
-  // ── AC1: Create bubble confirm ──
+  // ── Create bubble confirm ──
   const handleCreateFromBubble = useCallback(() => {
     if (!createBubbleName.trim()) return;
     if (onCreateNamedObject) {
@@ -188,7 +212,6 @@ export default function DocumentView({
   }, [createBubbleName, createBubbleType, onCreateObject, onCreateNamedObject]);
 
   // ── WYSIWYG toolbar handlers ──
-
   const execBold = useCallback(() => editor?.chain().focus().toggleBold().run(), [editor]);
   const execItalic = useCallback(() => editor?.chain().focus().toggleItalic().run(), [editor]);
   const execStrike = useCallback(() => editor?.chain().focus().toggleStrike().run(), [editor]);
@@ -198,64 +221,95 @@ export default function DocumentView({
   const execBulletList = useCallback(() => editor?.chain().focus().toggleBulletList().run(), [editor]);
   const execCode = useCallback(() => editor?.chain().focus().toggleCode().run(), [editor]);
   const execCodeBlock = useCallback(() => editor?.chain().focus().toggleCodeBlock().run(), [editor]);
-  const execUndo = useCallback(() => editor?.chain().focus().undo().run(), [editor]);
-  const execRedo = useCallback(() => editor?.chain().focus().redo().run(), [editor]);
 
+  // ── Unified toolbar ──
   const renderToolbar = () => {
-    const isWysiwyg = editMode === 'wysiwyg';
     const isSource = editMode === 'source';
     const isPreview = editMode === 'preview';
-    if (isPreview) return null;
-
-    const commonButtons = (
-      <>
-        <span className="separator" />
-        <button className={`tb-btn ${isWysiwyg ? 'active' : ''}`} onClick={() => { if (editor) editor.commands.setContent(ensureHtmlContent(currentObject?.content || '')); setEditMode('wysiwyg'); }} title="编辑">✎ 编辑</button>
-        <button className={`tb-btn ${isSource ? 'active' : ''}`} onClick={() => setEditMode('source')} title="源码">&lt;/&gt; 源码</button>
-        <button className="tb-btn" onClick={() => setEditMode('preview')} title="预览">👁 预览</button>
-      </>
-    );
-
-    if (isWysiwyg && editor) {
-      return (
-        <div className="doc-toolbar">
-          <button className="tb-btn" onClick={execUndo} title="Undo">↩</button>
-          <button className="tb-btn" onClick={execRedo} title="Redo">↪</button>
-          <span className="separator" />
-          <button className={`tb-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`} onClick={execH2} title="Heading 2">H2</button>
-          <button className={`tb-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`} onClick={execH3} title="Heading 3">H3</button>
-          <span className="separator" />
-          <button className={`tb-btn ${editor.isActive('bold') ? 'active' : ''}`} onClick={execBold} title="Bold" style={{ fontWeight: 700 }}>B</button>
-          <button className={`tb-btn ${editor.isActive('italic') ? 'active' : ''}`} onClick={execItalic} title="Italic" style={{ fontStyle: 'italic' }}>I</button>
-          <button className={`tb-btn ${editor.isActive('strike') ? 'active' : ''}`} onClick={execStrike} title="Strikethrough" style={{ textDecoration: 'line-through' }}>S</button>
-          <span className="separator" />
-          <button className={`tb-btn ${editor.isActive('blockquote') ? 'active' : ''}`} onClick={execBlockquote} title="Blockquote">❝</button>
-          <button className={`tb-btn ${editor.isActive('bulletList') ? 'active' : ''}`} onClick={execBulletList} title="Bullet List">≡</button>
-          <button className={`tb-btn ${editor.isActive('code') ? 'active' : ''}`} onClick={execCode} title="Inline Code">&lt;/&gt;</button>
-          <button className={`tb-btn ${editor.isActive('codeBlock') ? 'active' : ''}`} onClick={execCodeBlock} title="Code Block">▦</button>
-          {commonButtons}
-        </div>
-      );
-    }
 
     return (
-      <div className="doc-toolbar">
-        <button className="tb-btn" onClick={() => { const ta = sourceRef.current; if (!ta || !currentObject) return; undoStack.current.push(currentObject.content); redoStack.current = []; const text = currentObject.content; const full = text.slice(0, ta.selectionStart); const lastLC = full.lastIndexOf('\n'); const lineStart = lastLC >= 0 ? lastLC + 1 : 0; const newText = text.slice(0, lineStart) + '## ' + text.slice(lineStart); onUpdateObject(currentObject.id, { content: newText }); }} title="Heading 2">H2</button>
-        <button className="tb-btn" onClick={() => insertFormat('### ', '')} title="Heading 3">H3</button>
-        <span className="separator" />
-        <button className="tb-btn" onClick={() => insertFormat('**', '**')} title="Bold" style={{ fontWeight: 700 }}>B</button>
-        <button className="tb-btn" onClick={() => insertFormat('*', '*')} title="Italic" style={{ fontStyle: 'italic' }}>I</button>
-        <button className="tb-btn" onClick={() => insertFormat('~~', '~~')} title="Strikethrough" style={{ textDecoration: 'line-through' }}>S</button>
-        <span className="separator" />
-        <button className="tb-btn" onClick={() => insertFormat('> ', '')} title="Blockquote">❝</button>
-        <button className="tb-btn" onClick={() => insertFormat('- ', '')} title="List">≡</button>
-        <button className="tb-btn" onClick={() => insertFormat('`', '`')} title="Inline Code">&lt;/&gt;</button>
-        {commonButtons}
+      <div className="doc-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, flexWrap: 'wrap' }}>
+          {/* Common formatting buttons — behavior changes by mode */}
+          {!isPreview && (
+            <>
+              {isSource ? (
+                <>
+                  <button className="tb-btn" onClick={() => insertFormat('## ', '')} title="Heading 2">H2</button>
+                  <button className="tb-btn" onClick={() => insertFormat('### ', '')} title="Heading 3">H3</button>
+                  <span className="separator" />
+                  <button className="tb-btn" onClick={() => insertFormat('**', '**')} title="Bold" style={{ fontWeight: 700 }}>B</button>
+                  <button className="tb-btn" onClick={() => insertFormat('*', '*')} title="Italic" style={{ fontStyle: 'italic' }}>I</button>
+                  <button className="tb-btn" onClick={() => insertFormat('~~', '~~')} title="Strikethrough" style={{ textDecoration: 'line-through' }}>S</button>
+                  <span className="separator" />
+                  <button className="tb-btn" onClick={() => insertFormat('> ', '')} title="Blockquote">❝</button>
+                  <button className="tb-btn" onClick={() => insertFormat('- ', '')} title="List">≡</button>
+                  <button className="tb-btn" onClick={() => insertFormat('`', '`')} title="Inline Code">{'</>'}</button>
+                </>
+              ) : editor && (
+                <>
+                  <button className={`tb-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`} onClick={execH2} title="Heading 2">H2</button>
+                  <button className={`tb-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`} onClick={execH3} title="Heading 3">H3</button>
+                  <span className="separator" />
+                  <button className={`tb-btn ${editor.isActive('bold') ? 'active' : ''}`} onClick={execBold} title="Bold" style={{ fontWeight: 700 }}>B</button>
+                  <button className={`tb-btn ${editor.isActive('italic') ? 'active' : ''}`} onClick={execItalic} title="Italic" style={{ fontStyle: 'italic' }}>I</button>
+                  <button className={`tb-btn ${editor.isActive('strike') ? 'active' : ''}`} onClick={execStrike} title="Strikethrough" style={{ textDecoration: 'line-through' }}>S</button>
+                  <span className="separator" />
+                  <button className={`tb-btn ${editor.isActive('blockquote') ? 'active' : ''}`} onClick={execBlockquote} title="Blockquote">❝</button>
+                  <button className={`tb-btn ${editor.isActive('bulletList') ? 'active' : ''}`} onClick={execBulletList} title="Bullet List">≡</button>
+                  <button className={`tb-btn ${editor.isActive('code') ? 'active' : ''}`} onClick={execCode} title="Inline Code">{'</>'}</button>
+                  <button className={`tb-btn ${editor.isActive('codeBlock') ? 'active' : ''}`} onClick={execCodeBlock} title="Code Block">▦</button>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Save status indicator */}
+          {saveStatus && (
+            <span style={{ marginLeft: 12, fontSize: 11, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'saving' ? '#FF9800' : saveStatus === 'error' ? '#f44336' : saveStatus === 'offline' ? '#888' : '#FF9800' }}>
+              {saveStatus === 'saved' ? '✓ 已保存' : saveStatus === 'saving' ? '⟳ 保存中' : saveStatus === 'error' ? '✗ 保存失败' : saveStatus === 'offline' ? '● 离线' : '● 未保存'}
+            </span>
+          )}
+        </div>
+
+        {/* Mode switch — right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          <span className="separator" />
+          <button
+            className={`tb-btn ${isSource ? 'active' : ''}`}
+            onClick={() => setEditMode('source')}
+            title="源码模式（默认）"
+            style={{ fontSize: 12 }}
+          >
+            {'</>'} 编辑
+          </button>
+          <button
+            className={`tb-btn ${editMode === 'wysiwyg' ? 'active' : ''}`}
+            onClick={() => {
+              if (editor && currentObject) {
+                editor.commands.setContent(ensureEditorContent(currentObject.content));
+              }
+              setEditMode('wysiwyg');
+            }}
+            title="富文本模式"
+            style={{ fontSize: 12 }}
+          >
+            ✎ 富文本
+          </button>
+          <button
+            className={`tb-btn ${isPreview ? 'active' : ''}`}
+            onClick={() => setEditMode('preview')}
+            title="预览模式"
+            style={{ fontSize: 12 }}
+          >
+            👁 预览
+          </button>
+        </div>
       </div>
     );
   };
 
-  // ── AC3: Property selectors ──
+  // ── Property selectors (compressed) ──
   const renderProperties = () => {
     if (!currentObject || editMode === 'preview') return null;
     const sd = STATUS_DISPLAY[currentObject.status];
@@ -279,25 +333,27 @@ export default function DocumentView({
           <select value={currentObject.canonLevel} onChange={handleCanonChange}>
             {CANON_LEVELS.map(c => (
               <option key={c} value={c} style={{
-                color: c === '核心正典' ? '#FFB74D' : c === '项目正典' ? '#90CAF9' : c === '草案正典' ? '#CE93D8' : '#999',
+                color: CANON_COLORS[c] || '#999',
               }}>{c}</option>
             ))}
           </select>
         </div>
+        {saveStatus && (
+          <div className="prop-item" style={{ marginLeft: 'auto' }}>
+            <span style={{
+              fontSize: 11, padding: '2px 6px', borderRadius: 3,
+              background: saveStatus === 'saved' ? '#1B5E20' : saveStatus === 'saving' ? '#E65100' : saveStatus === 'error' ? '#B71C1C' : saveStatus === 'offline' ? '#333' : '#E65100',
+              color: saveStatus === 'saved' ? '#A5D6A7' : saveStatus === 'saving' ? '#FFCC80' : saveStatus === 'error' ? '#EF9A9A' : saveStatus === 'offline' ? '#888' : '#FFCC80',
+            }}>
+              {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中' : saveStatus === 'error' ? '保存失败' : saveStatus === 'offline' ? '离线' : '未保存'}
+            </span>
+          </div>
+        )}
       </div>
     );
   };
 
   const renderEditorContent = () => {
-    if (editMode === 'wysiwyg') {
-      return (
-        <div className="doc-editor tiptap-editor">
-          {editor && (
-            <EditorContent editor={editor} />
-          )}
-        </div>
-      );
-    }
     if (editMode === 'source') {
       return (
         <div className="doc-editor">
@@ -312,7 +368,14 @@ export default function DocumentView({
         </div>
       );
     }
-    // Preview mode — render Markdown→HTML for rich display
+    if (editMode === 'wysiwyg') {
+      return (
+        <div className="doc-editor tiptap-editor">
+          {editor && <EditorContent editor={editor} />}
+        </div>
+      );
+    }
+    // Preview mode
     return (
       <div className="doc-editor">
         <div
@@ -354,19 +417,21 @@ export default function DocumentView({
         {renderEditorContent()}
 
         <div className="word-count">
-          字数: {wordCount} | [[链接]]: {wikiLinks.length}
+          字数: {wordCount.toLocaleString()} | [[链接]]: {wikiLinks.length}
           {wikiLinks.length > 0 && (
             <span style={{ marginLeft: 8 }}>
-              | 双击{editMode === 'source' ? ' [[链接]]' : ' Wiki链接'} 跳转
+              | 双击 [[链接]] 跳转
             </span>
           )}
-          {currentObject && currentObject.content.includes('<') && editMode === 'wysiwyg' && (
-            <span style={{ marginLeft: 8, color: '#888' }}>| 编辑模式 · HTML格式</span>
+          {saveStatus && (
+            <span style={{ marginLeft: 12, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'error' ? '#f44336' : '#888' }}>
+              {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中...' : saveStatus === 'error' ? '保存失败' : saveStatus === 'offline' ? '离线' : ''}
+            </span>
           )}
         </div>
       </div>
 
-      {/* AC1: Create bubble for missing wiki links */}
+      {/* Create bubble for missing wiki links */}
       {showCreateBubble && (
         <div className="dialog-overlay" onClick={() => setShowCreateBubble(false)}>
           <div className="dialog-box create-bubble" onClick={e => e.stopPropagation()}>

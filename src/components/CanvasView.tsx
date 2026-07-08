@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
+import ZoomControls from './ZoomControls';
 
 interface TextAnnotation { id: string; text: string; x: number; y: number; }
 interface PartitionZone { id: string; label: string; x: number; y: number; width: number; height: number; }
@@ -230,6 +231,7 @@ export default function CanvasView({
     dragOffsetY: number;
   } | null>(null);
   const state = canvasStates[activeTab];
+  const scale = state?.scale ?? 1;
 
   const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allObjects.forEach(o => m.set(o.name, o)); return m; }, [allObjects]);
 
@@ -340,6 +342,64 @@ export default function CanvasView({
   const displayConnections = useMemo(() => {
     return [...state.connections];
   }, [state.connections]);
+  // ── Zoom handlers (P1-06) ──
+  const handleZoomChange = useCallback((newScale: number) => {
+    onUpdateCanvasState(activeTab, { scale: newScale });
+  }, [activeTab, onUpdateCanvasState]);
+
+  const handleFitCanvas = useCallback(() => {
+    if (canvasObjects.length === 0) { handleZoomChange(1); return; }
+    const container = canvasRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const obj of canvasObjects) {
+      const pos = state.positions[obj.id];
+      if (pos) {
+        minX = Math.min(minX, pos.x);
+        minY = Math.min(minY, pos.y);
+        maxX = Math.max(maxX, pos.x + 130);
+        maxY = Math.max(maxY, pos.y + 60);
+      }
+    }
+    if (minX === Infinity) { handleZoomChange(1); return; }
+    const margin = 60;
+    const contentW = (maxX - minX) + margin * 2;
+    const contentH = (maxY - minY) + margin * 2;
+    const scaleX = rect.width / contentW;
+    const scaleY = rect.height / contentH;
+    const fitScale = Math.min(scaleX, scaleY, 2.0);
+    handleZoomChange(Math.max(0.2, Math.round(fitScale * 10) / 10));
+  }, [canvasObjects, state.positions, handleZoomChange]);
+
+  // ── Ctrl+wheel zoom ──
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = -e.deltaY * 0.001;
+        const currentScale = state?.scale ?? 1;
+        const newScale = Math.max(0.2, Math.min(3.0, currentScale + delta));
+        handleZoomChange(Math.round(newScale * 10) / 10);
+      }
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, [state?.scale, handleZoomChange]);
+
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handleFitCanvas();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleFitCanvas]);
 
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     if (toolMode === 'drag') { setPanning(true); setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }); }
@@ -802,6 +862,9 @@ export default function CanvasView({
           </div>
         </div>
       </div>
+
+
+            <ZoomControls scale={scale} onZoomChange={handleZoomChange} onFitCanvas={handleFitCanvas} />
 
       {/* Dialogs */}
       {showStickyDialog && (

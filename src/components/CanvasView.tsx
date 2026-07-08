@@ -383,11 +383,15 @@ export default function CanvasView({
         const dx = currentX - primaryStart.x;
         const dy = currentY - primaryStart.y;
 
+        // Snap-to-grid when dragging (20px grid)
+        const snapGrid = 20;
+        const snap = (v: number) => Math.round(v / snapGrid) * snapGrid;
+
         const newPositions = { ...positionsRef.current };
         for (const id of Object.keys(dragStartPositions)) {
           const start = dragStartPositions[id];
           if (start && newPositions[id]) {
-            newPositions[id] = { ...newPositions[id], x: Math.round(start.x + dx), y: Math.round(start.y + dy) };
+            newPositions[id] = { ...newPositions[id], x: snap(Math.round(start.x + dx)), y: snap(Math.round(start.y + dy)) };
           }
         }
         onUpdateCanvasState(activeTab, { positions: newPositions });
@@ -785,10 +789,14 @@ export default function CanvasView({
             )}
 
             {canvasObjects.length === 0 && activeTab !== '时间线' && (
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: '#666' }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
-                <div style={{ fontSize: 14 }}>在文档视图中将对象「放入画板」</div>
-                <div style={{ fontSize: 12, marginTop: 4, color: '#555' }}>或双击空白区域快速创建</div>
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: '#666', pointerEvents: 'none' }}>
+                <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.6 }}>📋</div>
+                <div style={{ fontSize: 14, color: '#888' }}>此画板暂无对象</div>
+                <div style={{ fontSize: 12, marginTop: 6, color: '#555', lineHeight: 1.8 }}>
+                  <div>🖱 双击空白区域创建新对象</div>
+                  <div>📄 在文档视图中将对象「放入画板」</div>
+                  <div>🔗 从侧栏「对象池」添加已有对象</div>
+                </div>
               </div>
             )}
           </div>

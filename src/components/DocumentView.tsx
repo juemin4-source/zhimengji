@@ -5,6 +5,7 @@ import { WikiLink } from '../extensions/WikiLink';
 import type { WorldObject, ObjectType, ObjectStatus, CanonLevel } from '../types/world';
 import { OBJECT_TYPES, OBJECT_STATUSES, CANON_LEVELS, STATUS_DISPLAY } from '../types/world';
 import { TEMPLATES } from '../data/seed';
+import { markdownToHtml, ensureEditorContent } from '../utils/markdown';
 import DocOutline from './DocOutline';
 
 type EditMode = 'wysiwyg' | 'source' | 'preview';
@@ -22,15 +23,9 @@ interface DocumentViewProps {
   onCreateNamedObject?: (name: string, objectType: ObjectType) => void;
 }
 
-/** Ensure content has basic HTML structure for TipTap rendering */
+/** Ensure content has valid HTML structure for TipTap rendering using Markdown→HTML converter */
 function ensureHtmlContent(content: string): string {
-  if (!content) return '<p></p>';
-  if (/<[a-z][\s\S]*>/i.test(content)) return content;
-  const escaped = content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return '<p>' + escaped.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+  return ensureEditorContent(content);
 }
 
 export default function DocumentView({
@@ -317,13 +312,13 @@ export default function DocumentView({
         </div>
       );
     }
-    // Preview mode
+    // Preview mode — render Markdown→HTML for rich display
     return (
       <div className="doc-editor">
         <div
           className="editor-content preview-content"
           dangerouslySetInnerHTML={{
-            __html: currentObject ? ensureHtmlContent(currentObject.content) : '',
+            __html: currentObject ? markdownToHtml(currentObject.content) : '',
           }}
         />
       </div>

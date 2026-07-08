@@ -101,7 +101,16 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate, on
               )}
             </div>
           ))}
-          {groups.length === 0 && <div className="outline-empty">暂无对象</div>}
+          {groups.length === 0 && (
+            <div className="outline-empty">
+              <div style={{ marginBottom: 8 }}>暂无对象</div>
+              {onCreateObject && (
+                <button className="tb-btn primary" onClick={() => onCreateObject('章节')} style={{ fontSize: 12, padding: '6px 12px', margin: '0 auto' }}>
+                  + 新建文档
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

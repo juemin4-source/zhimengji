@@ -11,6 +11,7 @@ import CanvasView from './components/CanvasView';
 import SettingCollection from './components/SettingCollection';
 import JudgmentRecords from './components/JudgmentRecords';
 import Inspector from './components/Inspector';
+import { ToastProvider, useToast } from './components/Toast';
 import './styles/global.css';
 import './styles/variables.css';
 
@@ -55,6 +56,15 @@ function mapProjectToCreate(name: string, genre?: string): Promise<api.ProjectDT
 
 // ===== App Component =====
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
+  );
+}
+
+function AppInner() {
+  const { showToast, dismissToast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [activeBookId, setActiveBookId] = useState<string | null>(null);
@@ -111,12 +121,13 @@ export default function App() {
       setSelectedObjectId(objs.length > 0 ? objs[0].id : null);
     } catch (e) {
       console.error('Failed to load project data', e);
+      showToast('加载项目数据失败', 'error');
       setObjects([]);
       setConnections([]);
       setCanvasStates(createDefaultCanvasStates());
       setSelectedObjectId(null);
     }
-  }, []);
+  }, [showToast]);
 
   // Refresh project list from backend
   const refreshProjects = useCallback(async () => {
@@ -125,8 +136,9 @@ export default function App() {
       setProjects(dtos.map(mapDTOtoProject));
     } catch (e) {
       console.error('Failed to refresh projects', e);
+      showToast('刷新项目列表失败', 'error');
     }
-  }, []);
+  }, [showToast]);
 
   const handleEnterProject = useCallback(async (project: Project) => {
     setActiveBookId(project.id);
@@ -152,10 +164,12 @@ export default function App() {
       setConnections([]);
       setCanvasStates(createDefaultCanvasStates());
       setSelectedObjectId(null);
+      showToast('作品创建成功', 'success');
     } catch (e) {
       console.error('Failed to create project', e);
+      showToast('创建作品失败', 'error');
     }
-  }, [refreshProjects]);
+  }, [refreshProjects, showToast]);
 
   // ══════════════════════════════════════════
   //  Judgment Operations (sync to backend)
@@ -182,8 +196,13 @@ export default function App() {
           }
         : o
     ));
-    api.appendJudgmentRecord(record).catch(e => console.error('Failed to append judgment', e));
-  }, [objects]);
+    api.appendJudgmentRecord(record)
+      .then(() => showToast(`${operationType}成功`, 'success'))
+      .catch(e => {
+        console.error('Failed to append judgment', e);
+        showToast(`${operationType}失败`, 'error');
+      });
+  }, [objects, showToast]);
 
   const onLockObject = useCallback((objectId: string, reason: string) => {
     const obj = objects.find(o => o.id === objectId);
@@ -223,11 +242,11 @@ export default function App() {
       const target = updated.find(o => o.id === id);
       if (target && activeBookId) {
         const objWithProject = { ...target, projectId: activeBookId };
-        api.updateWorldObject(objWithProject).catch(e => console.error('Failed to update object', e));
+        api.updateWorldObject(objWithProject).catch(e => { console.error('Failed to update object', e); showToast('保存失败', 'error'); });
       }
       return updated;
     });
-  }, [activeBookId, objects, addJudgment]);
+  }, [activeBookId, objects, addJudgment, showToast]);
 
   const onCreateObject = useCallback(async (templateType: ObjectType) => {
     const template = TEMPLATES.find(t => t.type === templateType);
@@ -244,9 +263,11 @@ export default function App() {
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
     if (activeBookId) {
-      api.createWorldObject(newObj).catch(e => console.error('Failed to create object', e));
+      api.createWorldObject(newObj)
+        .then(() => showToast(`已创建${templateType}`, 'success'))
+        .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
     }
-  }, [activeBookId]);
+  }, [activeBookId, showToast]);
 
 
   const onCreateNamedObject = useCallback(async (name: string, objectType: ObjectType) => {
@@ -264,15 +285,19 @@ export default function App() {
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
     if (activeBookId) {
-      api.createWorldObject(newObj).catch(e => console.error('Failed to create named object', e));
+      api.createWorldObject(newObj)
+        .then(() => showToast(`已创建「${name}」`, 'success'))
+        .catch(e => { console.error('Failed to create named object', e); showToast('创建对象失败', 'error'); });
     }
-  }, [activeBookId]);
+  }, [activeBookId, showToast]);
 
   const onDeleteObject = useCallback(async (id: string) => {
     setObjects(prev => prev.filter(o => o.id !== id));
     if (selectedObjectId === id) setSelectedObjectId(null);
-    api.deleteWorldObject(id).catch(e => console.error('Failed to delete object', e));
-  }, [selectedObjectId]);
+    api.deleteWorldObject(id)
+      .then(() => showToast('对象已删除', 'success'))
+      .catch(e => { console.error('Failed to delete object', e); showToast('删除对象失败', 'error'); });
+  }, [selectedObjectId, showToast]);
 
   const onNavigate = useCallback((name: string) => {
     const target = objects.find(o => o.name === name);
@@ -288,11 +313,13 @@ export default function App() {
       if (o.id !== objectId || o.selectedBoards.includes(board)) return o;
       const updated = { ...o, selectedBoards: [...o.selectedBoards, board], updatedAt: Date.now() };
       if (activeBookId) {
-        api.updateWorldObject({ ...updated, projectId: activeBookId }).catch(e => console.error('Failed to update board', e));
+        api.updateWorldObject({ ...updated, projectId: activeBookId })
+          .then(() => showToast(`已放入「${board}」`, 'success'))
+          .catch(e => { console.error('Failed to update board', e); showToast('加入画板失败', 'error'); });
       }
       return updated;
     }));
-  }, [activeBookId]);
+  }, [activeBookId, showToast]);
 
   const onInspectorAction = useCallback((action: string, objectId: string, extra?: string) => {
     switch (action) {
@@ -335,8 +362,8 @@ export default function App() {
     // We need an id; use projectId:tabId as convention
     const canvasId = `${activeBookId}:${tabId}`;
     api.saveCanvasTabState({ ...canvasRecord, id: canvasId, projectId: activeBookId })
-      .catch(e => console.error('Failed to save canvas state', e));
-  }, [activeBookId, canvasStates]);
+      .catch(e => { console.error('Failed to save canvas state', e); showToast('画板保存失败', 'error'); });
+  }, [activeBookId, canvasStates, showToast]);
 
   const onUpdateCanvasState = useCallback((tabId: CanvasTab, state: Partial<CanvasTabState>) => {
     saveCanvasState(tabId, state);
@@ -359,8 +386,8 @@ export default function App() {
       }
       return next;
     });
-    api.createConnection(newConn).catch(e => console.error('Failed to create connection', e));
-  }, [activeBookId]);
+    api.createConnection(newConn).catch(e => { console.error('Failed to create connection', e); showToast('创建连线失败', 'error'); });
+  }, [activeBookId, showToast]);
 
   const onAddSticky = useCallback((tabId: CanvasTab, text: string) => {
     setCanvasStates(prev => ({
@@ -388,7 +415,9 @@ export default function App() {
     setSelectedObjectId(newObj.id);
     // Stay on canvas — do NOT navigate away
     if (activeBookId) {
-      api.createWorldObject(newObj).catch(e => console.error('Failed to create object', e));
+      api.createWorldObject(newObj)
+        .then(() => showToast(`已创建${templateType}`, 'success'))
+        .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
     }
     // Set the position immediately on the canvas
     setCanvasStates(prev => {
@@ -405,7 +434,7 @@ export default function App() {
         },
       } as Record<CanvasTab, CanvasTabState>;
     });
-  }, [activeBookId]);
+  }, [activeBookId, showToast]);
 
   const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录'];
 
@@ -421,7 +450,8 @@ export default function App() {
 
   if (projectsLoading) {
     return (
-      <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div className="app-layout app-loading">
+        <div className="spinner" />
         <p style={{ color: '#888' }}>加载中...</p>
       </div>
     );

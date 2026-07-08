@@ -1,6 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { setupMocks, DEFAULT_PROJECTS } from "./mock-helper";
 
+/**
+ * Helper: switch to source mode to access the raw textarea.
+ */
+async function switchToSourceMode(page: import("@playwright/test").Page) {
+  const sourceBtn = page.getByTitle("源码");
+  if (await sourceBtn.isVisible()) {
+    await sourceBtn.click();
+    await page.waitForSelector("textarea", { timeout: 3000 });
+  }
+}
+
 test.describe("Path 5: Object Lifecycle", () => {
   test("empty project shows create template buttons", async ({ page }) => {
     await setupMocks(page, {
@@ -38,8 +49,8 @@ test.describe("Path 5: Object Lifecycle", () => {
     // Create a 人物 object
     await page.getByText("+ 人物").click();
 
-    // After creation, the editor textarea appears
-    await expect(page.locator("textarea")).toBeVisible({ timeout: 5000 });
+    // After creation, the TipTap ProseMirror editor appears (WYSIWYG default)
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 5000 });
   });
 
   test("edit object content via textarea", async ({ page }) => {
@@ -74,6 +85,10 @@ test.describe("Path 5: Object Lifecycle", () => {
 
     // Select the object by clicking on it in the outline
     await page.getByText("测试对象").first().click();
+
+    // TipTap editor appears — switch to source mode to access textarea
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 5000 });
+    await switchToSourceMode(page);
 
     // Textarea should show initial content
     const textarea = page.locator("textarea");
@@ -117,17 +132,17 @@ test.describe("Path 5: Object Lifecycle", () => {
     // Select the object
     await page.getByText("可编辑对象").first().click();
 
-    // Type select - change to "地点"
+    // Type select — change to "地点"
     const typeSelect = page.locator(".doc-properties select").nth(0);
     await typeSelect.selectOption("地点");
     await expect(typeSelect).toHaveValue("地点");
 
-    // Status select - change to "待定"
+    // Status select — change to "待定"
     const statusSelect = page.locator(".doc-properties select").nth(1);
     await statusSelect.selectOption("待定");
     await expect(statusSelect).toHaveValue("待定");
 
-    // Canon select - change to a canon level
+    // Canon select — change to a canon level
     const canonSelect = page.locator(".doc-properties select").nth(2);
     await canonSelect.selectOption("草案正典");
     await expect(canonSelect).toHaveValue("草案正典");

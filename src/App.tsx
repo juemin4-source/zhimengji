@@ -156,10 +156,59 @@ export default function App() {
   }, [refreshProjects]);
 
   // ══════════════════════════════════════════
+  //  Judgment Operations (sync to backend)
+  //  NOTE: defined BEFORE CRUD so onUpdateObject can reference addJudgment
+  // ══════════════════════════════════════════
+
+  const addJudgment = useCallback(async (objectId: string, operationType: JudgmentOperation, reason: string, prevStatus: string, newStatus: string) => {
+    const obj = objects.find(o => o.id === objectId);
+    if (!obj) return;
+    const now = Date.now();
+    const record = {
+      id: jid(), objectId, objectName: obj.name, operationType,
+      reason, timestamp: now, previousStatus: prevStatus, newStatus,
+    };
+    setObjects(prev => prev.map(o =>
+      o.id === objectId
+        ? { ...o, status: newStatus as ObjectStatus, judgmentHistory: [...o.judgmentHistory, record], updatedAt: now }
+        : o
+    ));
+    api.appendJudgmentRecord(record).catch(e => console.error('Failed to append judgment', e));
+  }, [objects]);
+
+  const onLockObject = useCallback((objectId: string, reason: string) => {
+    const obj = objects.find(o => o.id === objectId);
+    if (obj) addJudgment(objectId, '锁定', reason || '手动锁定', obj.status, '锁定');
+  }, [objects, addJudgment]);
+
+  const onDiscardObject = useCallback((objectId: string, reason: string) => {
+    const obj = objects.find(o => o.id === objectId);
+    if (obj) addJudgment(objectId, '废弃', reason || '手动废弃', obj.status, '废弃');
+  }, [objects, addJudgment]);
+
+  const onUnlockObject = useCallback((objectId: string, reason: string) => {
+    const obj = objects.find(o => o.id === objectId);
+    if (obj) addJudgment(objectId, '待验证', reason || '解锁回退', obj.status, '待验证');
+  }, [objects, addJudgment]);
+
+  // ══════════════════════════════════════════
   //  WorldObject CRUD (sync to backend)
   // ══════════════════════════════════════════
 
   const onUpdateObject = useCallback(async (id: string, updates: Partial<WorldObject>) => {
+    // Handle judgment creation BEFORE state updater
+    const before = objects.find(o => o.id === id);
+    if (before) {
+      if (updates.status && updates.status !== before.status) {
+        addJudgment(id, '待验证', `状态变更: ${before.status} → ${updates.status}`, before.status, updates.status);
+      }
+      if (updates.canonLevel && updates.canonLevel !== before.canonLevel) {
+        const idxBefore = CANON_LEVELS.indexOf(before.canonLevel);
+        const idxAfter = CANON_LEVELS.indexOf(updates.canonLevel);
+        const op: JudgmentOperation = idxAfter > idxBefore ? '提升正典' : '收录';
+        addJudgment(id, op, `正典等级变更: ${before.canonLevel} → ${updates.canonLevel}`, before.canonLevel, updates.canonLevel);
+      }
+    }
     setObjects(prev => {
       const updated = prev.map(o => o.id === id ? { ...o, ...updates, updatedAt: Date.now() } as WorldObject : o);
       const target = updated.find(o => o.id === id);
@@ -169,7 +218,7 @@ export default function App() {
       }
       return updated;
     });
-  }, [activeBookId]);
+  }, [activeBookId, objects, addJudgment]);
 
   const onCreateObject = useCallback(async (templateType: ObjectType) => {
     const template = TEMPLATES.find(t => t.type === templateType);
@@ -185,9 +234,27 @@ export default function App() {
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
-    // Persist to backend
     if (activeBookId) {
       api.createWorldObject(newObj).catch(e => console.error('Failed to create object', e));
+    }
+  }, [activeBookId]);
+
+  const onCreateNamedObject = useCallback(async (name: string, objectType: ObjectType) => {
+    const template = TEMPLATES.find(t => t.type === objectType);
+    const now = Date.now();
+    const newObj: WorldObject = {
+      id: uid(), projectId: activeBookId || '', name,
+      type: objectType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
+      canonLevel: '未收录' as CanonLevel,
+      tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [],
+      content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
+      createdAt: now, updatedAt: now,
+    };
+    setObjects(prev => [...prev, newObj]);
+    setSelectedObjectId(newObj.id);
+    setActiveNavTab('文档');
+    if (activeBookId) {
+      api.createWorldObject(newObj).catch(e => console.error('Failed to create named object', e));
     }
   }, [activeBookId]);
 
@@ -217,36 +284,6 @@ export default function App() {
     }));
   }, [activeBookId]);
 
-  // ══════════════════════════════════════════
-  //  Judgment Operations (sync to backend)
-  // ══════════════════════════════════════════
-
-  const addJudgment = useCallback(async (objectId: string, operationType: JudgmentOperation, reason: string, prevStatus: string, newStatus: string) => {
-    const obj = objects.find(o => o.id === objectId);
-    if (!obj) return;
-    const now = Date.now();
-    const record = {
-      id: jid(), objectId, objectName: obj.name, operationType,
-      reason, timestamp: now, previousStatus: prevStatus, newStatus,
-    };
-    setObjects(prev => prev.map(o =>
-      o.id === objectId
-        ? { ...o, status: newStatus as ObjectStatus, judgmentHistory: [...o.judgmentHistory, record], updatedAt: now }
-        : o
-    ));
-    api.appendJudgmentRecord(record).catch(e => console.error('Failed to append judgment', e));
-  }, [objects]);
-
-  const onLockObject = useCallback((objectId: string, reason: string) => {
-    const obj = objects.find(o => o.id === objectId);
-    if (obj) addJudgment(objectId, '锁定', reason || '手动锁定', obj.status, '锁定');
-  }, [objects, addJudgment]);
-
-  const onDiscardObject = useCallback((objectId: string, reason: string) => {
-    const obj = objects.find(o => o.id === objectId);
-    if (obj) addJudgment(objectId, '废弃', reason || '手动废弃', obj.status, '废弃');
-  }, [objects, addJudgment]);
-
   const onInspectorAction = useCallback((action: string, objectId: string, extra?: string) => {
     switch (action) {
       case '收录为设定': {
@@ -259,8 +296,9 @@ export default function App() {
         break;
       }
       case '放入画板': if (extra) onAddToBoard(objectId, extra); break;
-      case '锁定': onLockObject(objectId, ''); break;
-      case '废弃': onDiscardObject(objectId, ''); break;
+      case '锁定': onLockObject(objectId, extra || ''); break;
+      case '废弃': onDiscardObject(objectId, extra || ''); break;
+      case '解锁': onUnlockObject(objectId, extra || ''); break;
       case '查看引用': {
         const obj = objects.find(o => o.id === objectId);
         if (obj) { const ref = objects.find(o => o.id !== obj.id && o.content.includes(obj.name)); if (ref) onNavigate(ref.name); }
@@ -268,7 +306,7 @@ export default function App() {
       }
       case '判断记录': setSelectedObjectId(objectId); setActiveNavTab('判断记录'); break;
     }
-  }, [objects, onAddToBoard, onLockObject, onDiscardObject, addJudgment, onNavigate]);
+  }, [objects, onAddToBoard, onLockObject, onDiscardObject, onUnlockObject, addJudgment, onNavigate]);
 
   // ══════════════════════════════════════════
   //  Canvas Operations (sync to backend)
@@ -325,7 +363,7 @@ export default function App() {
 
   const renderMainContent = () => {
     switch (activeNavTab) {
-      case '文档': return <DocumentView currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard} onLockObject={onLockObject} onDiscardObject={onDiscardObject} onCreateObject={onCreateObject} />;
+      case '文档': return <DocumentView currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard} onLockObject={onLockObject} onDiscardObject={onDiscardObject} onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject} />;
       case '画板': return <CanvasView allObjects={objects} connections={connections} canvasStates={canvasStates} selectedObjectId={selectedObjectId} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState} onAddConnection={onAddConnection} onAddSticky={onAddSticky} onAddToBoard={onAddToBoard} onCreateObject={onCreateObject} />;
       case '设定集': return <SettingCollection allObjects={objects} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateObject={onUpdateObject} onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected} />;
       case '判断记录': return <JudgmentRecords allObjects={objects} onNavigate={onNavigate} />;

@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import type { WorldObject, ObjectType } from '../types/world';
+import { WikiLink } from '../extensions/WikiLink';
+import type { WorldObject, ObjectType, ObjectStatus, CanonLevel } from '../types/world';
+import { OBJECT_TYPES, OBJECT_STATUSES, CANON_LEVELS, STATUS_DISPLAY } from '../types/world';
 import { TEMPLATES } from '../data/seed';
 import DocOutline from './DocOutline';
 
@@ -17,14 +19,13 @@ interface DocumentViewProps {
   onLockObject: (objectId: string, reason: string) => void;
   onDiscardObject: (objectId: string, reason: string) => void;
   onCreateObject: (templateType: ObjectType) => void;
+  onCreateNamedObject?: (name: string, objectType: ObjectType) => void;
 }
 
 /** Ensure content has basic HTML structure for TipTap rendering */
 function ensureHtmlContent(content: string): string {
   if (!content) return '<p></p>';
-  // If it already has HTML tags, use as-is
   if (/<[a-z][\s\S]*>/i.test(content)) return content;
-  // Otherwise wrap in <p> — preserve line breaks as <br>
   const escaped = content
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -34,7 +35,7 @@ function ensureHtmlContent(content: string): string {
 
 export default function DocumentView({
   currentObject, allObjects,
-  onUpdateObject, onNavigate, onCreateObject
+  onUpdateObject, onNavigate, onCreateObject, onCreateNamedObject
 }: DocumentViewProps) {
   const [editMode, setEditMode] = useState<EditMode>('wysiwyg');
   const sourceRef = useRef<HTMLTextAreaElement>(null);
@@ -42,10 +43,34 @@ export default function DocumentView({
   const redoStack = useRef<string[]>([]);
   const [contentDirty, setContentDirty] = useState(false);
 
+  // ── AC1: Create bubble state ──
+  const [showCreateBubble, setShowCreateBubble] = useState(false);
+  const [createBubbleName, setCreateBubbleName] = useState('');
+  const [createBubbleType, setCreateBubbleType] = useState<ObjectType>('人物');
+
+  // ── WikiLink exists checker ──
+  const wikiExists = useCallback((name: string): boolean => {
+    return allObjects.some(o => o.name === name);
+  }, [allObjects]);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+      }),
+      WikiLink.configure({
+        existsChecker: wikiExists,
+        onDoubleClick: (name) => {
+          const exists = wikiExists(name);
+          if (exists) {
+            onNavigate(name);
+          } else {
+            setCreateBubbleName(name);
+            setCreateBubbleType('人物');
+            setShowCreateBubble(true);
+          }
+          return true;
+        },
       }),
     ],
     content: ensureHtmlContent(currentObject?.content || ''),
@@ -53,15 +78,6 @@ export default function DocumentView({
       attributes: {
         class: 'editor-content',
         'data-placeholder': '在此输入文档内容... 使用 [[对象名]] 引用其他对象',
-      },
-      handleClickOn: (_view, _pos, _node, _nodePos, event) => {
-        // Allow clicking on wiki links to navigate
-        const target = event.target as HTMLElement;
-        if (target.tagName === 'A' && target.dataset.wiki) {
-          onNavigate(target.dataset.wiki);
-          return true;
-        }
-        return false;
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -80,24 +96,6 @@ export default function DocumentView({
       }
     }
   }, [editor, currentObject?.id]);
-
-  // Wiki-link rendering: after TipTap renders, inject wiki-link markup
-  useEffect(() => {
-    if (!editor || editMode !== 'wysiwyg') return;
-    // Scan rendered content for [[wiki links]] and mark them
-    const editorEl = editor.view.dom;
-    if (!editorEl) return;
-    const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
-    const replacements: Array<{ text: string; node: Text }> = [];
-    while (walker.nextNode()) {
-      const node = walker.currentNode as Text;
-      if (node.textContent?.includes('[[')) {
-        replacements.push({ text: node.textContent, node });
-      }
-    }
-    // We don't modify the ProseMirror doc — the user sees the raw [[name]] syntax
-    // and can double-click to navigate (handled by textarea double-click below)
-  }, [editor, editMode, currentObject?.content]);
 
   const wikiLinks = useMemo(() => {
     if (!currentObject) return [];
@@ -158,10 +156,41 @@ export default function DocumentView({
       const name = text.slice(lastOpen + 2, pos + nextClose).trim();
       if (name) {
         const target = allObjects.find(o => o.name === name);
-        if (target) onNavigate(name);
+        if (target) {
+          onNavigate(name);
+        } else {
+          setCreateBubbleName(name);
+          setCreateBubbleType('人物');
+          setShowCreateBubble(true);
+        }
       }
     }
   }, [currentObject, allObjects, onNavigate]);
+
+  // ── AC3: Property change handlers ──
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (currentObject) onUpdateObject(currentObject.id, { type: e.target.value as ObjectType });
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (currentObject) onUpdateObject(currentObject.id, { status: e.target.value as ObjectStatus });
+  };
+
+  const handleCanonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (currentObject) onUpdateObject(currentObject.id, { canonLevel: e.target.value as CanonLevel });
+  };
+
+  // ── AC1: Create bubble confirm ──
+  const handleCreateFromBubble = useCallback(() => {
+    if (!createBubbleName.trim()) return;
+    if (onCreateNamedObject) {
+      onCreateNamedObject(createBubbleName.trim(), createBubbleType);
+    } else {
+      onCreateObject(createBubbleType);
+    }
+    setShowCreateBubble(false);
+    setCreateBubbleName('');
+  }, [createBubbleName, createBubbleType, onCreateObject, onCreateNamedObject]);
 
   // ── WYSIWYG toolbar handlers ──
 
@@ -231,6 +260,39 @@ export default function DocumentView({
     );
   };
 
+  // ── AC3: Property selectors ──
+  const renderProperties = () => {
+    if (!currentObject || editMode === 'preview') return null;
+    const sd = STATUS_DISPLAY[currentObject.status];
+    return (
+      <div className="doc-properties">
+        <div className="prop-item">
+          <label>类型</label>
+          <select value={currentObject.type} onChange={handleTypeChange}>
+            {OBJECT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="prop-item">
+          <label>状态</label>
+          <select value={currentObject.status} onChange={handleStatusChange}
+            style={{ background: sd.background, color: sd.text, border: sd.border }}>
+            {OBJECT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="prop-item">
+          <label>正典</label>
+          <select value={currentObject.canonLevel} onChange={handleCanonChange}>
+            {CANON_LEVELS.map(c => (
+              <option key={c} value={c} style={{
+                color: c === '核心正典' ? '#FFB74D' : c === '项目正典' ? '#90CAF9' : c === '草案正典' ? '#CE93D8' : '#999',
+              }}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  };
+
   const renderEditorContent = () => {
     if (editMode === 'wysiwyg') {
       return (
@@ -293,7 +355,7 @@ export default function DocumentView({
       <DocOutline allObjects={allObjects} currentObjectId={currentObject.id} onNavigate={onNavigate} onCreateObject={onCreateObject} />
       <div className="doc-editor-area">
         {renderToolbar()}
-
+        {renderProperties()}
         {renderEditorContent()}
 
         <div className="word-count">
@@ -308,6 +370,39 @@ export default function DocumentView({
           )}
         </div>
       </div>
+
+      {/* AC1: Create bubble for missing wiki links */}
+      {showCreateBubble && (
+        <div className="dialog-overlay" onClick={() => setShowCreateBubble(false)}>
+          <div className="dialog-box create-bubble" onClick={e => e.stopPropagation()}>
+            <h4>创建对象「{createBubbleName}」</h4>
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
+              对象不存在，选择类型后创建并打开：
+            </p>
+            <div className="bubble-type-selector">
+              {OBJECT_TYPES.map(t => (
+                <button
+                  key={t}
+                  className={`bubble-type-btn ${createBubbleType === t ? 'selected' : ''}`}
+                  onClick={() => setCreateBubbleType(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div className="dialog-actions" style={{ marginTop: 16 }}>
+              <button className="ia-btn" onClick={() => setShowCreateBubble(false)}>取消</button>
+              <button
+                className="ia-btn"
+                style={{ background: '#1a73e8' }}
+                onClick={handleCreateFromBubble}
+              >
+                创建并打开
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

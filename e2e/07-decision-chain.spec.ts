@@ -1,6 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { setupMocks, DEFAULT_PROJECTS } from "./mock-helper";
 
+/**
+ * Helper: switch to source mode to access the raw textarea.
+ */
+async function switchToSourceMode(page: import("@playwright/test").Page) {
+  const sourceBtn = page.getByTitle("源码");
+  if (await sourceBtn.isVisible()) {
+    await sourceBtn.click();
+    await page.waitForSelector("textarea", { timeout: 3000 });
+  }
+}
+
 test.describe("Path 7: Decision Chain", () => {
   test("full workflow: select → edit → promote → navigate tabs", async ({ page }) => {
     await setupMocks(page, {
@@ -35,9 +46,11 @@ test.describe("Path 7: Decision Chain", () => {
 
     // Step 2: Select the existing object in the outline
     await page.getByText("新建角色").first().click();
-    await expect(page.locator("textarea")).toHaveValue("初始设定内容", { timeout: 5000 });
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 5000 });
 
-    // Step 3: Edit content
+    // Step 3: Switch to source mode and edit content
+    await switchToSourceMode(page);
+    await expect(page.locator("textarea")).toHaveValue("初始设定内容", { timeout: 5000 });
     await page.locator("textarea").fill("经过深思熟虑的设定内容");
     await expect(page.locator("textarea")).toHaveValue("经过深思熟虑的设定内容");
 
@@ -92,6 +105,8 @@ test.describe("Path 7: Decision Chain", () => {
 
     // Select object
     await page.getByText("新建角色").first().click();
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 5000 });
+    await switchToSourceMode(page);
     await expect(page.locator("textarea")).toHaveValue("测试内容", { timeout: 5000 });
 
     // Switch to judgment records
@@ -100,6 +115,7 @@ test.describe("Path 7: Decision Chain", () => {
 
     // Switch back to document tab
     await page.locator("button.nav-tab", { hasText: "文档" }).click();
-    await expect(page.locator("textarea")).toHaveValue("测试内容", { timeout: 3000 });
+    // After switching back, ProseMirror should show the content
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 3000 });
   });
 });

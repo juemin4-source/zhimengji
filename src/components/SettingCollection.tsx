@@ -51,7 +51,14 @@ export default function SettingCollection({
     if (idx < CANON_LEVELS.length - 1) onUpdateObject(selectedObject.id, { canonLevel: CANON_LEVELS[idx + 1] });
   }, [selectedObject, onUpdateObject]);
 
+  const handleDemote = useCallback(() => {
+    if (!selectedObject) return;
+    const idx = CANON_LEVELS.indexOf(selectedObject.canonLevel);
+    if (idx > 0) onUpdateObject(selectedObject.id, { canonLevel: CANON_LEVELS[idx - 1] });
+  }, [selectedObject, onUpdateObject]);
+
   const canPromote = selectedObject && CANON_LEVELS.indexOf(selectedObject.canonLevel) < CANON_LEVELS.length - 1;
+  const canDemote = selectedObject && CANON_LEVELS.indexOf(selectedObject.canonLevel) > 0;
 
   return (
     <div className="setting-view">
@@ -133,6 +140,7 @@ export default function SettingCollection({
                 <span>引用: {selectedObject.referencesCount} 次</span>
               </div>
               {canPromote && (<button className="canon-promote" onClick={handlePromote}>⬆ 提升至 {CANON_LEVELS[CANON_LEVELS.indexOf(selectedObject.canonLevel) + 1]}</button>)}
+              {canDemote && (<button className="canon-demote" onClick={handleDemote}>⬇ 降级至 {CANON_LEVELS[CANON_LEVELS.indexOf(selectedObject.canonLevel) - 1]}</button>)}
               {selectedObject.canonLevel === '核心正典' && (<div style={{ marginTop: 12, fontSize: 12, color: '#FFB74D', fontStyle: 'italic' }}>✓ 已达最高正典等级</div>)}
             </div>
           ) : (

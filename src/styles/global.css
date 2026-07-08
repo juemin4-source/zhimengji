@@ -401,3 +401,48 @@ body {
 .overview-item { display: flex; flex-direction: column; align-items: center; padding: 16px 8px; background: #141414; border: 1px solid #222; border-radius: 6px; }
 .overview-count { font-size: 28px; font-weight: 700; color: #B7FF00; line-height: 1.2; }
 .overview-label { font-size: 12px; color: #888; margin-top: 4px; }
+
+/* ===== Dialog / Overlay (AC1, AC4) ===== */
+.dialog-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+}
+.dialog-box {
+  background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+  padding: 24px; min-width: 360px; max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.dialog-box h4 { font-size: 16px; color: #e0e0e0; margin-bottom: 4px; }
+.dialog-input {
+  width: 100%; padding: 8px 12px; border: 1px solid #444; border-radius: 6px;
+  font-size: 14px; outline: none; background: #0a0a0a; color: #ccc; box-sizing: border-box;
+}
+.dialog-input:focus { border-color: #B7FF00; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* ===== Create Bubble (AC1) ===== */
+.create-bubble { min-width: 380px; }
+.bubble-type-selector {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+.bubble-type-btn {
+  padding: 8px 12px; border: 1px solid #333; border-radius: 6px;
+  background: #141414; color: #aaa; cursor: pointer; font-size: 13px;
+  text-align: center; transition: all 0.15s;
+}
+.bubble-type-btn:hover { border-color: #666; background: #1e1e1e; }
+.bubble-type-btn.selected { border-color: #B7FF00; background: #1a2e1a; color: #B7FF00; font-weight: 500; }
+
+/* ===== WikiLink Marks ===== */
+.wiki-link { cursor: pointer; color: #90CAF9; }
+.wiki-link-missing { text-decoration: underline dashed #FF9800; color: #FFB74D; }
+.wiki-link-exists { text-decoration: underline solid #90CAF9; }
+
+/* ===== Canon Demote (AC5) ===== */
+.canon-demote {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; margin-left: 8px;
+  padding: 6px 12px; background: #333; color: #FFB74D;
+  border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.canon-demote:hover { background: #3e2723; }
+.canon-demote:disabled { background: #222; color: #555; cursor: not-allowed; }

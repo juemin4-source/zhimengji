@@ -10,9 +10,63 @@ interface InspectorProps {
   onAction: (action: string, objectId: string, extra?: string) => void;
 }
 
+// ── Reason Dialog (AC4) ──
+function ReasonDialog({
+  actionName, objectName, onConfirm, onCancel,
+}: {
+  actionName: string;
+  objectName: string;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') onCancel();
+    if (e.key === 'Enter' && reason.trim()) onConfirm(reason.trim());
+  };
+
+  return (
+    <div className="dialog-overlay" onClick={onCancel}>
+      <div className="dialog-box" onClick={e => e.stopPropagation()}>
+        <h4>{actionName}「{objectName}」</h4>
+        <p style={{ fontSize: 13, color: '#888', margin: '4px 0 12px' }}>请填写操作原因：</p>
+        <input
+          ref={inputRef}
+          type="text"
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="输入原因..."
+          className="dialog-input"
+        />
+        <div className="dialog-actions">
+          <button className="ia-btn" onClick={onCancel}>取消</button>
+          <button
+            className="ia-btn"
+            style={{ background: actionName === '废弃' ? '#B71C1C' : '#1B5E20', opacity: reason.trim() ? 1 : 0.5 }}
+            disabled={!reason.trim()}
+            onClick={() => onConfirm(reason.trim())}
+          >
+            确认{actionName}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Inspector({ object, allObjects, allBoardTabs, onNavigate, onAction }: InspectorProps) {
   const [showBoardMenu, setShowBoardMenu] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // ── AC4: reason dialog state ──
+  const [pendingAction, setPendingAction] = useState<{ action: string; label: string } | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,6 +103,10 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
   const isUncollected = object.canonLevel === '未收录';
   const allBoardsCovered = allBoardTabs.length > 0 && allBoardTabs.every(b => object.selectedBoards.includes(b));
 
+  const handleLockClick = () => setPendingAction({ action: '锁定', label: '锁定' });
+  const handleDiscardClick = () => setPendingAction({ action: '废弃', label: '废弃' });
+  const handleUnlockClick = () => setPendingAction({ action: '解锁', label: '解锁' });
+
   return (
     <div className="inspector-panel">
       <h3 style={{ borderBottom: `2px solid ${sd.border.split(' ')[1]}`, paddingBottom: 8 }}>{object.name}</h3>
@@ -67,8 +125,15 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
             </div>
           )}
         </div>
-        <button className="ia-btn" disabled={isLocked || isDiscarded} onClick={() => onAction('锁定', object.id)} title={isLocked ? '已锁定' : isDiscarded ? '已废弃，无法锁定' : '锁定对象'}>锁定</button>
-        <button className="ia-btn ia-btn-danger" disabled={isDiscarded || isLocked} onClick={() => onAction('废弃', object.id)} title={isDiscarded ? '已废弃' : isLocked ? '已锁定，无法废弃' : '废弃对象'}>废弃</button>
+        {/* AC2: Unlock button for locked objects */}
+        {isLocked ? (
+          <button className="ia-btn" onClick={handleUnlockClick} title="解锁回退到待验证">解锁</button>
+        ) : (
+          <>
+            <button className="ia-btn" disabled={isDiscarded} onClick={handleLockClick} title={isDiscarded ? '已废弃，无法锁定' : '锁定对象'}>锁定</button>
+            <button className="ia-btn ia-btn-danger" disabled={isDiscarded} onClick={handleDiscardClick} title={isDiscarded ? '已废弃' : '废弃对象'}>废弃</button>
+          </>
+        )}
         <button className="ia-btn" onClick={() => onAction('查看引用', object.id)} title="查看引用">引用{referencedBy.length > 0 ? ` (${referencedBy.length})` : ''}</button>
         <button className="ia-btn" onClick={() => onAction('判断记录', object.id)} title="查看判断记录">判断{object.judgmentHistory.length > 0 ? ` (${object.judgmentHistory.length})` : ''}</button>
       </div>
@@ -129,6 +194,19 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
             ))}
           </div>
         </div>
+      )}
+
+      {/* AC4: Reason Dialog */}
+      {pendingAction && (
+        <ReasonDialog
+          actionName={pendingAction.label}
+          objectName={object.name}
+          onConfirm={(reason) => {
+            onAction(pendingAction.action, object.id, reason);
+            setPendingAction(null);
+          }}
+          onCancel={() => setPendingAction(null)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { setupMocks, DEFAULT_PROJECTS } from "./mock-helper";
 
+/**
+ * Helper: switch to source mode to access the raw textarea.
+ * TipTap WYSIWYG is the default editor mode (Batch 1).
+ */
+async function switchToSourceMode(page: import("@playwright/test").Page) {
+  const sourceBtn = page.getByTitle("源码");
+  if (await sourceBtn.isVisible()) {
+    await sourceBtn.click();
+    // Wait for textarea to appear
+    await page.waitForSelector("textarea", { timeout: 3000 });
+  }
+}
+
 test.describe("Path 1: Story Creation", () => {
   test.beforeEach(async ({ page }) => {
     await setupMocks(page, {
@@ -86,17 +99,18 @@ test.describe("Path 1: Story Creation", () => {
     // Click "+ 人物" to create a character
     await page.getByText("+ 人物").click();
 
-    // After creation the editor textarea appears
-    const textarea = page.locator("textarea");
-    await expect(textarea).toBeVisible({ timeout: 5000 });
+    // After creation the TipTap editor appears — switch to source mode for text entry
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 5000 });
+    await switchToSourceMode(page);
 
     // Default name shows as "新人物" in the outline
     await expect(page.locator(".outline-item-name").filter({ hasText: "新人物" })).toBeVisible({ timeout: 3000 });
 
-    // Initial word count should show 0 links
+    // Word count should show 0 links
     await expect(page.getByText(/\[\[链接\]\]: 0/)).toBeVisible();
 
     // Type content containing a [[wiki link]]
+    const textarea = page.locator("textarea");
     await textarea.fill("这个故事的主角是[[李四]]，他是核心人物。");
     await expect(textarea).toHaveValue("这个故事的主角是[[李四]]，他是核心人物。");
 
@@ -137,6 +151,8 @@ test.describe("Path 1: Story Creation", () => {
 
     // Select the object in the outline
     await page.getByText("新人物").first().click();
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 5000 });
+    await switchToSourceMode(page);
     await expect(page.locator("textarea")).toHaveValue("新人物设定内容", { timeout: 5000 });
 
     // Navigate to canvas tab first — should show no nodes for a board-less object
@@ -146,7 +162,7 @@ test.describe("Path 1: Story Creation", () => {
 
     // Switch back to document tab to use inspector
     await page.locator("button.nav-tab", { hasText: "文档" }).click();
-    await expect(page.locator("textarea")).toBeVisible({ timeout: 3000 });
+    await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 3000 });
 
     // Click "放入画板" in the inspector panel
     const addToBoardBtn = page.getByTitle("放入画板");

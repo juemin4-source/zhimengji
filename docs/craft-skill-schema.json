@@ -1,0 +1,538 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhimengji.app/schemas/craft-skill-schema.json",
+  "title": "Craft Skill Schema",
+  "description": "织梦机 v2.0 Craft Skill 的 JSON Schema 定义。每个 skill 继承此结构。来源于文学天演论六部理论：审美篇、读者篇、人物篇、命运篇、现场篇、深处篇。",
+  "type": "object",
+
+  "definitions": {
+    "callChain": {
+      "type": "object",
+      "description": "Skill 调用链定义。dependsOn 表示此 skill 依赖的上游 skill ID。triggers 表示此 skill 完成后可以触发的下游 skill ID。",
+      "properties": {
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^CS-\\d{2}$" },
+          "description": "此 skill 依赖的上游 skill ID 列表。执行前必须已完成的 skill。",
+          "examples": [["CS-01", "CS-02", "CS-03"]]
+        },
+        "triggers": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^CS-\\d{2}$" },
+          "description": "此 skill 完成后可以触发的下游 skill ID 列表。仅在调用链模式下生效。",
+          "examples": [["CS-04"]]
+        },
+        "parallel": {
+          "type": "boolean",
+          "description": "此 skill 是否可与同级 skill 并行执行。默认 false。",
+          "default": false
+        }
+      },
+      "required": ["dependsOn"],
+      "additionalProperties": false
+    },
+
+    "depthLevel": {
+      "type": "object",
+      "description": "单路深度配置。每个深度级别定义 skill 在此模式下的输出级别、是否需要确认、以及交互方式。",
+      "properties": {
+        "outputLevel": {
+          "type": "string",
+          "enum": ["summary", "detailed", "full"],
+          "description": "输出级别：summary=仅摘要，detailed=详细分析，full=包含原始数据的完整输出"
+        },
+        "confirmRequired": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "string", "enum": ["each_dimension", "each_finding", "once_per_chain"] }
+          ],
+          "description": "确认策略：false=自动通过，true=需要确认，each_dimension=每维度确认，each_finding=每条发现确认，once_per_chain=每链确认一次"
+        },
+        "detailLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "细节级别 1-5：1=最精简，5=最详尽。控制 LLM prompt 中的'展开程度'参数。"
+        },
+        "showFindings": {
+          "type": "boolean",
+          "description": "是否显示具体发现条目（问题列表/建议列表）"
+        }
+      },
+      "required": ["outputLevel", "confirmRequired"],
+      "additionalProperties": false
+    },
+
+    "depthControl": {
+      "type": "object",
+      "description": "三路深度介入配置（小新/老张/老陈）。控制同一 skill 在不同用户模式下的行为差异。",
+      "properties": {
+        "auto": { "$ref": "#/definitions/depthLevel", "description": "小新（全自动）模式" },
+        "suggest": { "$ref": "#/definitions/depthLevel", "description": "老张（半自动）模式" },
+        "manual": { "$ref": "#/definitions/depthLevel", "description": "老陈（手动）模式" },
+        "gradualDisclosure": {
+          "type": "boolean",
+          "description": "是否启用渐进式信息揭示（先显示摘要，用户选择展开详细）。默认 true。"
+        }
+      },
+      "required": ["auto", "suggest", "manual"],
+      "additionalProperties": false
+    },
+
+    "boundary": {
+      "type": "object",
+      "description": "Skill 边界声明——什么场景下不应使用此 skill。解决 SIF smell #12。",
+      "properties": {
+        "notApplicable": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "此 skill 不适用的场景列表",
+          "examples": [["非叙事性文本", "诗歌", "技术文档"]]
+        },
+        "unsupportedInputs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "此 skill 不支持的输入类型列表",
+          "examples": [["音频", "图像（无文字）"]]
+        },
+        "minInputLength": {
+          "type": "integer",
+          "description": "最小输入长度（字符数）。低于此长度时 skill 不应调用。",
+          "examples": [100]
+        },
+        "maxInputLength": {
+          "type": "integer",
+          "description": "最大输入长度（字符数）。超过此长度时 skill 应分段处理。",
+          "examples": [10000]
+        },
+        "overlapWith": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skillId": { "type": "string", "pattern": "^CS-\\d{2}$" },
+              "distinction": { "type": "string", "description": "与重叠 skill 的区别说明" }
+            },
+            "required": ["skillId", "distinction"],
+            "additionalProperties": false
+          },
+          "description": "与此 skill 有功能重叠的其他 skill 及区分说明"
+        }
+      },
+      "required": ["notApplicable"],
+      "additionalProperties": false
+    },
+
+    "verification": {
+      "type": "object",
+      "description": "Skill 验证配置——如何确认 skill 运行正确。解决 SIF smell #11。",
+      "properties": {
+        "falsePositiveControl": {
+          "type": "string",
+          "description": "误报率控制方法。描述如何验证发现的问题是真的。",
+          "examples": ["人工抽检 10% 的标记，误标率应 <15%"]
+        },
+        "falseNegativeControl": {
+          "type": "string",
+          "description": "漏报率控制方法。描述如何确保没有漏掉问题。",
+          "examples": ["每 1000 字应至少发现 3 处抽象表达"]
+        },
+        "stopCondition": {
+          "type": "string",
+          "description": "停止条件。描述何时停止检查。",
+          "examples": ["连续 5 句无抽象表达 → 停止检查"]
+        },
+        "testCases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "input": { "type": "string" },
+              "expectedOutput": { "type": "string" }
+            },
+            "required": ["description", "input", "expectedOutput"],
+            "additionalProperties": false
+          },
+          "description": "测试用例列表"
+        }
+      },
+      "required": ["falsePositiveControl", "falseNegativeControl"],
+      "additionalProperties": false
+    },
+
+    "dimension": {
+      "type": "object",
+      "description": "诊断维度定义。每个 Diagnostic skill 包含多个维度用于评估。",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "维度名称",
+          "examples": ["情感具象化", "动作替代抽象", "物色参与度"]
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "权重 0-1。所有维度权重之和应为 1。控制综合评分中各维度的占比。"
+        },
+        "description": {
+          "type": "string",
+          "description": "维度描述——检查什么，以什么标准判断"
+        },
+        "indicators": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "该维度的具体观察指标列表"
+        }
+      },
+      "required": ["name", "weight", "description"],
+      "additionalProperties": false
+    },
+
+    "dimensionGroup": {
+      "type": "object",
+      "description": "诊断维度组。Lens 集，提供检查视角。",
+      "properties": {
+        "dimensions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/dimension" },
+          "minItems": 1,
+          "description": "维度列表（至少 1 个）"
+        },
+        "expansion": {
+          "type": "string",
+          "description": "扩展算子。描述发现后的下一步操作——如何从发现延伸到建议。",
+          "examples": ["对每个抽象词/句，输出 2-3 个具象替换建议"]
+        }
+      },
+      "required": ["dimensions"],
+      "additionalProperties": false
+    },
+
+    "promptTemplate": {
+      "type": "object",
+      "description": "LLM Prompt 模板。system 和 user 字段使用 {{variable}} 占位符格式。",
+      "properties": {
+        "system": {
+          "type": "string",
+          "description": "System prompt。定义 AI 的角色、任务、输出格式要求。支持变量替换。",
+          "examples": ["你是一个文学审美诊断专家。你的任务是检查文本中的抽象表达。"]
+        },
+        "user": {
+          "type": "string",
+          "description": "User prompt。包含具体输入内容的模板。使用 {{text}} 等占位符由 executor 替换。",
+          "examples": ["请检查以下文本中的抽象表达：\n\n{{text}}"]
+        },
+        "responseFormat": {
+          "type": "object",
+          "description": "期望的输出格式定义。可以是 JSON Schema 或 markdown 结构描述。",
+          "properties": {
+            "type": { "type": "string", "enum": ["json", "markdown", "text"] },
+            "schema": { "type": "object", "description": "JSON Schema（当 type=json 时）" }
+          },
+          "required": ["type"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["system", "user"],
+      "additionalProperties": false
+    },
+
+    "theoryRef": {
+      "type": "object",
+      "description": "理论原文引用。确保每个 skill 有明确的理论根基。",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "理论来源（审美篇/读者篇/人物篇/命运篇/现场篇/深处篇）",
+          "enum": ["审美篇", "读者篇", "人物篇", "命运篇", "现场篇", "深处篇"]
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "关键词列表",
+          "minItems": 1
+        },
+        "quote": {
+          "type": "string",
+          "description": "理论原文引用。作为 AI 判断时的锚定标准。"
+        },
+        "chapter": {
+          "type": "string",
+          "description": "具体章节引用",
+          "examples": ["第一章「机制受力点」", "第三章「私」"]
+        }
+      },
+      "required": ["source", "keywords"],
+      "additionalProperties": false
+    }
+  },
+
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "指向此 schema 自身的引用"
+    },
+
+    "id": {
+      "type": "string",
+      "pattern": "^CS-\\d{2}$",
+      "description": "Skill 唯一标识符。格式 CS-01 ~ CS-40。",
+      "examples": ["CS-01", "CS-10", "CS-40"]
+    },
+
+    "name": {
+      "type": "string",
+      "pattern": "^craft-[a-z]+(-[a-z]+)*$",
+      "description": "Skill 技术名称。kebab-case，用于代码引用。",
+      "examples": ["craft-aesthetics-concrete", "craft-character-si"]
+    },
+
+    "displayName": {
+      "type": "string",
+      "description": "Skill 显示名称。中文，用于 UI 展示。",
+      "examples": ["具象诊断", "私诊断"]
+    },
+
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Skill 版本号。用于追踪 skill 定义变更。",
+      "default": "1.0.0",
+      "examples": ["1.0.0"]
+    },
+
+    "archetype": {
+      "type": "object",
+      "description": "SIF (Skill Intelligence Framework) Archetype 分类。",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": ["Diagnostic", "Director", "Delivery", "Stance", "Workflow"],
+          "description": "主要 Archetype。决定 skill 的默认行为和输出模式。"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["Diagnostic", "Director", "Delivery", "Stance", "Workflow"]
+          },
+          "description": "次要 Archetype 列表。辅助行为模式。",
+          "maxItems": 2
+        }
+      },
+      "required": ["primary"],
+      "additionalProperties": false
+    },
+
+    "theory": {
+      "$ref": "#/definitions/theoryRef",
+      "description": "理论原文引用。"
+    },
+
+    "function": {
+      "type": "string",
+      "description": "Skill 功能描述。一句话说明此 skill 做什么。",
+      "examples": ["检查文本是否将抽象情感/状态转化为具体动作、物色、场景"]
+    },
+
+    "category": {
+      "type": "string",
+      "enum": ["aesthetics", "reader", "character", "fate", "scene", "depth", "gate"],
+      "description": "Skill 所属大类。对应文学天演论的六篇理论 + Gate。"
+    },
+
+    "subcategory": {
+      "type": "string",
+      "description": "子类细分。用于更精细的 skill 分组。",
+      "examples": ["审美打磨", "人物设计", "命运结构", "现场写作", "读者验证", "深处检查", "最终Gate"]
+    },
+
+    "thickness": {
+      "type": "string",
+      "enum": ["thin", "medium", "thick"],
+      "description": "Skill 厚度。thin=快速判断(~200 tokens)，medium=中等分析(~500 tokens)，thick=深度分析(~1000+ tokens)。决定 context 预算。"
+    },
+
+    "modelTier": {
+      "type": "string",
+      "enum": ["lightweight", "sonnet", "opus"],
+      "description": "推荐模型层级。lightweight=快速廉价模型，sonnet=平衡型，opus=旗舰模型。Chain Engine 根据此字段选择 LLM。",
+      "default": "sonnet"
+    },
+
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["text", "json", "array", "object"] },
+          "description": { "type": "string" },
+          "required": { "type": "boolean", "default": true }
+        },
+        "required": ["name", "type", "description"],
+        "additionalProperties": false
+      },
+      "description": "输入参数列表。每个参数有名称、类型、描述。",
+      "minItems": 1
+    },
+
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "type", "description"],
+        "additionalProperties": false
+      },
+      "description": "输出参数列表。生成的要求和限制。",
+      "minItems": 1
+    },
+
+    "lens": {
+      "$ref": "#/definitions/dimensionGroup",
+      "description": "Lens 集。仅 Diagnostic archetype 需要。定义检查视角和扩展算子。"
+    },
+
+    "promptTemplate": {
+      "$ref": "#/definitions/promptTemplate",
+      "description": "LLM Prompt 模板。executor 使用此模板组装最终的 LLM prompt。"
+    },
+
+    "callChain": {
+      "$ref": "#/definitions/callChain",
+      "description": "Skill 调用链。定义 skill 间的依赖和触发关系。"
+    },
+
+    "depthControl": {
+      "$ref": "#/definitions/depthControl",
+      "description": "三路深度介入配置。控制 auto/suggest/manual 模式下的行为差异。"
+    },
+
+    "boundary": {
+      "$ref": "#/definitions/boundary",
+      "description": "Skill 边界声明。解决 SIF smell #12 和 #9。"
+    },
+
+    "verification": {
+      "$ref": "#/definitions/verification",
+      "description": "Skill 验证配置。解决 SIF smell #11。"
+    },
+
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "input": { "type": "string" },
+          "output": { "type": "string" },
+          "explanation": { "type": "string" }
+        },
+        "required": ["title", "input", "output"],
+        "additionalProperties": false
+      },
+      "description": "使用示例列表。帮助理解 skill 的预期行为。"
+    },
+
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "标签列表。用于 skill 搜索和过滤。",
+      "examples": [["审美", "具象化", "抽象表达"]]
+    }
+  },
+
+  "required": [
+    "id",
+    "name",
+    "displayName",
+    "archetype",
+    "theory",
+    "function",
+    "category",
+    "thickness",
+    "inputs",
+    "outputs",
+    "promptTemplate",
+    "callChain",
+    "depthControl",
+    "boundary",
+    "verification"
+  ],
+
+  "additionalProperties": false,
+
+  "examples": [
+    {
+      "id": "CS-01",
+      "name": "craft-aesthetics-concrete",
+      "displayName": "具象诊断",
+      "version": "1.0.0",
+      "archetype": {
+        "primary": "Diagnostic",
+        "secondary": []
+      },
+      "theory": {
+        "source": "审美篇",
+        "keywords": ["具体"],
+        "quote": "不写笼统的'他很难过'，写'他把杯子转了四圈'"
+      },
+      "function": "检查文本是否将抽象情感/状态转化为具体动作、物色、场景",
+      "category": "aesthetics",
+      "subcategory": "审美打磨",
+      "thickness": "thin",
+      "modelTier": "sonnet",
+      "inputs": [
+        { "name": "text", "type": "text", "description": "需要诊断的文本内容" }
+      ],
+      "outputs": [
+        { "name": "concreteScore", "type": "number", "description": "具象化评分 0-100" },
+        { "name": "abstractWordList", "type": "array", "description": "发现的抽象词/句列表" }
+      ],
+      "lens": {
+        "dimensions": [
+          { "name": "情感具象化", "weight": 0.4, "description": "情感是否通过具体动作/物色表达" },
+          { "name": "动作替代抽象", "weight": 0.3, "description": "抽象状态是否被动作替代" },
+          { "name": "物色参与度", "weight": 0.3, "description": "物品是否承载叙事重量" }
+        ],
+        "expansion": "对每个抽象词/句，输出 2-3 个具象替换建议"
+      },
+      "promptTemplate": {
+        "system": "你是一个文学审美诊断专家，专注于检查文本的具象化程度。你的任务是识别抽象表达并给出具体化建议。",
+        "user": "请检查以下文本中的抽象表达，按维度评分：\n\n{{text}}",
+        "responseFormat": { "type": "json" }
+      },
+      "callChain": {
+        "dependsOn": [],
+        "triggers": ["CS-04"]
+      },
+      "depthControl": {
+        "auto": { "outputLevel": "summary", "confirmRequired": false, "detailLevel": 1, "showFindings": false },
+        "suggest": { "outputLevel": "detailed", "confirmRequired": true, "detailLevel": 3, "showFindings": true },
+        "manual": { "outputLevel": "full", "confirmRequired": "each_dimension", "detailLevel": 5, "showFindings": true }
+      },
+      "boundary": {
+        "notApplicable": ["非叙事性文本", "诗歌", "技术文档"],
+        "unsupportedInputs": ["音频", "图像（无文字）"],
+        "minInputLength": 100,
+        "maxInputLength": 10000,
+        "overlapWith": [
+          { "skillId": "CS-30", "distinction": "CS-01聚焦情感/状态抽象，CS-30聚焦形容词堆砌" }
+        ]
+      },
+      "verification": {
+        "falsePositiveControl": "人工抽检 10% 的标记，误标率应 <15%",
+        "falseNegativeControl": "每 1000 字应至少发现 3 处抽象表达",
+        "stopCondition": "连续 5 句无抽象表达 → 停止检查"
+      },
+      "tags": ["审美", "具象化", "抽象表达"]
+    }
+  ]
+}

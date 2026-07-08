@@ -237,21 +237,22 @@
 | Agent Cost (L4) | 2/5 | 🔴 需补充 |
 | Agent Security (L5) | 3/10 controls | 🟢 N/A(单用户) |
 
-### 必须修复 (P0)
+### 必须修复 (P0) — ✅ 已全部修复
 
-1. **callChain 语义反转** — JSON 中 40 个 skill 的 `after`/`before` 全部写反。必须修正才能被自动编排工具消费。
-2. **缺少 per-skill 边界声明** — 40 个 skill 均无 "不适用于" 声明。违反 SIF smell #12。
+1. ~~**callChain 语义反转** — JSON 中 40 个 skill 的 `after`/`before` 全部写反~~ ✅ 已改为 `precedes`/`follows` 语义，40条全部更正
+2. ~~**缺少 per-skill 边界声明** — 40 个 skill 均无 "不适用于" 声明~~ ✅ JSON `notApplicable` + mapping.md `不适用于` 已全部补全（40/40）
 
-### 建议修复 (P1)
+### 建议修复 (P1) — ✅ 已全部修复
 
-3. **缺少 verification step** — 违反 SIF smell #11。至少为每个 Diagnostic skill 添加误报/漏报控制方法。
-4. **Agent 缺少 model tier** — 每个 agent 需要指定模型层级。Orchestrator/Reader 可用小型模型，Architect/Writer/Inspector 需旗舰模型。
-5. **Agent 缺少 forbidden scope** — 防止 agent 越界执行。
+3. ~~**缺少 verification step** — 违反 SIF smell #11~~ ✅ JSON `verification` + mapping.md `验证方法` 已全部补全（40/40）
+4. ~~**Agent 缺少 model tier**~~ ✅ 5个 agent 全部指定：Orchestrator(小型) / Reader(中型) / Architect、Writer、Inspector(旗舰)
+5. ~~**Agent 缺少 forbidden scope**~~ ✅ 5个 agent 全部添加禁入范围
 
 ### 优化建议 (P2)
 
-6. **Reader + Inspector 合并** → 节省一次 agent 调用
-7. **10 个 medium thickness skill 降为 thin** → 节省 context
-8. **mapping.md 中的 stale 调用链引用** → 修正错误 skill ID
-9. **"三重检验"去重** → 合并到 CS-38
-10. **技能边界重叠说明** → CS-01/30、CS-03/35、CS-22/23 增加区分文档
+6. **Reader + Inspector 合并** → 节省一次 agent 调用（当前各5个agent，可优化为4个）
+7. **26 thin / 14 medium** ✅ 厚度已按 SIF v3.1 调整（从14 thin→26 thin）
+8. **mapping.md 中的 stale 调用链引用** ✅ CS-01 调用链已修正（CS-13→CS-32）
+9. **"三重检验"去重** ✅ 已合并到 CS-38
+10. **技能边界重叠说明** — CS-01/30、CS-03/35、CS-22/23 仍需增加区分文档
+11. **完成报告更新** — `done/zhimengji-v2-craft-skill-mapping.json` 需补充修复摘要

@@ -45,6 +45,8 @@
 | **Success Metric** | 编排覆盖率（用户意图→skill链的映射完整性） |
 | **Failure Mode** | 遗漏关键 skill 维度 |
 | **Thickness** | thin — 不做具体 skill 工作，只路由 |
+| **Model Tier** | 小型模型（路由只需分类，无需深度推理） |
+| **Forbidden Scope** | 不直接执行任何 skill；不修改文本；不越过 Inspector 直接发布 |
 
 ### 路由决策
 
@@ -106,6 +108,8 @@ orchestrator_output:
 | **Success Metric** | 人物-结构-命运三位一体的一致性 |
 | **Failure Mode** | 人物设计脱离命运结构 |
 | **Thickness** | medium |
+| **Model Tier** | 旗舰模型（人物+命运分析需深度推理和文学判断） |
+| **Forbidden Scope** | 不直接写场景文本；不修改已有文本；不跳过 Writer 直接交付 |
 
 ### 持有的 Skill 链
 
@@ -172,6 +176,8 @@ architect_outputs:
 | **Success Metric** | 现场独立成立度 + 审美通过率 |
 | **Failure Mode** | 场景漂亮但脱离命运结构 |
 | **Thickness** | medium-thick |
+| **Model Tier** | 旗舰模型（场景写作+审美打磨需最高质量输出） |
+| **Forbidden Scope** | 不修改人物设定和命运结构（来自 Architect 的输入为只读）；不做读者验证 |
 
 ### 持有的 Skill 链
 
@@ -234,6 +240,8 @@ writer_outputs:
 | **Success Metric** | 读者欲望持续度评分 |
 | **Failure Mode** | 忽略特定读者群的差异 |
 | **Thickness** | medium |
+| **Model Tier** | 中型模型（读者体验诊断可复用基础文学判断力，无需旗舰） |
+| **Forbidden Scope** | 不修文本（只管发现不管修复）；不触及深处母题分析 |
 
 ### 持有的 Skill 链
 
@@ -283,6 +291,8 @@ reader_outputs:
 | **Success Metric** | Gate 决策正确性（无漏放，无误拦） |
 | **Failure Mode** | 过于宽松放行问题文本 / 过于严格阻碍发布 |
 | **Thickness** | thin（Gate 型 — 只需要决策，不需要大量产生） |
+| **Model Tier** | 旗舰模型（Gate 决策需最强判断力，误判成本高） |
+| **Forbidden Scope** | 不修复发现的任何问题（只报告不修改）；不覆写其他 Agent 的输出 |
 
 ### 持有的 Skill 链
 

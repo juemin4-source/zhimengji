@@ -86,6 +86,7 @@
   .handbook-nav h1 { font-size: 1.2rem; font-weight: 700; flex: 1; }
   .handbook-nav .view-toggle-btn { background: transparent; border: 1px solid var(--border-default); color: var(--text-secondary); font: 400 0.8rem var(--font); padding: 0.35rem 0.85rem; border-radius: 6px; cursor: pointer; transition: all .2s; }
   .handbook-nav .view-toggle-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .handbook-notice { background: var(--accent-soft); border: 1px solid rgba(183,255,0,0.15); border-radius: var(--radius-sm); padding: 0.6rem 1rem; font-size: 0.82rem; color: var(--accent); margin-bottom: 1rem; line-height: 1.5; }
   .canon-section { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; transition: box-shadow .2s; }
   .canon-section:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
   .canon-section-header { display: flex; align-items: center; gap: 0.65rem; padding: 1rem 1.25rem; cursor: pointer; user-select: none; transition: background .2s; }
@@ -217,6 +218,7 @@
 <div id="view-handbook" class="view">
   <div class="view-port">
     <div class="handbook">
+      <div class="handbook-notice">v1.2 的新手引导在编辑器内联展示，本页面为正典参考手册</div>
       <div class="handbook-nav">
         <button class="back-btn" id="btn-back">&#x2190; 返回</button>
         <h1>正典手册</h1>

@@ -101,7 +101,7 @@ input{font-family:inherit;font-size:0.8125rem}
 .timeline-year-marker{position:absolute;top:50%;transform:translateX(-50%);text-align:center}
 .timeline-year-marker .year-dot{width:10px;height:10px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--text-secondary);margin:0 auto 4px}
 .timeline-year-marker .year-label{font-size:0.6875rem;color:var(--text-secondary);margin-top:4px}
-.timeline-event-card{position:absolute;width:160px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.timeline-event-card{position:absolute;width:160px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s,box-shadow .15s;user-select:none}
 .timeline-event-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,0.3)}
 .timeline-event-card .event-date{font-size:0.6875rem;color:var(--accent);margin-bottom:2px}
 .timeline-event-card .event-name{font-size:0.8125rem;font-weight:500;color:var(--text-primary)}
@@ -114,6 +114,13 @@ input{font-family:inherit;font-size:0.8125rem}
 .sidebar-event .se-date{font-size:0.6875rem;color:var(--canon-none)}
 .sidebar-event .se-name{font-size:0.8125rem;color:var(--text-primary)}
 .canvas-hint{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:0.75rem;color:var(--canon-none);pointer-events:none;opacity:0.6}
+.status-bar{height:28px;background:var(--bg-header);border-top:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;user-select:none;font-size:0.6875rem;color:var(--text-secondary);z-index:30}
+.status-bar-left,.status-bar-right{display:flex;align-items:center;gap:12px}
+.status-indicator{display:flex;align-items:center;gap:5px}
+.save-dot{width:7px;height:7px;border-radius:50%;background:#4CAF50;transition:background .3s,box-shadow .3s;flex-shrink:0}
+.save-dot.unsaved{background:var(--accent);box-shadow:0 0 6px rgba(183,255,0,0.5)}
+.save-label{transition:color .3s}
+.save-label.unsaved{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -238,8 +245,8 @@ input{font-family:inherit;font-size:0.8125rem}
             <span style="margin-left:auto;font-size:0.6875rem;color:var(--text-secondary)">人物</span>
           </div>
         </div>
-        <div class="marquee-rect" id="marqueeDemo" style="left:380px;top:250px;width:240px;height:130px;display:none;"></div>
       </div>
+      <div class="marquee-rect" id="marqueeRect" style="display:none;"></div>
       <div class="zoom-controls">
         <button class="zoom-btn" id="zoomOut" title="缩小">−</button>
         <span class="zoom-label" id="zoomLabel">100%</span>
@@ -281,29 +288,29 @@ input{font-family:inherit;font-size:0.8125rem}
         <div class="timeline-subtitle">纪元 001 — 012 年</div>
       </div>
       <div class="timeline-body">
-        <div class="timeline-track-area">
+        <div class="timeline-track-area" id="timelineTrackArea">
           <div class="timeline-track"></div>
           <div class="timeline-year-marker" style="left:12%;top:50%;"><div class="year-dot"></div><div class="year-label">001年</div></div>
           <div class="timeline-year-marker" style="left:30%;top:50%;"><div class="year-dot"></div><div class="year-label">003年</div></div>
           <div class="timeline-year-marker" style="left:48%;top:50%;"><div class="year-dot"></div><div class="year-label">005年</div></div>
           <div class="timeline-year-marker" style="left:66%;top:50%;"><div class="year-dot"></div><div class="year-label">008年</div></div>
           <div class="timeline-year-marker" style="left:84%;top:50%;"><div class="year-dot"></div><div class="year-label">012年</div></div>
-          <div class="timeline-event-card" style="left:12%;top:50%;transform:translate(-50%,-100%) translateY(-24px);">
+          <div class="timeline-event-card" data-event="1" style="left:12%;top:50%;transform:translate(-50%,-100%) translateY(-24px);">
             <div class="event-date">001年</div>
             <div class="event-name">乐园机制启动</div>
             <div class="event-type">核心事件</div>
           </div>
-          <div class="timeline-event-card" style="left:30%;top:50%;transform:translate(-50%,0) translateY(24px);">
+          <div class="timeline-event-card" data-event="2" style="left:30%;top:50%;transform:translate(-50%,0) translateY(24px);">
             <div class="event-date">003年</div>
             <div class="event-name">张三被激活</div>
             <div class="event-type">角色登场</div>
           </div>
-          <div class="timeline-event-card" style="left:48%;top:50%;transform:translate(-50%,-100%) translateY(-24px);">
+          <div class="timeline-event-card" data-event="3" style="left:48%;top:50%;transform:translate(-50%,-100%) translateY(-24px);">
             <div class="event-date">005年</div>
             <div class="event-name">李四加入</div>
             <div class="event-type">角色登场</div>
           </div>
-          <div class="timeline-event-card" style="left:66%;top:50%;transform:translate(-50%,0) translateY(24px);">
+          <div class="timeline-event-card" data-event="4" style="left:66%;top:50%;transform:translate(-50%,0) translateY(24px);">
             <div class="event-date">008年</div>
             <div class="event-name">中央数据库事件</div>
             <div class="event-type">核心事件</div>
@@ -320,6 +327,15 @@ input{font-family:inherit;font-size:0.8125rem}
       </div>
     </div>
   </div>
+  <div class="status-bar">
+    <div class="status-bar-left">
+      <span class="status-indicator"><span class="save-dot" id="saveDot"></span><span class="save-label" id="saveLabel">已保存</span></span>
+    </div>
+    <div class="status-bar-right">
+      <span id="wordCount">0 字</span>
+      <span id="nodeCount">0 节点</span>
+    </div>
+  </div>
 </div>
 <script>
 (function(){
@@ -329,7 +345,48 @@ input{font-family:inherit;font-size:0.8125rem}
   var ct=document.getElementById('canvasContent');
   var pd=document.getElementById('poolDrawer');
   var zl=document.getElementById('zoomLabel');
-  var md=document.getElementById('marqueeDemo');
+  var svg=document.getElementById('connectionsSvg');
+  var saveDot=document.getElementById('saveDot');
+  var saveLabel=document.getElementById('saveLabel');
+  var wordCountEl=document.getElementById('wordCount');
+  var nodeCountEl=document.getElementById('nodeCount');
+
+  var isMarquee=false,marqueeStartX=0,marqueeStartY=0;
+  var marqueeRect=document.getElementById('marqueeRect');
+
+  var connectSource=null;
+  var connectTempLine=null;
+
+  var isTimelineDrag=false,timelineCard=null,timelineStartX=0,timelineStartLeft=0;
+
+  function getTool(){
+    var tb=document.querySelector('.tool-btn.active[data-tool]');
+    return tb?tb.dataset.tool:'select';
+  }
+
+  function ctX(vpX){return (vpX-panX)/(zoom/100);}
+  function ctY(vpY){return (vpY-panY)/(zoom/100);}
+
+  function markUnsaved(){
+    saveDot.classList.add('unsaved');
+    saveLabel.classList.add('unsaved');
+    saveLabel.textContent='未保存';
+  }
+
+  function updateStatusBar(){
+    var words=0;
+    var nodes=document.querySelectorAll('.node-card');
+    nodes.forEach(function(n){
+      var nm=n.querySelector('.node-card-name');
+      var ds=n.querySelector('.node-card-desc');
+      if(nm)words+=nm.textContent.length;
+      if(ds)words+=ds.textContent.length;
+    });
+    document.querySelectorAll('.conn-label').forEach(function(t){words+=t.textContent.length;});
+    if(wordCountEl)wordCountEl.textContent=words+' 字';
+    if(nodeCountEl)nodeCountEl.textContent=nodes.length+' 节点';
+  }
+
   function u(){
     var s=zoom/100;
     ct.style.transform='translate('+panX+'px,'+panY+'px) scale('+s+')';
@@ -337,15 +394,21 @@ input{font-family:inherit;font-size:0.8125rem}
     ct.style.backgroundSize=f+'px '+f+'px,'+f+'px '+f+'px,'+m+'px '+m+'px,'+m+'px '+m+'px';
     zl.textContent=Math.round(zoom)+'%';
   }
+
   function setTool(t){
     document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b){b.classList.toggle('active',b.dataset.tool===t);});
     vp.classList.toggle('marquee-active',t==='marquee');
-    md.style.display=t==='marquee'?'block':'none';
+    if(t!=='connect'&&connectSource){
+      connectSource.classList.remove('selected');
+      if(connectTempLine){connectTempLine.remove();}
+      connectSource=null;connectTempLine=null;
+    }
     if(t==='pool'){togglePool();document.querySelector('.tool-btn[data-tool="pool"]').classList.remove('active');}
     if(t==='fit'){resetView();document.querySelector('.tool-btn[data-tool="fit"]').classList.remove('active');}
     if(t==='layout'){autoLayout();document.querySelector('.tool-btn[data-tool="layout"]').classList.remove('active');}
     if(t==='undo'||t==='redo'){document.querySelector('.tool-btn[data-tool="'+t+'"]').classList.remove('active');}
   }
+
   function setTab(t){
     document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===t);});
     var cvp=document.querySelector('.canvas-viewport');
@@ -358,10 +421,161 @@ input{font-family:inherit;font-size:0.8125rem}
       dp.style.display='flex';
     }else{cvp.style.display='block';tlv.classList.remove('active');if(dp)dp.style.display='none';}
   }
+
   window.selectNode=function(el){
+    var curTool=getTool();
+    if(curTool==='connect'){
+      handleConnect(el);
+      return;
+    }
     document.querySelectorAll('.node-card').forEach(function(n){n.classList.remove('selected');});
     el.classList.add('selected');
   };
+
+  function handleConnect(el){
+    if(!connectSource){
+      connectSource=el;
+      el.classList.add('selected');
+      var sx=parseFloat(el.style.left)+85;
+      var sy=parseFloat(el.style.top)+30;
+      connectTempLine=document.createElementNS('http://www.w3.org/2000/svg','line');
+      connectTempLine.setAttribute('x1',sx);
+      connectTempLine.setAttribute('y1',sy);
+      connectTempLine.setAttribute('x2',sx);
+      connectTempLine.setAttribute('y2',sy);
+      connectTempLine.setAttribute('stroke','#B7FF00');
+      connectTempLine.setAttribute('stroke-width','2');
+      connectTempLine.setAttribute('stroke-dasharray','6,4');
+      svg.appendChild(connectTempLine);
+    }else if(el!==connectSource){
+      var x1=parseFloat(connectSource.style.left)+85;
+      var y1=parseFloat(connectSource.style.top)+30;
+      var x2=parseFloat(el.style.left)+85;
+      var y2=parseFloat(el.style.top)+30;
+      var line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',x1);
+      line.setAttribute('y1',y1);
+      line.setAttribute('x2',x2);
+      line.setAttribute('y2',y2);
+      line.setAttribute('stroke','var(--text-secondary)');
+      line.setAttribute('stroke-width','1.5');
+      svg.appendChild(line);
+      if(connectTempLine){connectTempLine.remove();connectTempLine=null;}
+      connectSource.classList.remove('selected');
+      connectSource=null;
+      markUnsaved();
+      updateStatusBar();
+    }
+  }
+
+  function cancelConnect(){
+    if(connectSource){
+      connectSource.classList.remove('selected');
+      connectSource=null;
+    }
+    if(connectTempLine){connectTempLine.remove();connectTempLine=null;}
+  }
+
+  function updateConnectTempLine(mouseVpX,mouseVpY){
+    if(!connectTempLine||!connectSource)return;
+    var sx=parseFloat(connectSource.style.left)+85;
+    var sy=parseFloat(connectSource.style.top)+30;
+    var ex=ctX(mouseVpX);
+    var ey=ctY(mouseVpY);
+    connectTempLine.setAttribute('x1',sx);
+    connectTempLine.setAttribute('y1',sy);
+    connectTempLine.setAttribute('x2',ex);
+    connectTempLine.setAttribute('y2',ey);
+  }
+
+  function startMarquee(e){
+    isMarquee=true;
+    var vr=vp.getBoundingClientRect();
+    marqueeStartX=e.clientX-vr.left;
+    marqueeStartY=e.clientY-vr.top;
+    marqueeRect.style.left=marqueeStartX+'px';
+    marqueeRect.style.top=marqueeStartY+'px';
+    marqueeRect.style.width='0px';
+    marqueeRect.style.height='0px';
+    marqueeRect.style.display='block';
+    e.preventDefault();
+  }
+
+  function updateMarquee(e){
+    if(!isMarquee)return;
+    var vr=vp.getBoundingClientRect();
+    var cx=e.clientX-vr.left;
+    var cy=e.clientY-vr.top;
+    var l=Math.min(marqueeStartX,cx);
+    var t=Math.min(marqueeStartY,cy);
+    var w=Math.abs(cx-marqueeStartX);
+    var h=Math.abs(cy-marqueeStartY);
+    marqueeRect.style.left=l+'px';
+    marqueeRect.style.top=t+'px';
+    marqueeRect.style.width=w+'px';
+    marqueeRect.style.height=h+'px';
+  }
+
+  function endMarquee(){
+    if(!isMarquee)return;
+    isMarquee=false;
+    marqueeRect.style.display='none';
+    var r=marqueeRect.getBoundingClientRect();
+    document.querySelectorAll('.node-card').forEach(function(n){
+      var nr=n.getBoundingClientRect();
+      var overlap=nr.left<r.right&&nr.right>r.left&&nr.top<r.bottom&&nr.bottom>r.top;
+      n.classList.toggle('selected',overlap);
+    });
+    updateStatusBar();
+  }
+
+  function startTimelineDrag(e,card){
+    var tlv=document.getElementById('timelineView');
+    if(!tlv.classList.contains('active'))return;
+    isTimelineDrag=true;
+    timelineCard=card;
+    timelineStartX=e.clientX;
+    timelineStartLeft=parseFloat(card.style.left)||0;
+    card.style.cursor='grabbing';
+    card.style.zIndex=10;
+    card.style.transition='none';
+    e.preventDefault();
+  }
+
+  function moveTimelineDrag(e){
+    if(!isTimelineDrag||!timelineCard)return;
+    var dx=e.clientX-timelineStartX;
+    var parent=timelineCard.parentElement;
+    var pw=parent.clientWidth;
+    var pct=pw>0?dx/pw*100:0;
+    var newLeft=Math.max(2,Math.min(98,timelineStartLeft+pct));
+    timelineCard.style.left=newLeft+'%';
+    e.preventDefault();
+  }
+
+  function endTimelineDrag(){
+    if(!isTimelineDrag||!timelineCard)return;
+    isTimelineDrag=false;
+    timelineCard.style.cursor='pointer';
+    timelineCard.style.zIndex='';
+    timelineCard.style.transition='';
+    var markers=timelineCard.parentElement.querySelectorAll('.timeline-year-marker');
+    var cardLeft=parseFloat(timelineCard.style.left);
+    var nearest=null,nearestDist=Infinity;
+    markers.forEach(function(m){
+      var ml=parseFloat(m.style.left);
+      var d=Math.abs(ml-cardLeft);
+      if(d<nearestDist){nearestDist=d;nearest=m;}
+    });
+    if(nearest&&nearestDist<15){
+      timelineCard.style.transition='left 0.2s ease';
+      timelineCard.style.left=nearest.style.left;
+      setTimeout(function(){if(timelineCard)timelineCard.style.transition='';},250);
+    }
+    markUnsaved();
+    timelineCard=null;
+  }
+
   function togglePool(){poolOpen=!poolOpen;pd.classList.toggle('open',poolOpen);}
   function resetView(){zoom=100;panX=-60;panY=-40;u();}
   function autoLayout(){
@@ -370,16 +584,71 @@ input{font-family:inherit;font-size:0.8125rem}
       if(i<ps.length){c.style.transition='left 0.6s ease,top 0.6s ease';c.style.left=ps[i].l+'px';c.style.top=ps[i].t+'px';setTimeout(function(){c.style.transition='';},700);}
     });
   }
+
   vp.addEventListener('mousedown',function(e){
-    if(e.target.closest('.node-card')||e.target.closest('svg')||e.target.closest('.zoom-controls'))return;
-    isPanning=true;panStartX=e.clientX;panStartY=e.clientY;panStartOX=panX;panStartOY=panY;
-    vp.classList.add('panning');e.preventDefault();
+    if(e.button!==0)return;
+    var target=e.target;
+    var node=target.closest('.node-card');
+    var svgEl=target.closest('svg');
+    var zoomEl=target.closest('.zoom-controls');
+    var curTool=getTool();
+
+    if(curTool==='marquee'&&!node&&!svgEl&&!zoomEl){
+      startMarquee(e);
+      return;
+    }
+    if(node||svgEl||zoomEl)return;
+    isPanning=true;
+    panStartX=e.clientX;panStartY=e.clientY;panStartOX=panX;panStartOY=panY;
+    vp.classList.add('panning');
+    e.preventDefault();
   });
+
   document.addEventListener('mousemove',function(e){
-    if(!isPanning)return;
-    panX=panStartOX+(e.clientX-panStartX);panY=panStartOY+(e.clientY-panStartY);u();
+    if(isMarquee){updateMarquee(e);return;}
+    if(isPanning){
+      panX=panStartOX+(e.clientX-panStartX);
+      panY=panStartOY+(e.clientY-panStartY);
+      u();
+      return;
+    }
+    if(isTimelineDrag){moveTimelineDrag(e);return;}
+    if(connectSource){
+      var vr=vp.getBoundingClientRect();
+      updateConnectTempLine(e.clientX-vr.left,e.clientY-vr.top);
+    }
   });
-  document.addEventListener('mouseup',function(){if(isPanning){isPanning=false;vp.classList.remove('panning');}});
+
+  document.addEventListener('mouseup',function(e){
+    if(isMarquee){endMarquee();return;}
+    if(isPanning){isPanning=false;vp.classList.remove('panning');return;}
+    if(isTimelineDrag){endTimelineDrag();return;}
+  });
+
+  vp.addEventListener('click',function(e){
+    if(connectSource&&!e.target.closest('.node-card')&&!e.target.closest('svg')){
+      cancelConnect();
+    }
+  });
+
+  vp.addEventListener('contextmenu',function(e){
+    if(connectSource){e.preventDefault();cancelConnect();}
+  });
+
+  document.querySelectorAll('.timeline-event-card').forEach(function(card){
+    card.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;
+      startTimelineDrag(e,card);
+    });
+  });
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&connectSource){cancelConnect();e.preventDefault();return;}
+    if((e.key==='v'||e.key==='V')&&!e.ctrlKey&&!e.metaKey){setTool('select');e.preventDefault();}
+    if((e.key==='m'||e.key==='M')&&!e.ctrlKey&&!e.metaKey){setTool('marquee');e.preventDefault();}
+    if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey){setTool('connect');e.preventDefault();}
+  });
+
   document.getElementById('zoomOut').addEventListener('click',function(){zoom=Math.max(25,zoom-25);u();});
   document.getElementById('zoomIn').addEventListener('click',function(){zoom=Math.min(400,zoom+25);u();});
   document.getElementById('zoomFit').addEventListener('click',resetView);
@@ -400,7 +669,9 @@ input{font-family:inherit;font-size:0.8125rem}
       g.style.display=vs.length>0||q===''?'block':'none';
     });
   });
+
   u();
+  updateStatusBar();
 })();
 </script>
 </body>

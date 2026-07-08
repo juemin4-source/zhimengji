@@ -23,15 +23,16 @@ async function enterProject(page, name = '觉醒纪元') {
   await page.getByLabel('进入《' + name + '》').click();
   await expect(page.getByTitle('返回书架')).toBeVisible({ timeout: 5000 });
 
-  // 关闭弹出的引导弹窗（如果有）
-  const guideBtn = page.getByRole('button', { name: '开始使用' });
-  if (await guideBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await guideBtn.click();
-    const knowBtn = page.getByRole('button', { name: '知道啦' });
-    if (await knowBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await knowBtn.click();
-    }
-  }
+  // 等待弹窗出现并全部关闭
+  await page.waitForTimeout(500);
+  // 关 FirstLaunchGuide: 点"开始使用" → 点"跳过"
+  await page.getByText('开始使用').click().catch(() => {});
+  await page.waitForTimeout(200);
+  await page.getByRole('button', { name: '跳过' }).click().catch(() => {});
+  await page.waitForTimeout(200);
+  // 关 CanonGuideCard: 点"知道了"
+  await page.getByText(/知道了|知道啦/).click().catch(() => {});
+  await page.waitForTimeout(200);
 }
 
 // ─── 1. Bookshelf ───────────────────────────────────────────────────
@@ -285,5 +286,7 @@ test.describe('键盘快捷键', () => {
     await page.keyboard.press('Escape');
   });
 });
+
+
 
 

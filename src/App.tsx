@@ -21,8 +21,12 @@ import FirstLaunchGuide, { shouldShowGuide, markGuideDone } from './components/F
 import CanonGuideCard, { shouldShowCanonGuide } from './components/CanonGuideCard';
 import GlobalSearch from './components/GlobalSearch';
 import { ToastProvider, useToast } from './components/Toast';
+import AIChat from './components/ai/AIChat';
+import AiSettings from './components/ai/AiSettings';
+import type { ProviderConfig, UsageStats } from './types/ai';
 import './styles/global.css';
 import './styles/variables.css';
+import './styles/ai.css';
 
 // ===== ID Generators =====
 let _nextId = 1000;
@@ -106,6 +110,15 @@ function AppInner() {
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [lastGenre, setLastGenre] = useState('科幻');
 
+  // v1.3: AI Chat state
+  const [showAiSettings, setShowAiSettings] = useState(false);
+  const [aiProviders, setAiProviders] = useState<ProviderConfig[]>([]);
+  const [aiActiveModelId, setAiActiveModelId] = useState('gpt-4o');
+  const [aiUsageStats, setAiUsageStats] = useState<UsageStats>({
+    todayTokens: 6240, maxTokens: 10000,
+    dailyHistory: [],
+    totalCostToday: 0.055, totalCostMonth: 1.24, budgetLimit: 10,
+  });
   // v1.2: Object count for canon guide trigger
   const prevObjectCountRef = useRef(0);
 
@@ -715,7 +728,7 @@ function AppInner() {
     '事件': '📅', '物品': '📦', '术语': '📖', '章节': '📄',
   };
 
-  const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录'];
+  const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录', 'AI'];
   // Compute total word count for status bar
   const totalWordCount = useMemo(() => {
     return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
@@ -815,6 +828,10 @@ function AppInner() {
             <button className="tb-btn" onClick={() => setShowGlobalSearch(true)} title="全局搜索 (Ctrl+K)" style={{ fontSize: 13, gap: 4 }}>
               🔍 <kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
             </button>
+            <button className="tb-btn" onClick={() => setShowAiSettings(true)} title="AI 设置" style="{{ fontSize: 13 }}"
+              onMouseEnter={{e => e.currentTarget.style.color='var(--accent, #B7FF00)'}}
+              onMouseLeave={{e => e.currentTarget.style.color=''}}
+            >⚙️</button>
           </nav>
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>
@@ -872,3 +889,5 @@ function AppInner() {
     </div>
   );
 }
+
+

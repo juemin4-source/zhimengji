@@ -27,7 +27,7 @@ export const CANON_COLORS: Record<CanonLevel, string> = {
   '核心正典': '#FFB74D',
 };
 
-export type NavTab = '文档' | '画板' | '设定集' | '判断记录' | '正典手册';
+export type NavTab = '文档' | '画板' | '设定集' | '判断记录' | '正典手册' | 'AI';
 
 export type CanvasTab = '角色关系图' | '时间线' | '设定推演图';
 

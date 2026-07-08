@@ -366,12 +366,50 @@ export default function App() {
     }));
   }, []);
 
+  // ══════════════════════════════════════════
+  //  Canvas Object Creation (AC1: double-click to create at position)
+  // ══════════════════════════════════════════
+
+  const onCanvasCreateObject = useCallback((templateType: ObjectType, board: CanvasTab, x: number, y: number) => {
+    const template = TEMPLATES.find(t => t.type === templateType);
+    const now = Date.now();
+    const newObj: WorldObject = {
+      id: uid(), projectId: activeBookId || '', name: `新${templateType}`,
+      type: templateType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
+      canonLevel: '未收录' as CanonLevel,
+      tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [board],
+      content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
+      createdAt: now, updatedAt: now,
+    };
+    setObjects(prev => [...prev, newObj]);
+    setSelectedObjectId(newObj.id);
+    // Stay on canvas — do NOT navigate away
+    if (activeBookId) {
+      api.createWorldObject(newObj).catch(e => console.error('Failed to create object', e));
+    }
+    // Set the position immediately on the canvas
+    setCanvasStates(prev => {
+      const tab = prev[board];
+      if (!tab) return prev;
+      return {
+        ...prev,
+        [board]: {
+          ...tab,
+          positions: {
+            ...tab.positions,
+            [newObj.id]: { objectId: newObj.id, x, y },
+          },
+        },
+      } as Record<CanvasTab, CanvasTabState>;
+    });
+  }, [activeBookId]);
+
   const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录'];
 
   const renderMainContent = () => {
     switch (activeNavTab) {
       case '文档': return <DocumentView currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard} onLockObject={onLockObject} onDiscardObject={onDiscardObject} onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject} />;
-      case '画板': return <CanvasView allObjects={objects} connections={connections} canvasStates={canvasStates} selectedObjectId={selectedObjectId} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState} onAddConnection={onAddConnection} onAddSticky={onAddSticky} onAddToBoard={onAddToBoard} onCreateObject={onCreateObject} />;
+      case '画板': return <CanvasView allObjects={objects} connections={connections} canvasStates={canvasStates} selectedObjectId={selectedObjectId} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState} onAddConnection={onAddConnection} onAddSticky={onAddSticky} onAddToBoard={onAddToBoard} onCreateObject={onCreateObject} onCanvasCreateObject={onCanvasCreateObject} />;
       case '设定集': return <SettingCollection allObjects={objects} onSelectObject={onSelectObject} onNavigate={onNavigate} onUpdateObject={onUpdateObject} onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected} />;
       case '判断记录': return <JudgmentRecords allObjects={objects} onNavigate={onNavigate} />;
       default: return null;

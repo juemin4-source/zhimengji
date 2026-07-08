@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+﻿import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
@@ -10,14 +10,14 @@ interface PartitionZone { id: string; label: string; x: number; y: number; width
 interface ToolDef { mode: CanvasToolMode; icon: string; label: string; shortcut?: string; }
 
 const SIDEBAR_TOOLS: ToolDef[] = [
-  { mode: 'select', icon: '↖', label: '选择', shortcut: 'V' },
-  { mode: 'drag', icon: '✋', label: '拖动画布', shortcut: 'H' },
-  { mode: 'addObject', icon: '▦', label: '对象卡' },
-  { mode: 'text', icon: 'T', label: '文本' },
-  { mode: 'addSticky', icon: '📝', label: '便签' },
-  { mode: 'addConnection', icon: '→', label: '连线' },
-  { mode: 'partition', icon: '⊞', label: '分区' },
-  { mode: 'template', icon: '▫', label: '模板' },
+  { mode: 'select', icon: '鈫?, label: '閫夋嫨', shortcut: 'V' },
+  { mode: 'drag', icon: '鉁?, label: '鎷栧姩鐢诲竷', shortcut: 'H' },
+  { mode: 'addObject', icon: '鈻?, label: '瀵硅薄鍗? },
+  { mode: 'text', icon: 'T', label: '鏂囨湰' },
+  { mode: 'addSticky', icon: '馃摑', label: '渚跨' },
+  { mode: 'addConnection', icon: '鈫?, label: '杩炵嚎' },
+  { mode: 'partition', icon: '鈯?, label: '鍒嗗尯' },
+  { mode: 'template', icon: '鈻?, label: '妯℃澘' },
 ];
 
 interface CanvasViewProps {
@@ -58,14 +58,14 @@ function getLabelPoint(from: CanvasNodePosition, to: CanvasNodePosition) {
 }
 
 const STATUS_TO_ZONE: Record<string, string> = {
-  '占位': '问题区', '草稿': '问题区', '待定': '候选方案区', '待验证': '待验证区', '锁定': '已锁定区', '废弃': '废弃区',
+  '鍗犱綅': '闂鍖?, '鑽夌': '闂鍖?, '寰呭畾': '鍊欓€夋柟妗堝尯', '寰呴獙璇?: '寰呴獙璇佸尯', '閿佸畾': '宸查攣瀹氬尯', '搴熷純': '搴熷純鍖?,
 };
-const DEDUCTION_ZONE_NAMES = ['问题区', '候选方案区', '已锁定区', '废弃区', '待验证区'];
+const DEDUCTION_ZONE_NAMES = ['闂鍖?, '鍊欓€夋柟妗堝尯', '宸查攣瀹氬尯', '搴熷純鍖?, '寰呴獙璇佸尯'];
 
 const TIMELINE_EVENTS = [
-  { name: '第一次背叛' },
-  { name: '替换计划' },
-  { name: '逃离' },
+  { name: '绗竴娆¤儗鍙? },
+  { name: '鏇挎崲璁″垝' },
+  { name: '閫冪' },
 ];
 
 let _textId = 0, _zoneId = 0;
@@ -189,7 +189,7 @@ export default function CanvasView({
   onUpdateCanvasState, onAddConnection, onAddSticky,
   onAddToBoard, onCreateObject, onCanvasCreateObject
 }: CanvasViewProps) {
-  const [activeTab, setActiveTab] = useState<CanvasTab>('角色关系图');
+  const [activeTab, setActiveTab] = useState<CanvasTab>('瑙掕壊鍏崇郴鍥?);
   const [toolMode, setToolMode] = useState<CanvasToolMode>('select');
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -245,7 +245,7 @@ export default function CanvasView({
     const newPositions = { ...state.positions };
     let changed = false;
 
-    if (activeTab === '时间线') {
+    if (activeTab === '鏃堕棿绾?) {
       TIMELINE_EVENTS.forEach((evt, i) => {
         const obj = allObjects.find(o => o.name === evt.name);
         if (obj && !newPositions[obj.id]) {
@@ -253,14 +253,14 @@ export default function CanvasView({
           changed = true;
         }
       });
-    } else if (activeTab === '设定推演图') {
-      const deductionObjects = allObjects.filter(o => o.selectedBoards.includes('设定推演图'));
+    } else if (activeTab === '璁惧畾鎺ㄦ紨鍥?) {
+      const deductionObjects = allObjects.filter(o => o.selectedBoards.includes('璁惧畾鎺ㄦ紨鍥?));
       const zoneCounts: Record<string, number> = {};
       DEDUCTION_ZONE_NAMES.forEach(z => { zoneCounts[z] = 0; });
-      const zoneLayout: Record<string, { x: number; y: number }> = { '问题区': { x: 30, y: 50 }, '候选方案区': { x: 430, y: 50 }, '已锁定区': { x: 30, y: 250 }, '废弃区': { x: 430, y: 250 }, '待验证区': { x: 30, y: 450 } };
+      const zoneLayout: Record<string, { x: number; y: number }> = { '闂鍖?: { x: 30, y: 50 }, '鍊欓€夋柟妗堝尯': { x: 430, y: 50 }, '宸查攣瀹氬尯': { x: 30, y: 250 }, '搴熷純鍖?: { x: 430, y: 250 }, '寰呴獙璇佸尯': { x: 30, y: 450 } };
       deductionObjects.forEach(obj => {
         if (!newPositions[obj.id]) {
-          const zone = STATUS_TO_ZONE[obj.status] || '问题区';
+          const zone = STATUS_TO_ZONE[obj.status] || '闂鍖?;
           const base = zoneLayout[zone] || { x: 30, y: 50 };
           const count = zoneCounts[zone] || 0;
           newPositions[obj.id] = { objectId: obj.id, x: base.x + 10, y: base.y + count * 50 };
@@ -269,7 +269,7 @@ export default function CanvasView({
         }
       });
     } else {
-      // 角色关系图 force-directed layout
+      // 瑙掕壊鍏崇郴鍥?force-directed layout
       const objectsInBoard = allObjects.filter(o => o.selectedBoards.includes(activeTab));
       const unpositioned = objectsInBoard.filter(o => !newPositions[o.id]);
 
@@ -333,16 +333,20 @@ export default function CanvasView({
 
   const canvasObjects = useMemo(() => {
     let objects = allObjects.filter(o => o.selectedBoards.includes(activeTab));
-    if (activeTab === '时间线') {
+    if (activeTab === '鏃堕棿绾?) {
       TIMELINE_EVENTS.forEach(evt => { const obj = nameToObj.get(evt.name); if (obj && !objects.find(o => o.id === obj.id)) objects = [...objects, obj]; });
     }
     return objects;
   }, [allObjects, activeTab, nameToObj]);
 
+  const wordCount = useMemo(() => {
+    return canvasObjects.reduce((sum, o) => sum + (o.name?.length || 0) + (o.type?.length || 0), 0);
+  }, [canvasObjects]);
+
   const displayConnections = useMemo(() => {
     return [...state.connections];
   }, [state.connections]);
-  // ── Zoom handlers (P1-06) ──
+  // 鈹€鈹€ Zoom handlers (P1-06) 鈹€鈹€
   const handleZoomChange = useCallback((newScale: number) => {
     onUpdateCanvasState(activeTab, { scale: newScale });
   }, [activeTab, onUpdateCanvasState]);
@@ -372,7 +376,7 @@ export default function CanvasView({
     handleZoomChange(Math.max(0.2, Math.round(fitScale * 10) / 10));
   }, [canvasObjects, state.positions, handleZoomChange]);
 
-  // ── Ctrl+wheel zoom ──
+  // 鈹€鈹€ Ctrl+wheel zoom 鈹€鈹€
   useEffect(() => {
     const el = canvasRef.current;
     if (!el) return;
@@ -389,7 +393,7 @@ export default function CanvasView({
     return () => el.removeEventListener('wheel', handler);
   }, [state?.scale, handleZoomChange]);
 
-  // ── Keyboard shortcuts ──
+  // 鈹€鈹€ Keyboard shortcuts 鈹€鈹€
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
@@ -430,7 +434,7 @@ export default function CanvasView({
       }
     }
 
-    // Dragging node(s) — use positionsRef for stable ref to avoid dependency chain
+    // Dragging node(s) 鈥?use positionsRef for stable ref to avoid dependency chain
     if (draggingNode) {
       const pos = positionsRef.current[draggingNode];
       if (pos) {
@@ -465,7 +469,7 @@ export default function CanvasView({
     setDraggingNode(null);
     setDragStartPositions(prev => Object.keys(prev).length === 0 ? prev : {});
 
-    // Connection drop detection — use positionsRef to avoid dep chain
+    // Connection drop detection 鈥?use positionsRef to avoid dep chain
     if (connSource) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
@@ -512,7 +516,7 @@ export default function CanvasView({
         onSelectObject(objectId);
       }
 
-      // Don't start drag on mousedown — record potential drag and start only on actual mouse movement
+      // Don't start drag on mousedown 鈥?record potential drag and start only on actual mouse movement
       // Prevents a single click from entering the drag render loop via accidental mousemove
       const selected = isCtrl
         ? (multiSelectedIds.includes(objectId) ? [...multiSelectedIds] : [...multiSelectedIds, objectId])
@@ -547,7 +551,7 @@ export default function CanvasView({
     if (toolMode === 'partition') {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-      setPartitionZones(prev => [...prev, { id: `zone_${_zoneId++}`, label: `分区 ${prev.length + 1}`, x: e.clientX - rect.left + panOffset.x - 100, y: e.clientY - rect.top + panOffset.y - 50, width: 200, height: 100 }]);
+      setPartitionZones(prev => [...prev, { id: `zone_${_zoneId++}`, label: `鍒嗗尯 ${prev.length + 1}`, x: e.clientX - rect.left + panOffset.x - 100, y: e.clientY - rect.top + panOffset.y - 50, width: 200, height: 100 }]);
       return;
     }
     if (toolMode === 'template') { setShowTemplatePicker(true); setToolMode('select'); return; }
@@ -638,7 +642,7 @@ export default function CanvasView({
   useEffect(() => { if (!contextMenu) return; const h = () => setContextMenu(null); window.addEventListener('click', h); return () => window.removeEventListener('click', h); }, [contextMenu]);
 
   const renderConnections = () => {
-    if (activeTab !== '角色关系图') return null;
+    if (activeTab !== '瑙掕壊鍏崇郴鍥?) return null;
     return <g>{displayConnections.map(conn => {
       const from = state.positions[conn.sourceId];
       const to = state.positions[conn.targetId];
@@ -647,7 +651,7 @@ export default function CanvasView({
       const isHovered = hoveredConn === conn.id;
       const labelPt = getLabelPoint(from, to);
       return <g key={conn.id}>
-        <path d={path} fill="none" stroke={isHovered ? '#1a73e8' : '#555'} strokeWidth={isHovered ? 2.5 : 1.5} strokeDasharray={conn.type === '冲突' ? '6,3' : conn.type === '替代' ? '3,3' : undefined} onMouseEnter={() => setHoveredConn(conn.id)} onMouseLeave={() => setHoveredConn(null)} style={{ cursor: 'pointer', transition: 'stroke 0.2s' }} />
+        <path d={path} fill="none" stroke={isHovered ? '#1a73e8' : '#555'} strokeWidth={isHovered ? 2.5 : 1.5} strokeDasharray={conn.type === '鍐茬獊' ? '6,3' : conn.type === '鏇夸唬' ? '3,3' : undefined} onMouseEnter={() => setHoveredConn(conn.id)} onMouseLeave={() => setHoveredConn(null)} style={{ cursor: 'pointer', transition: 'stroke 0.2s' }} />
         <g><rect x={labelPt.x - 30} y={labelPt.y - 10} width={60} height={20} rx={4} fill="#1e1e1e" fillOpacity={0.9} stroke={isHovered ? '#1a73e8' : '#444'} strokeWidth={0.5} />
           <text x={labelPt.x} y={labelPt.y + 4} textAnchor="middle" fontSize={11} fill={isHovered ? '#1a73e8' : '#aaa'} style={{ pointerEvents: 'none', fontWeight: isHovered ? 600 : 400 }}>{conn.label || conn.type}</text></g>
       </g>;
@@ -670,9 +674,9 @@ export default function CanvasView({
     const isSelected = selectedObjectId === obj.id;
     const isMultiSelected = multiSelectedIds.includes(obj.id);
     const isConnSource = connSource === obj.id;
-    const isTimeline = activeTab === '时间线';
-    const isKeyEvent = isTimeline && (obj.name === '第一次背叛' || obj.name === '替换计划');
-    const isDiscarded = obj.status === '废弃';
+    const isTimeline = activeTab === '鏃堕棿绾?;
+    const isKeyEvent = isTimeline && (obj.name === '绗竴娆¤儗鍙? || obj.name === '鏇挎崲璁″垝');
+    const isDiscarded = obj.status === '搴熷純';
 
     const borderStyle = isConnSource ? '0 0 0 3px #FF9800, 0 4px 16px rgba(0,0,0,0.3)' :
       isSelected ? '0 0 0 2px #1a73e8, 0 4px 16px rgba(0,0,0,0.3)' :
@@ -687,7 +691,7 @@ export default function CanvasView({
         opacity: isDiscarded ? 0.65 : 1, textDecoration: isDiscarded ? 'line-through' : 'none', zIndex: 10, ...(isKeyEvent ? { borderLeft: '4px solid #f44336' } : {}),
       }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={(e) => { e.stopPropagation(); onNavigate(obj.name); }}>
           <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 1 }}>{obj.name}</div>
-          <div style={{ fontSize: 11, opacity: 0.7 }}>{isDiscarded ? '已废弃' : obj.type}</div>
+          <div style={{ fontSize: 11, opacity: 0.7 }}>{isDiscarded ? '宸插簾寮? : obj.type}</div>
         </div>;
     }
 
@@ -704,7 +708,7 @@ export default function CanvasView({
   };
 
   const renderTimelineFeatures = () => {
-    if (activeTab !== '时间线') return null;
+    if (activeTab !== '鏃堕棿绾?) return null;
     const axisY = 55;
     const eventItems = TIMELINE_EVENTS.map(evt => { const obj = nameToObj.get(evt.name); if (!obj) return null; const pos = state.positions[obj.id]; if (!pos) return null; return { obj, pos }; }).filter(Boolean) as Array<{ obj: WorldObject; pos: CanvasNodePosition }>;
     if (eventItems.length === 0) return null;
@@ -716,17 +720,17 @@ export default function CanvasView({
         <line x1={eventItems[0].pos.x + 100 - panOffset.x} y1={axisY} x2={eventItems[eventItems.length - 1].pos.x + 100 - panOffset.x} y2={axisY} stroke="#555" strokeWidth={2} strokeLinecap="round" />
         {eventItems.map(item => {
           const cx = item.pos.x + 100 - panOffset.x;
-          const isKey = item.obj.name === '第一次背叛' || item.obj.name === '替换计划';
+          const isKey = item.obj.name === '绗竴娆¤儗鍙? || item.obj.name === '鏇挎崲璁″垝';
           return <g key={item.obj.id}>
             <line x1={cx} y1={axisY} x2={cx} y2={item.pos.y + 5 - panOffset.y} stroke="#444" strokeWidth={1} strokeDasharray="4,3" />
             <circle cx={cx} cy={axisY} r={isKey ? 6 : 4} fill={isKey ? '#f44336' : '#666'} stroke="#1e1e1e" strokeWidth={2} />
-            {isKey && <text x={cx} y={axisY - 14} textAnchor="middle" fontSize={10} fill="#f44336" fontWeight={600}>关键转折</text>}
+            {isKey && <text x={cx} y={axisY - 14} textAnchor="middle" fontSize={10} fill="#f44336" fontWeight={600}>鍏抽敭杞姌</text>}
           </g>;
         })}
       </svg>
       <div style={{ position: 'absolute', left: 40 - panOffset.x, top: 220 - panOffset.y, width: 850, minHeight: 100, border: '2px dashed #333', borderRadius: 8, padding: 12, background: '#141414', pointerEvents: 'auto' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 8 }}>待排事件区</div>
-        {pendingObjects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', padding: '12px 0' }}>暂无待排事件</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 8 }}>寰呮帓浜嬩欢鍖?/div>
+        {pendingObjects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', padding: '12px 0' }}>鏆傛棤寰呮帓浜嬩欢</div>
           : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{pendingObjects.map(obj => (
             <div key={obj.id} style={{ padding: '4px 10px', background: STATUS_DISPLAY[obj.status].background, border: STATUS_DISPLAY[obj.status].border, color: STATUS_DISPLAY[obj.status].text, borderRadius: 4, fontSize: 11, cursor: 'pointer' }}
               onClick={() => onSelectObject(obj.id)} onDoubleClick={() => onNavigate(obj.name)}>{obj.name}</div>))}</div>}
@@ -735,15 +739,15 @@ export default function CanvasView({
   };
 
   const renderDeductionZones = () => {
-    if (activeTab !== '设定推演图') return null;
+    if (activeTab !== '璁惧畾鎺ㄦ紨鍥?) return null;
     const zoneLayout: Record<string, { x: number; y: number; w: number; h: number }> = {
-      '问题区': { x: 20, y: 20, w: 390, h: 180 }, '候选方案区': { x: 430, y: 20, w: 390, h: 180 },
-      '已锁定区': { x: 20, y: 220, w: 390, h: 180 }, '废弃区': { x: 430, y: 220, w: 390, h: 180 },
-      '待验证区': { x: 20, y: 420, w: 800, h: 140 },
+      '闂鍖?: { x: 20, y: 20, w: 390, h: 180 }, '鍊欓€夋柟妗堝尯': { x: 430, y: 20, w: 390, h: 180 },
+      '宸查攣瀹氬尯': { x: 20, y: 220, w: 390, h: 180 }, '搴熷純鍖?: { x: 430, y: 220, w: 390, h: 180 },
+      '寰呴獙璇佸尯': { x: 20, y: 420, w: 800, h: 140 },
     };
     const zoneObjects: Record<string, WorldObject[]> = {};
     DEDUCTION_ZONE_NAMES.forEach(z => { zoneObjects[z] = []; });
-    allObjects.filter(o => o.selectedBoards.includes('设定推演图')).forEach(obj => { const zone = STATUS_TO_ZONE[obj.status] || '问题区'; if (!zoneObjects[zone]) zoneObjects[zone] = []; zoneObjects[zone].push(obj); });
+    allObjects.filter(o => o.selectedBoards.includes('璁惧畾鎺ㄦ紨鍥?)).forEach(obj => { const zone = STATUS_TO_ZONE[obj.status] || '闂鍖?; if (!zoneObjects[zone]) zoneObjects[zone] = []; zoneObjects[zone].push(obj); });
 
     return <>{DEDUCTION_ZONE_NAMES.map(zoneName => {
       const layout = zoneLayout[zoneName];
@@ -751,15 +755,15 @@ export default function CanvasView({
       const objects = zoneObjects[zoneName] || [];
       return <div key={zoneName} className="deduction-zone" style={{ position: 'absolute', left: layout.x - panOffset.x, top: layout.y - panOffset.y, width: layout.w, height: layout.h, border: '2px solid #333', borderRadius: 8, background: '#141414', overflowY: 'auto' }}>
         <div style={{ background: '#1e1e1e', padding: '5px 12px', fontSize: 13, fontWeight: 600, color: '#aaa', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{zoneName}</span><span style={{ fontWeight: 400, fontSize: 11, color: '#666' }}>{objects.length} 项</span>
+          <span>{zoneName}</span><span style={{ fontWeight: 400, fontSize: 11, color: '#666' }}>{objects.length} 椤?/span>
         </div>
         <div style={{ padding: 6 }}>
-          {objects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', paddingTop: 20 }}>暂无</div>
+          {objects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', paddingTop: 20 }}>鏆傛棤</div>
             : objects.map(obj => (
-              <div key={obj.id} style={{ padding: '5px 10px', marginBottom: 4, background: STATUS_DISPLAY[obj.status].background, border: STATUS_DISPLAY[obj.status].border, color: STATUS_DISPLAY[obj.status].text, borderRadius: 4, fontSize: 12, cursor: 'pointer', ...(obj.status === '废弃' ? { textDecoration: 'line-through', opacity: 0.7 } : {}) }}
+              <div key={obj.id} style={{ padding: '5px 10px', marginBottom: 4, background: STATUS_DISPLAY[obj.status].background, border: STATUS_DISPLAY[obj.status].border, color: STATUS_DISPLAY[obj.status].text, borderRadius: 4, fontSize: 12, cursor: 'pointer', ...(obj.status === '搴熷純' ? { textDecoration: 'line-through', opacity: 0.7 } : {}) }}
                 onClick={() => onSelectObject(obj.id)} onDoubleClick={() => onNavigate(obj.name)}>
                 <div style={{ fontWeight: 500 }}>{obj.name}</div>
-                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 1 }}>{obj.type}{obj.status === '废弃' ? ' · 已废弃' : ''}</div>
+                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 1 }}>{obj.type}{obj.status === '搴熷純' ? ' 路 宸插簾寮? : ''}</div>
               </div>
             ))}
         </div>
@@ -783,18 +787,18 @@ export default function CanvasView({
             </button>;
           })}
           <div className="canvas-sb-separator" />
-          <button className="canvas-sb-btn" onClick={() => { onUpdateCanvasState(activeTab, { scale: 1, panX: 0, panY: 0 }); setPanOffset({ x: 0, y: 0 }); }} title="适应画布">⊞<span className="sb-tooltip">适应画布</span></button>
-          <button className="canvas-sb-btn" onClick={handleAutoLayout} title="自动布局">⟳<span className="sb-tooltip">自动布局</span></button>
+          <button className="canvas-sb-btn" onClick={() => { onUpdateCanvasState(activeTab, { scale: 1, panX: 0, panY: 0 }); setPanOffset({ x: 0, y: 0 }); }} title="閫傚簲鐢诲竷">鈯?span className="sb-tooltip">閫傚簲鐢诲竷</span></button>
+          <button className="canvas-sb-btn" onClick={handleAutoLayout} title="鑷姩甯冨眬">鉄?span className="sb-tooltip">鑷姩甯冨眬</span></button>
         </div>
         <div className="canvas-main">
           <div className="canvas-info-bar">
-            <span>节点: {Object.keys(state.positions).length}</span><span>|</span><span>连线: {displayConnections.length}</span>
-            {toolMode === 'addConnection' && <><span>|</span><span style={{ color: '#FF9800' }}>{connSource ? '拖拽到目标节点建立连线' : '点击一个节点开始连线'}</span></>}
-            {multiSelectedIds.length > 0 && <><span>|</span><span style={{ color: '#4FC3F7' }}>已选 {multiSelectedIds.length + (selectedObjectId && !multiSelectedIds.includes(selectedObjectId) ? 1 : 0)} 个节点</span></>}
+            <span>鑺傜偣: {Object.keys(state.positions).length}</span><span>|</span><span>杩炵嚎: {displayConnections.length}</span>
+            {toolMode === 'addConnection' && <><span>|</span><span style={{ color: '#FF9800' }}>{connSource ? '鎷栨嫿鍒扮洰鏍囪妭鐐瑰缓绔嬭繛绾? : '鐐瑰嚮涓€涓妭鐐瑰紑濮嬭繛绾?}</span></>}
+            {multiSelectedIds.length > 0 && <><span>|</span><span style={{ color: '#4FC3F7' }}>宸查€?{multiSelectedIds.length + (selectedObjectId && !multiSelectedIds.includes(selectedObjectId) ? 1 : 0)} 涓妭鐐?/span></>}
           </div>
           <div ref={canvasRef} className="canvas-container" onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp} onClick={handleCanvasClick} onDoubleClick={handleCanvasDoubleClick}
             style={{ cursor: toolMode === 'drag' ? 'grab' : toolMode === 'addConnection' && connSource ? 'crosshair' : toolMode === 'text' ? 'text' : toolMode === 'partition' ? 'crosshair' : 'default' }}>
-            {activeTab === '角色关系图' && <svg className="canvas-svg">{renderConnections()}</svg>}
+            {activeTab === '瑙掕壊鍏崇郴鍥? && <svg className="canvas-svg">{renderConnections()}</svg>}
             {renderTimelineFeatures()}
             {renderDeductionZones()}
 
@@ -806,7 +810,7 @@ export default function CanvasView({
             ))}
 
             {/* Nodes */}
-            {activeTab !== '设定推演图' && canvasObjects.map(obj => renderNode(obj))}
+            {activeTab !== '璁惧畾鎺ㄦ紨鍥? && canvasObjects.map(obj => renderNode(obj))}
 
             {/* Text annotations */}
             {textLabels.map(label => (
@@ -822,12 +826,12 @@ export default function CanvasView({
             {/* Inline type bubble at double-click position */}
             {showTypeBubble && (
               <div className="type-bubble" style={{ left: bubblePos.x - panOffset.x, top: bubblePos.y - panOffset.y }} onClick={e => e.stopPropagation()}>
-                <div className="type-bubble-header">新建对象</div>
+                <div className="type-bubble-header">鏂板缓瀵硅薄</div>
                 <div className="type-bubble-grid">
                   {TEMPLATES.map(t => (
                     <button key={t.type} className="type-bubble-btn" onClick={() => handleTypeSelect(t.type)}>
                       <span className="type-bubble-icon">
-                        {t.type === '人物' ? '👤' : t.type === '地点' ? '📍' : t.type === '组织' ? '🏛' : t.type === '规则/机制' ? '⚙️' : t.type === '事件' ? '📅' : t.type === '物品' ? '📦' : t.type === '术语' ? '📖' : '📄'}
+                        {t.type === '浜虹墿' ? '馃懁' : t.type === '鍦扮偣' ? '馃搷' : t.type === '缁勭粐' ? '馃彌' : t.type === '瑙勫垯/鏈哄埗' ? '鈿欙笍' : t.type === '浜嬩欢' ? '馃搮' : t.type === '鐗╁搧' ? '馃摝' : t.type === '鏈' ? '馃摉' : '馃搫'}
                       </span>
                       <span className="type-bubble-label">{t.type}</span>
                     </button>
@@ -839,7 +843,7 @@ export default function CanvasView({
             {/* Inline connection type popup */}
             {pendingConn && (
               <div className="conn-type-popup" style={{ left: pendingConn.x - panOffset.x, top: pendingConn.y - panOffset.y }} onClick={e => e.stopPropagation()}>
-                <div className="conn-popup-header">连线类型</div>
+                <div className="conn-popup-header">杩炵嚎绫诲瀷</div>
                 <div className="conn-popup-grid">
                   {CONNECTION_TYPES.map(type => (
                     <button key={type} className="conn-popup-btn" onClick={() => handleConnTypeSelect(type)}>{type}</button>
@@ -848,14 +852,14 @@ export default function CanvasView({
               </div>
             )}
 
-            {canvasObjects.length === 0 && activeTab !== '时间线' && (
+            {canvasObjects.length === 0 && activeTab !== '鏃堕棿绾? && (
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: '#666', pointerEvents: 'none' }}>
-                <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.6 }}>📋</div>
-                <div style={{ fontSize: 14, color: '#888' }}>此画板暂无对象</div>
+                <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.6 }}>馃搵</div>
+                <div style={{ fontSize: 14, color: '#888' }}>姝ょ敾鏉挎殏鏃犲璞?/div>
                 <div style={{ fontSize: 12, marginTop: 6, color: '#555', lineHeight: 1.8 }}>
-                  <div>🖱 双击空白区域创建新对象</div>
-                  <div>📄 在文档视图中将对象「放入画板」</div>
-                  <div>🔗 从侧栏「对象池」添加已有对象</div>
+                  <div>馃柋 鍙屽嚮绌虹櫧鍖哄煙鍒涘缓鏂板璞?/div>
+                  <div>馃搫 鍦ㄦ枃妗ｈ鍥句腑灏嗗璞°€屾斁鍏ョ敾鏉裤€?/div>
+                  <div>馃敆 浠庝晶鏍忋€屽璞℃睜銆嶆坊鍔犲凡鏈夊璞?/div>
                 </div>
               </div>
             )}
@@ -869,11 +873,11 @@ export default function CanvasView({
       {/* Dialogs */}
       {showStickyDialog && (
         <div className="canvas-overlay" onClick={() => setShowStickyDialog(false)}>
-          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>添加便签</h4>
-            <textarea style={{ width: '100%', height: 80, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="便签内容..." value={stickyText} onChange={e => setStickyText(e.target.value)} autoFocus />
+          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>娣诲姞渚跨</h4>
+            <textarea style={{ width: '100%', height: 80, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="渚跨鍐呭..." value={stickyText} onChange={e => setStickyText(e.target.value)} autoFocus />
             <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-              <button className="tb-btn" onClick={() => setShowStickyDialog(false)}>取消</button>
-              <button className="tb-btn primary" onClick={handleConfirmSticky}>添加</button>
+              <button className="tb-btn" onClick={() => setShowStickyDialog(false)}>鍙栨秷</button>
+              <button className="tb-btn primary" onClick={handleConfirmSticky}>娣诲姞</button>
             </div>
           </div>
         </div>
@@ -881,11 +885,11 @@ export default function CanvasView({
 
       {showTextDialog && (
         <div className="canvas-overlay" onClick={() => setShowTextDialog(false)}>
-          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>添加文本</h4>
-            <textarea style={{ width: '100%', height: 60, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="文本内容..." value={textInput} onChange={e => setTextInput(e.target.value)} autoFocus />
+          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>娣诲姞鏂囨湰</h4>
+            <textarea style={{ width: '100%', height: 60, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="鏂囨湰鍐呭..." value={textInput} onChange={e => setTextInput(e.target.value)} autoFocus />
             <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-              <button className="tb-btn" onClick={() => setShowTextDialog(false)}>取消</button>
-              <button className="tb-btn primary" onClick={handleConfirmText}>添加</button>
+              <button className="tb-btn" onClick={() => setShowTextDialog(false)}>鍙栨秷</button>
+              <button className="tb-btn primary" onClick={handleConfirmText}>娣诲姞</button>
             </div>
           </div>
         </div>
@@ -894,11 +898,11 @@ export default function CanvasView({
       {showObjectPool && (
         <div className="canvas-overlay" onClick={() => { setShowObjectPool(false); setPoolSearch(''); }}>
           <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}>
-            <h4>对象池 — 选择对象添加到画板</h4>
-            <input className="pool-search" type="text" placeholder="搜索对象名称、类型、标签..." value={poolSearch} onChange={e => setPoolSearch(e.target.value)} autoFocus />
+            <h4>瀵硅薄姹?鈥?閫夋嫨瀵硅薄娣诲姞鍒扮敾鏉?/h4>
+            <input className="pool-search" type="text" placeholder="鎼滅储瀵硅薄鍚嶇О銆佺被鍨嬨€佹爣绛?.." value={poolSearch} onChange={e => setPoolSearch(e.target.value)} autoFocus />
             <div className="pool-list">
               {filteredPoolItems.length === 0 ? (
-                <div className="pool-empty">{poolSearch.trim() ? '无匹配对象' : '所有对象已在此画板中'}</div>
+                <div className="pool-empty">{poolSearch.trim() ? '鏃犲尮閰嶅璞? : '鎵€鏈夊璞″凡鍦ㄦ鐢绘澘涓?}</div>
               ) : (
                 filteredPoolItems.map(obj => (
                   <div key={obj.id} className="pool-item" onClick={() => handleSelectFromPool(obj)}>
@@ -909,7 +913,7 @@ export default function CanvasView({
                 ))
               )}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => { setShowObjectPool(false); setPoolSearch(''); }}>取消</button></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => { setShowObjectPool(false); setPoolSearch(''); }}>鍙栨秷</button></div>
           </div>
         </div>
       )}
@@ -917,23 +921,24 @@ export default function CanvasView({
       {showTemplatePicker && (
         <div className="canvas-overlay" onClick={() => setShowTemplatePicker(false)}>
           <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}>
-            <h4>选择画板模板</h4>
+            <h4>閫夋嫨鐢绘澘妯℃澘</h4>
             <div className="template-grid">
-              <div className="template-card" onClick={() => setShowTemplatePicker(false)}><div className="template-icon">📄</div><div className="template-name">空白画板</div><div className="template-desc">从空白开始</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('角色关系图'); }}><div className="template-icon">🔗</div><div className="template-name">角色关系图</div><div className="template-desc">角色关系布局、连线</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('时间线'); }}><div className="template-icon">📅</div><div className="template-name">时间线</div><div className="template-desc">横向时间轴布局</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('设定推演图'); }}><div className="template-icon">🧩</div><div className="template-name">设定推演图</div><div className="template-desc">问题→方案→锁定 五区布局</div></div>
+              <div className="template-card" onClick={() => setShowTemplatePicker(false)}><div className="template-icon">馃搫</div><div className="template-name">绌虹櫧鐢绘澘</div><div className="template-desc">浠庣┖鐧藉紑濮?/div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('瑙掕壊鍏崇郴鍥?); }}><div className="template-icon">馃敆</div><div className="template-name">瑙掕壊鍏崇郴鍥?/div><div className="template-desc">瑙掕壊鍏崇郴甯冨眬銆佽繛绾?/div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('鏃堕棿绾?); }}><div className="template-icon">馃搮</div><div className="template-name">鏃堕棿绾?/div><div className="template-desc">妯悜鏃堕棿杞村竷灞€</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('璁惧畾鎺ㄦ紨鍥?); }}><div className="template-icon">馃З</div><div className="template-name">璁惧畾鎺ㄦ紨鍥?/div><div className="template-desc">闂鈫掓柟妗堚啋閿佸畾 浜斿尯甯冨眬</div></div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => setShowTemplatePicker(false)}>取消</button></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => setShowTemplatePicker(false)}>鍙栨秷</button></div>
           </div>
         </div>
       )}
 
       {contextMenu && (
         <div className="canvas-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={e => e.stopPropagation()}>
-          <button className="ctx-item" onClick={() => { onCreateObject('事件'); setContextMenu(null); }}>➜ 转为对象</button>
+          <button className="ctx-item" onClick={() => { onCreateObject('浜嬩欢'); setContextMenu(null); }}>鉃?杞负瀵硅薄</button>
         </div>
       )}
     </div>
   );
 }
+

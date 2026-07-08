@@ -2,7 +2,7 @@
  * useSaveStatus — Save status hook for 织梦机 v1.2 (P1-05).
  *
  * Provides:
- * - saveStatus state (saved/saving/unsaved/error/offline)
+ * - saveStatus state (saved/saving/unsaved/failed/offline)
  * - contentDirty flag
  * - Auto-save 500ms debounce timer
  * - SyncManager integration
@@ -51,7 +51,7 @@ export function useSaveStatus(
         setSaveStatus('saved');
         setContentDirtyState(false);
       } catch {
-        setSaveStatus('error');
+        setSaveStatus('failed');
       }
     }, 500);
   }, [autoSaveFn, setSaveStatus]);
@@ -72,3 +72,4 @@ export function useSaveStatus(
     triggerSave,
   };
 }
+

@@ -1,59 +1,47 @@
-/**
- * SyncManager 鈥?IndexedDB-backed retry queue for 缁囨ⅵ鏈?v1.2 (P0-01, P0-02).
+﻿/**
+ * SyncManager — Offline-first sync for 织梦机 v1.2 (P2-04).
  *
- * All write operations route through enqueue() before reaching Tauri invoke.
- * Queue persisted to IndexedDB for survival across app restarts.
- * 3-retry exponential backoff (1s, 2s, 4s).
- * Health ping every 3 seconds for online/offline detection.
+ * Queue strategy with IndexedDB persistence, retry with exponential backoff,
+ * and online/offline awareness.
  */
 
 import type { SyncOperation, SyncOperationType, SaveStatus } from '../types/world';
-import * as api from '../tauri-api';
 
 type StatusCallback = (status: SaveStatus) => void;
 type OnlineCallback = (online: boolean) => void;
 
-const DB_NAME = 'zhimengji-sync-queue';
-const DB_VERSION = 1;
-const STORE_NAME = 'operations';
-const PING_INTERVAL_MS = 3000;
-const MAX_RETRIES = 3;
-const BACKOFF_BASE_MS = 1000;
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+interface DBSchema {
+  ops: SyncOperation;
 }
 
+const DB_NAME = 'zhimengji-sync';
+const DB_VERSION = 1;
+const STORE_NAME = 'ops';
+const PING_INTERVAL_MS = 10000;
+const BACKOFF_BASE_MS = 2000;
+
 export class SyncManager {
-  private dbPromise: Promise<IDBDatabase> | null = null;
-  private _isOnline: boolean = true;
-  private _saveStatus: SaveStatus = 'saved';
+  private db: IDBDatabase | null = null;
+  private dbReady: Promise<void>;
+  private isOnline = navigator.onLine;
+  private processing = false;
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private retryTimers: ReturnType<typeof setTimeout>[] = [];
   private statusListeners: StatusCallback[] = [];
   private onlineListeners: OnlineCallback[] = [];
-  private pingTimer: ReturnType<typeof setInterval> | null = null;
-  private _failedCount: number = 0;
-  private retryTimers: ReturnType<typeof setTimeout>[] = [];
-  private processing: boolean = false;
+  private pendingCount = 0;
+  private _failedCount = 0;
+  private _saveStatus: SaveStatus = 'saved';
 
-  constructor() {
-    this.dbPromise = openDB();
+  constructor(
+    private pingUrl: string,
+    private pingTimeout: number = 3000,
+  ) {
+    this.dbReady = this.initDB();
+    this.startPing();
   }
 
-  // 鈹€鈹€ Online Status 鈹€鈹€
-
-  isOnline(): boolean {
-    return this._isOnline;
-  }
+  // ═══ Public API ═══
 
   getSaveStatus(): SaveStatus {
     return this._saveStatus;
@@ -69,28 +57,51 @@ export class SyncManager {
 
   private setSaveStatus(status: SaveStatus): void {
     this._saveStatus = status;
-    for (const cb of this.statusListeners) {
-      try { cb(status); } catch { /* ignore */ }
-    }
+    this.statusListeners.forEach(cb => cb(status));
   }
 
-  private setOnline(online: boolean): void {
-    if (this._isOnline === online) return;
-    this._isOnline = online;
+  private setOnlineStatus(online: boolean): void {
+    this.isOnline = online;
+    this.onlineListeners.forEach(cb => cb(online));
     if (!online) {
       this.setSaveStatus('offline');
-    }
-    for (const cb of this.onlineListeners) {
-      try { cb(online); } catch { /* ignore */ }
+    } else {
+      this.processQueue();
     }
   }
 
-  // 鈹€鈹€ Lifecycle 鈹€鈹€
+  async enqueue(type: SyncOperationType, payload: any): Promise<void> {
+    await this.dbReady;
+    const op: SyncOperation = {
+      id: crypto.randomUUID(),
+      type,
+      payload,
+      retryCount: 0,
+      maxRetries: 5,
+      createdAt: Date.now(),
+    };
+    await this.saveToDB(op);
+    this.pendingCount = (await this.getAllFromDB()).length;
+
+    if (!this.isOnline) {
+      this.setSaveStatus('offline');
+      return;
+    }
+
+    this.setSaveStatus('saving');
+    this.processQueue();
+  }
+
+  async getQueueLength(): Promise<number> {
+    await this.dbReady;
+    const all = await this.getAllFromDB();
+    return all.length;
+  }
 
   startPing(): void {
     if (this.pingTimer) return;
     this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
-    this.ping(); // immediate first check
+    this.ping();
   }
 
   stopPing(): void {
@@ -98,71 +109,85 @@ export class SyncManager {
       clearInterval(this.pingTimer);
       this.pingTimer = null;
     }
+    this.retryTimers.forEach(clearTimeout);
+    this.retryTimers = [];
   }
 
-  private async ping(): Promise<void> {
+  // ═══ Internal: DB ═══
+
+  private initDB(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = () => {
+        this.db = req.result;
+        resolve();
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  private saveToDB(op: SyncOperation): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(op);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  private removeFromDB(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  private updateInDB(op: SyncOperation): Promise<void> {
+    return this.saveToDB(op);
+  }
+
+  private getAllFromDB(): Promise<SyncOperation[]> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ═══ Internal: Queue Processing ═══
+
+  private async executeOp(op: SyncOperation): Promise<boolean> {
     try {
-      await api.ping();
-      const wasOffline = !this._isOnline;
-      this.setOnline(true);
-      if (this._saveStatus === 'offline' || wasOffline) {
-        this.setSaveStatus('saving');
-        await this.processQueue();
-      }
+      const response = await fetch(this.pingUrl.replace('/ping', '/sync'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(op),
+        signal: AbortSignal.timeout(this.pingTimeout),
+      });
+      return response.ok;
     } catch {
-      this.setOnline(false);
+      return false;
     }
   }
 
-  // 鈹€鈹€ Queue Operations 鈹€鈹€
-
-  async enqueue(type: SyncOperationType, payload: any): Promise<void> {
-    const op: SyncOperation = {
-      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      type,
-      payload,
-      retryCount: 0,
-      maxRetries: MAX_RETRIES,
-      createdAt: Date.now(),
-    };
-
-    await this.saveToDB(op);
-    if (this._isOnline) {
-      this.setSaveStatus('saving');
-      this.processQueue();
-    } else {
-      this.setSaveStatus('offline');
-    }
-  }
-
-  async getQueueLength(): Promise<number> {
-    try {
-      const all = await this.getAllFromDB();
-      return all.length;
-    } catch {
-      return 0;
-    }
-  }
-
-  getFailedCount(): number {
-    return this._failedCount;
-  }
-
-  async retryFailed(): Promise<void> {
-    this.setSaveStatus('saving');
-    await this.processQueue();
-  }
-
-  // 鈹€鈹€ Queue Processing 鈹€鈹€
-
-  private async processQueue(): Promise<void> {
-    if (this.processing) return;
+  async processQueue(): Promise<void> {
+    if (this.processing || !this.isOnline) return;
     this.processing = true;
 
     try {
       const ops = await this.getAllFromDB();
       if (ops.length === 0) {
         this.setSaveStatus('saved');
+        this.processing = false;
         return;
       }
 
@@ -179,7 +204,7 @@ export class SyncManager {
             op.error = 'Max retries exceeded';
             await this.updateInDB(op);
             this._failedCount++;
-            this.setSaveStatus('error');
+            this.setSaveStatus('failed');
           } else {
             await this.updateInDB(op);
             // Schedule retry with exponential backoff
@@ -201,94 +226,33 @@ export class SyncManager {
         this.setSaveStatus('saved');
       }
     } catch {
-      // Queue processing error 鈥?keep status
+      // Queue processing error — keep status
     } finally {
       this.processing = false;
     }
   }
 
-  private async executeOp(op: SyncOperation): Promise<boolean> {
+  // ═══ Internal: Ping ═══
+
+  private async ping(): Promise<void> {
     try {
-      switch (op.type) {
-        case 'createObject':
-          await api.createWorldObject(op.payload);
-          break;
-        case 'updateObject':
-          await api.updateWorldObject(op.payload);
-          break;
-        case 'deleteObject':
-          await api.deleteWorldObject(op.payload.id || op.payload);
-          break;
-        case 'saveCanvasState':
-          await api.saveCanvasTabState(op.payload);
-          break;
-        case 'createConnection':
-          await api.createConnection(op.payload);
-          break;
-        case 'deleteConnection':
-          await api.deleteConnection(op.payload.id || op.payload);
-          break;
-        case 'appendJudgment':
-          await api.appendJudgmentRecord(op.payload);
-          break;
+      const response = await fetch(this.pingUrl, {
+        signal: AbortSignal.timeout(this.pingTimeout),
+      });
+      const wasOffline = !this.isOnline;
+      this.setOnlineStatus(response.ok);
+      if (wasOffline && this.isOnline) {
+        this.processQueue();
       }
-      return true;
     } catch {
-      return false;
+      this.setOnlineStatus(false);
     }
   }
 
-  // 鈹€鈹€ IndexedDB Helpers 鈹€鈹€
-
-  private async withDB<T>(fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-    const db = await this.dbPromise!;
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const req = fn(store);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  private saveToDB(op: SyncOperation): Promise<void> {
-    return this.withDB(store => store.put(op)).then(() => {});
-  }
-
-  private removeFromDB(id: string): Promise<void> {
-    return this.withDB(store => store.delete(id)).then(() => {});
-  }
-
-  private updateInDB(op: SyncOperation): Promise<void> {
-    return this.withDB(store => store.put(op)).then(() => {});
-  }
-
-  private async getAllFromDB(): Promise<SyncOperation[]> {
-    const db = await this.dbPromise!;
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.getAll();
-      req.onsuccess = () => {
-        const results: SyncOperation[] = req.result || [];
-        results.sort((a, b) => a.createdAt - b.createdAt);
-        resolve(results);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async getFailedOperations(): Promise<SyncOperation[]> {
-    const all = await this.getAllFromDB();
-    return all.filter(o => o.retryCount > o.maxRetries);
-  }
-
-  async clearAll(): Promise<void> {
-    // Clear pending retry timers
-    for (const t of this.retryTimers) clearTimeout(t);
-    this.retryTimers = [];
-    this._failedCount = 0;
-    await this.withDB(store => store.clear());
+  destroy(): void {
+    this.stopPing();
+    this.statusListeners = [];
+    this.onlineListeners = [];
   }
 }
 

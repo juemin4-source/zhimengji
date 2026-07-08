@@ -119,8 +119,6 @@ describe('Path 1: Story Creation (App level)', () => {
   });
 
   it('create project button triggers project creation flow', async () => {
-    // First call: listProjects returns initial projects
-    // Second call: createProject returns new project
     mockInvoke
       .mockResolvedValueOnce('pong') // SyncManager ping
       .mockResolvedValueOnce(mockProjects) // listProjects
@@ -143,8 +141,16 @@ describe('Path 1: Story Creation (App level)', () => {
     });
 
     // Click create
-    const createBtn = screen.getByTestId('create-project');
-    fireEvent.click(createBtn);
+    fireEvent.click(screen.getByTestId('create-project'));
+
+    // Step 1: type title
+    fireEvent.change(screen.getByPlaceholderText('输入作品名称...'), { target: { value: '新作品' } });
+
+    // Click next
+    fireEvent.click(screen.getByText('下一步 →'));
+
+    // Step 2: skip template
+    fireEvent.click(screen.getByText('跳过'));
 
     // Should call create_project
     await waitFor(() => {

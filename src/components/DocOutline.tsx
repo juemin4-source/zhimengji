@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import type { WorldObject, ObjectType } from '../types/world';
 
 interface DocOutlineProps {
@@ -20,10 +20,10 @@ const GROUPS: GroupConfig[] = [
   { key: 'draft', label: '草稿', icon: '\u{1F4DD}', predicate: (o) => o.status === '草稿' },
   { key: 'chapter', label: '正文', icon: '\u{1F4C4}', predicate: (o) => o.type === '章节' && o.status !== '废弃' && o.status !== '草稿' },
   { key: 'character', label: '人物', icon: '\u{1F464}', predicate: (o) => o.type === '人物' && o.status !== '废弃' && o.status !== '草稿' },
-  { key: 'setting', label: '设定', icon: '⚙️', predicate: (o) => ['地点', '组织', '规则/机制', '事件', '物品', '术语'].includes(o.type) && o.status !== '废弃' && o.status !== '草稿' },
+  { key: 'setting', label: '设定', icon: '鈿欙笍', predicate: (o) => ['地点', '组织', '规则/机制', '事件', '物品', '术语'].includes(o.type) && o.status !== '废弃' && o.status !== '草稿' },
 ];
 
-/** Map group key → the most appropriate ObjectType to create */
+/** Map group key to the most appropriate ObjectType to create */
 function createTypeForGroup(groupKey: string): ObjectType {
   switch (groupKey) {
     case 'chapter': return '章节';

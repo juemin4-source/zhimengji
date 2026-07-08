@@ -513,8 +513,8 @@ function AppInner() {
       .catch(e => { console.error('Failed to delete object', e); showToast('删除对象失败', 'error'); });
   }, [selectedObjectId, showToast]);
 
-  const onNavigate = useCallback((name: string) => {
-    const target = objects.find(o => o.name === name);
+  const onNavigate = useCallback((name: string, id?: string) => {
+    const target = id ? objects.find(o => o.id === id) : objects.find(o => o.name === name);
     if (target) { setSelectedObjectId(target.id); setActiveNavTab('文档'); }
   }, [objects]);
 

@@ -141,7 +141,7 @@ export interface Project {
 
 // ===== v1.2 New Types =====
 
-export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error' | 'offline';
+export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'failed' | 'offline';
 
 export interface ChangelogEntry {
   timestamp: number;

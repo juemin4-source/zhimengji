@@ -266,8 +266,8 @@ export default function DocumentView({
 
           {/* Save status indicator */}
           {saveStatus && (
-            <span style={{ marginLeft: 12, fontSize: 11, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'saving' ? '#FF9800' : saveStatus === 'error' ? '#f44336' : saveStatus === 'offline' ? '#888' : '#FF9800' }}>
-              {saveStatus === 'saved' ? '✓ 已保存' : saveStatus === 'saving' ? '⟳ 保存中' : saveStatus === 'error' ? '✗ 保存失败' : saveStatus === 'offline' ? '● 离线' : '● 未保存'}
+            <span style={{ marginLeft: 12, fontSize: 11, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'saving' ? '#FF9800' : saveStatus === 'failed' ? '#f44336' : saveStatus === 'offline' ? '#888' : '#FF9800' }}>
+              {saveStatus === 'saved' ? '✓ 已保存' : saveStatus === 'saving' ? '⟳ 保存中' : saveStatus === 'failed' ? '✗ 保存失败' : saveStatus === 'offline' ? '● 离线' : '● 未保存'}
             </span>
           )}
         </div>
@@ -342,10 +342,10 @@ export default function DocumentView({
           <div className="prop-item" style={{ marginLeft: 'auto' }}>
             <span style={{
               fontSize: 11, padding: '2px 6px', borderRadius: 3,
-              background: saveStatus === 'saved' ? '#1B5E20' : saveStatus === 'saving' ? '#E65100' : saveStatus === 'error' ? '#B71C1C' : saveStatus === 'offline' ? '#333' : '#E65100',
-              color: saveStatus === 'saved' ? '#A5D6A7' : saveStatus === 'saving' ? '#FFCC80' : saveStatus === 'error' ? '#EF9A9A' : saveStatus === 'offline' ? '#888' : '#FFCC80',
+              background: saveStatus === 'saved' ? '#1B5E20' : saveStatus === 'saving' ? '#E65100' : saveStatus === 'failed' ? '#B71C1C' : saveStatus === 'offline' ? '#333' : '#E65100',
+              color: saveStatus === 'saved' ? '#A5D6A7' : saveStatus === 'saving' ? '#FFCC80' : saveStatus === 'failed' ? '#EF9A9A' : saveStatus === 'offline' ? '#888' : '#FFCC80',
             }}>
-              {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中' : saveStatus === 'error' ? '保存失败' : saveStatus === 'offline' ? '离线' : '未保存'}
+              {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中' : saveStatus === 'failed' ? '保存失败' : saveStatus === 'offline' ? '离线' : '未保存'}
             </span>
           </div>
         )}
@@ -424,8 +424,8 @@ export default function DocumentView({
             </span>
           )}
           {saveStatus && (
-            <span style={{ marginLeft: 12, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'error' ? '#f44336' : '#888' }}>
-              {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中...' : saveStatus === 'error' ? '保存失败' : saveStatus === 'offline' ? '离线' : ''}
+            <span style={{ marginLeft: 12, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'failed' ? '#f44336' : '#888' }}>
+              {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中...' : saveStatus === 'failed' ? '保存失败' : saveStatus === 'offline' ? '离线' : ''}
             </span>
           )}
         </div>
@@ -466,3 +466,4 @@ export default function DocumentView({
     </div>
   );
 }
+

@@ -1,0 +1,1086 @@
+{
+    "screens":  [
+                    {
+                        "id":  "shelf",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "filterbar",
+                                         "statsbar",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "num":  "01",
+                        "title":  "作品书架",
+                        "modals":  [
+                                       "wizard",
+                                       "delete"
+                                   ],
+                        "description":  "项目卡片网格，渐变色封面",
+                        "overlays":  [
+                                         "guide",
+                                         "canon"
+                                     ],
+                        "phase":  "1"
+                    },
+                    {
+                        "id":  "shelf-empty",
+                        "description":  "空书架引导页",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "filterbar",
+                                         "statsbar",
+                                         "empty-state",
+                                         "statusbar"
+                                     ],
+                        "phase":  "1",
+                        "title":  "书架空状态",
+                        "num":  "02"
+                    },
+                    {
+                        "id":  "shelf-search",
+                        "description":  "搜索+体裁/状态筛选+排序",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "filterbar",
+                                         "statsbar",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "1",
+                        "title":  "搜索与筛选",
+                        "num":  "03"
+                    },
+                    {
+                        "id":  "shelf-card-menu",
+                        "description":  "卡片右键菜单：重命名/更换体裁/删除",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statsbar",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "1",
+                        "title":  "卡片右键菜单",
+                        "num":  "04"
+                    },
+                    {
+                        "id":  "shelf-cover-edit",
+                        "description":  "悬停圆形编辑按钮切换渐变",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statsbar",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "1",
+                        "title":  "封面颜色编辑",
+                        "num":  "05"
+                    },
+                    {
+                        "id":  "wizard",
+                        "description":  "作品名/体裁/模板选择模态框",
+                        "modals":  [
+                                       "wizard"
+                                   ],
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statsbar",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "2",
+                        "title":  "创建向导",
+                        "num":  "06"
+                    },
+                    {
+                        "id":  "wizard-template-preview",
+                        "description":  "选择模板时展示预设对象列表",
+                        "modals":  [
+                                       "wizard"
+                                   ],
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statsbar",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "2",
+                        "title":  "模板预览",
+                        "num":  "07"
+                    },
+                    {
+                        "id":  "first-launch-guide",
+                        "description":  "3步覆盖引导：正典/WikiLink/画板",
+                        "overlays":  [
+                                         "guide"
+                                     ],
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "2",
+                        "title":  "首次引导",
+                        "num":  "08"
+                    },
+                    {
+                        "id":  "canon-guide",
+                        "description":  "4级正典等级说明弹出框",
+                        "overlays":  [
+                                         "canon"
+                                     ],
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "card-grid",
+                                         "statusbar"
+                                     ],
+                        "phase":  "2",
+                        "title":  "正典引导弹出",
+                        "num":  "09"
+                    },
+                    {
+                        "id":  "workspace-shell",
+                        "description":  "3栏布局：左侧栏+主内容+右侧检查器",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "3",
+                        "title":  "工作区外壳",
+                        "num":  "10"
+                    },
+                    {
+                        "id":  "nav-bar",
+                        "description":  "返回书架/项目名/标签/模式/搜索/徽章",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "3",
+                        "title":  "导航栏",
+                        "num":  "11"
+                    },
+                    {
+                        "id":  "status-bar-screen",
+                        "description":  "保存状态/同步队列/字数/链接/正典",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "3",
+                        "title":  "底部状态栏",
+                        "num":  "12"
+                    },
+                    {
+                        "id":  "offline-banner",
+                        "description":  "黄色离线警告条",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "3",
+                        "title":  "离线横幅",
+                        "num":  "13"
+                    },
+                    {
+                        "id":  "loading-screen",
+                        "description":  "加载项目时的旋转动画",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "3",
+                        "title":  "加载屏幕",
+                        "num":  "14"
+                    },
+                    {
+                        "id":  "workspace-mode",
+                        "description":  "写作/审阅/协作模式切换",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "4",
+                        "title":  "模式切换",
+                        "num":  "15"
+                    },
+                    {
+                        "id":  "quick-action",
+                        "description":  "Ctrl+K 命令面板",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "4",
+                        "title":  "快速操作",
+                        "num":  "16"
+                    },
+                    {
+                        "id":  "editor-source",
+                        "description":  "Markdown编辑区，语法高亮",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "5",
+                        "title":  "源码编辑",
+                        "num":  "17"
+                    },
+                    {
+                        "id":  "editor-preview",
+                        "description":  "渲染HTML预览，可点击WikiLink",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "5",
+                        "title":  "预览模式",
+                        "num":  "18"
+                    },
+                    {
+                        "id":  "editor-wysiwyg",
+                        "description":  "TipTap富文本编辑，WikiLink扩展",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "5",
+                        "title":  "富文本编辑",
+                        "num":  "19"
+                    },
+                    {
+                        "id":  "editor-toolbar",
+                        "description":  "H1-H3/B/I/U/S/引用/代码/链接，正典徽章",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "5",
+                        "title":  "统一工具栏",
+                        "num":  "20"
+                    },
+                    {
+                        "id":  "wiki-create-bubble",
+                        "description":  "点击不存在的[[链接]]弹出创建",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "5",
+                        "title":  "WikiLink创建气泡",
+                        "num":  "21"
+                    },
+                    {
+                        "id":  "editor-empty",
+                        "description":  "空对象引导创建内容",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "5",
+                        "title":  "编辑空状态",
+                        "num":  "22"
+                    },
+                    {
+                        "id":  "outline-tree",
+                        "description":  "可折叠、可搜索、正典颜色编码",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "6",
+                        "title":  "大纲树",
+                        "num":  "23"
+                    },
+                    {
+                        "id":  "outline-search",
+                        "description":  "按名称过滤大纲项目",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "6",
+                        "title":  "大纲搜索",
+                        "num":  "24"
+                    },
+                    {
+                        "id":  "outline-smart-group",
+                        "description":  "按类型自动分组",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "6",
+                        "title":  "智能分组",
+                        "num":  "25"
+                    },
+                    {
+                        "id":  "outline-recent",
+                        "description":  "最近访问的对象列表",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "6",
+                        "title":  "最近项目",
+                        "num":  "26"
+                    },
+                    {
+                        "id":  "inspector-summary",
+                        "description":  "未选择对象时的项目统计数据",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "项目概要",
+                        "num":  "27"
+                    },
+                    {
+                        "id":  "inspector-detail",
+                        "description":  "类型/正典/状态/时间戳",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "对象检查器",
+                        "num":  "28"
+                    },
+                    {
+                        "id":  "inspector-linked",
+                        "description":  "引用/被引用对象列表",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "关联对象",
+                        "num":  "29"
+                    },
+                    {
+                        "id":  "inspector-judgment",
+                        "description":  "对象操作时间线",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "判断历程",
+                        "num":  "30"
+                    },
+                    {
+                        "id":  "inspector-canon-popup",
+                        "description":  "4级正典下拉选择",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "正典弹出",
+                        "num":  "31"
+                    },
+                    {
+                        "id":  "inspector-board",
+                        "description":  "画板分配界面",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "添加到画板",
+                        "num":  "32"
+                    },
+                    {
+                        "id":  "inspector-reason",
+                        "description":  "锁定/弃置/提升需要输入原因",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "7",
+                        "title":  "原因对话框",
+                        "num":  "33"
+                    },
+                    {
+                        "id":  "canvas-relation",
+                        "description":  "节点关系图",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "关系图",
+                        "num":  "34"
+                    },
+                    {
+                        "id":  "canvas-timeline",
+                        "description":  "水平时间线",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "时间线",
+                        "num":  "35"
+                    },
+                    {
+                        "id":  "canvas-deduction",
+                        "description":  "分区推演：问题/候选/验证/锁定",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "推演图",
+                        "num":  "36"
+                    },
+                    {
+                        "id":  "canvas-tool-panel",
+                        "description":  "选择/框选/连线/对象池/模板",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "工具面板",
+                        "num":  "37"
+                    },
+                    {
+                        "id":  "canvas-zoom",
+                        "description":  "+/-/百分比/适应",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "缩放控制",
+                        "num":  "38"
+                    },
+                    {
+                        "id":  "canvas-pool",
+                        "description":  "右侧对象列表，可按类型搜索拖拽",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "对象池",
+                        "num":  "39"
+                    },
+                    {
+                        "id":  "canvas-marquee",
+                        "description":  "矩形多选",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "框选",
+                        "num":  "40"
+                    },
+                    {
+                        "id":  "canvas-layout-lock",
+                        "description":  "切换开关保护手动布局",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "布局锁定",
+                        "num":  "41"
+                    },
+                    {
+                        "id":  "canvas-connect",
+                        "description":  "点击源拖拽到目标创建连线",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "连线绘制",
+                        "num":  "42"
+                    },
+                    {
+                        "id":  "canvas-sticky",
+                        "description":  "自由浮动文本注释",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "便签",
+                        "num":  "43"
+                    },
+                    {
+                        "id":  "canvas-timeline-unsorted",
+                        "description":  "未排期事件侧栏，可拖入时间线",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "待排事件池",
+                        "num":  "44"
+                    },
+                    {
+                        "id":  "canvas-hint",
+                        "description":  "底部居中平移/缩放提示",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "8",
+                        "title":  "画布提示",
+                        "num":  "45"
+                    },
+                    {
+                        "id":  "setting-collection",
+                        "description":  "正典对象集合，可过滤搜索",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "filterbar",
+                                         "statusbar"
+                                     ],
+                        "phase":  "9",
+                        "title":  "设定集",
+                        "num":  "46"
+                    },
+                    {
+                        "id":  "setting-promote",
+                        "description":  "正典等级变更按钮",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "9",
+                        "title":  "正典升级",
+                        "num":  "47"
+                    },
+                    {
+                        "id":  "judgment-records",
+                        "description":  "操作日志+字段变更",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "filterbar",
+                                         "statusbar"
+                                     ],
+                        "phase":  "9",
+                        "title":  "判断记录",
+                        "num":  "48"
+                    },
+                    {
+                        "id":  "canon-handbook",
+                        "description":  "4级正典参考文档",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "9",
+                        "title":  "正典手册",
+                        "num":  "49"
+                    },
+                    {
+                        "id":  "global-search",
+                        "description":  "Ctrl+K模糊+拼音搜索",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "10",
+                        "title":  "全局搜索",
+                        "num":  "50"
+                    },
+                    {
+                        "id":  "undo-redo-toast",
+                        "description":  "边界反馈提示",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "10",
+                        "title":  "撤销/重做提示",
+                        "num":  "51"
+                    },
+                    {
+                        "id":  "error-toast",
+                        "description":  "操作失败通知",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "10",
+                        "title":  "错误提示",
+                        "num":  "52"
+                    },
+                    {
+                        "id":  "ai-chat",
+                        "description":  "左侧大纲+对话+输入+文档卡片",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI全页对话",
+                        "num":  "53"
+                    },
+                    {
+                        "id":  "ai-chat-header",
+                        "description":  "标题/模型指示/聚焦徽章/新对话",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI对话头部",
+                        "num":  "54"
+                    },
+                    {
+                        "id":  "ai-doc-card",
+                        "description":  "类型徽章/标题/正文/编辑/保存",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI文档卡片",
+                        "num":  "55"
+                    },
+                    {
+                        "id":  "ai-doc-card-edit",
+                        "description":  "可编辑标题/正文",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "文档卡片内联编辑",
+                        "num":  "56"
+                    },
+                    {
+                        "id":  "ai-input-bar",
+                        "description":  "自动缩放输入框",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI输入栏",
+                        "num":  "57"
+                    },
+                    {
+                        "id":  "ai-focus",
+                        "description":  "头部徽章",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI聚焦指示器",
+                        "num":  "58"
+                    },
+                    {
+                        "id":  "ai-typing",
+                        "description":  "3点弹跳动画",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI打字指示器",
+                        "num":  "59"
+                    },
+                    {
+                        "id":  "ai-sidebar-model",
+                        "description":  "当前模型名称可点入设置",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI侧栏模型选择",
+                        "num":  "60"
+                    },
+                    {
+                        "id":  "ai-bottom-bar",
+                        "description":  "连接点/Token数/用量条",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "AI底部栏",
+                        "num":  "61"
+                    },
+                    {
+                        "id":  "ai-new-chat",
+                        "description":  "清空对话前确认",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "11",
+                        "title":  "新对话确认",
+                        "num":  "62"
+                    },
+                    {
+                        "id":  "settings-shell",
+                        "description":  "设置导航面板",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "设置外壳",
+                        "num":  "63"
+                    },
+                    {
+                        "id":  "settings-api-keys",
+                        "description":  "多提供商密钥管理",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "API Key管理",
+                        "num":  "64"
+                    },
+                    {
+                        "id":  "settings-models",
+                        "description":  "单选列表",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "模型选择",
+                        "num":  "65"
+                    },
+                    {
+                        "id":  "settings-cost",
+                        "description":  "今日+本月费用",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "费用估算",
+                        "num":  "66"
+                    },
+                    {
+                        "id":  "settings-breakdown",
+                        "description":  "条状图+Token数+费用",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "各模型分解",
+                        "num":  "67"
+                    },
+                    {
+                        "id":  "settings-sparkline",
+                        "description":  "7日柱状图",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "周趋势图",
+                        "num":  "68"
+                    },
+                    {
+                        "id":  "settings-test",
+                        "description":  "内联结果及延迟",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "12",
+                        "title":  "连接测试",
+                        "num":  "69"
+                    },
+                    {
+                        "id":  "ai-agent-tab",
+                        "description":  "Agent卡片+任务队列",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "Agent控制中心",
+                        "num":  "70"
+                    },
+                    {
+                        "id":  "agent-card",
+                        "description":  "图标/名称/状态/进度",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "Agent卡片",
+                        "num":  "71"
+                    },
+                    {
+                        "id":  "task-queue",
+                        "description":  "可拖拽的任务列表",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "任务队列",
+                        "num":  "72"
+                    },
+                    {
+                        "id":  "skill-marketplace",
+                        "description":  "可安装技能",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "技能市场",
+                        "num":  "73"
+                    },
+                    {
+                        "id":  "agent-collab",
+                        "description":  "实时AI写作",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "协作编辑",
+                        "num":  "74"
+                    },
+                    {
+                        "id":  "change-history",
+                        "description":  "AI修改时间线",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "变更历史",
+                        "num":  "75"
+                    },
+                    {
+                        "id":  "collaborator-list",
+                        "description":  "活跃Agent和用户",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "协作者列表",
+                        "num":  "76"
+                    },
+                    {
+                        "id":  "ai-suggestions",
+                        "description":  "自动布局推荐",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "AI建议面板",
+                        "num":  "77"
+                    },
+                    {
+                        "id":  "consistency-report",
+                        "description":  "问题列表",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "一致性扫描报告",
+                        "num":  "78"
+                    },
+                    {
+                        "id":  "ai-layout-recommend",
+                        "description":  "2-3个方案",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "13",
+                        "title":  "AI布局推荐",
+                        "num":  "79"
+                    },
+                    {
+                        "id":  "dashboard",
+                        "description":  "对象趋势/AI时长/一致性分数",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "14",
+                        "title":  "仪表盘",
+                        "num":  "80"
+                    },
+                    {
+                        "id":  "style-recognition",
+                        "description":  "类型/风格匹配百分比",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "14",
+                        "title":  "风格识别",
+                        "num":  "81"
+                    },
+                    {
+                        "id":  "skill-recommend",
+                        "description":  "按项目推荐技能",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "14",
+                        "title":  "技能推荐",
+                        "num":  "82"
+                    },
+                    {
+                        "id":  "platform-switcher",
+                        "description":  "桌面/Web徽章",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "15",
+                        "title":  "平台指示器",
+                        "num":  "83"
+                    },
+                    {
+                        "id":  "pwa-install",
+                        "description":  "安装应用toast",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "15",
+                        "title":  "PWA安装提示",
+                        "num":  "84"
+                    },
+                    {
+                        "id":  "cloud-sync",
+                        "description":  "同步开关",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "15",
+                        "title":  "云同步设置",
+                        "num":  "85"
+                    },
+                    {
+                        "id":  "share-button",
+                        "description":  "只读分享链接",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "15",
+                        "title":  "分享按钮",
+                        "num":  "86"
+                    },
+                    {
+                        "id":  "feedback",
+                        "description":  "Bug报告",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "16",
+                        "title":  "反馈按钮",
+                        "num":  "87"
+                    },
+                    {
+                        "id":  "beta-badge",
+                        "description":  "版本指示器",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "16",
+                        "title":  "Beta/RC徽章",
+                        "num":  "88"
+                    },
+                    {
+                        "id":  "skeleton",
+                        "description":  "内容占位符",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "16",
+                        "title":  "骨架加载",
+                        "num":  "89"
+                    },
+                    {
+                        "id":  "crash-recovery",
+                        "description":  "异常退出检测",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "16",
+                        "title":  "崩溃恢复",
+                        "num":  "90"
+                    },
+                    {
+                        "id":  "publish",
+                        "description":  "QA检查表",
+                        "sections":  [
+                                         "nav",
+                                         "page-header",
+                                         "statusbar"
+                                     ],
+                        "phase":  "17",
+                        "title":  "发布面板",
+                        "num":  "91"
+                    },
+                    {
+                        "id":  "version-footprint",
+                        "description":  "v1.1到v2.0时间线",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "17",
+                        "title":  "版本足迹",
+                        "num":  "92"
+                    },
+                    {
+                        "id":  "knowledge-base",
+                        "description":  "索引条目计数",
+                        "sections":  [
+                                         "nav",
+                                         "statusbar"
+                                     ],
+                        "phase":  "17",
+                        "title":  "知识库链接",
+                        "num":  "93"
+                    }
+                ]
+}

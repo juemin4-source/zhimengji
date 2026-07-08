@@ -142,7 +142,7 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
     nav: { display: 'flex', alignItems: 'center', height: 44, background: 'var(--bg-header, #0e0e0e)', borderBottom: '1px solid var(--border-default, #2a2a2a)', padding: '0 16px', gap: 12, flexShrink: 0 },
     layout: { display: 'flex', flex: 1, overflow: 'hidden' },
     sidebar: { width: 200, minWidth: 200, background: 'var(--bg-surface, #141414)', borderRight: '1px solid var(--border-default, #2a2a2a)', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
-    content: { flex: 1, overflowY: 'auto' as const, padding: '24px 32px' },
+    content: { flex: 1, overflowY: 'auto' as const, padding: '24px 32px', background: 'var(--bg-surface, #141414)' },
     title: { fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary, #e0e0e0)', marginBottom: 4 },
     desc: { fontSize: '0.8125rem', color: 'var(--text-secondary, #a0a0a0)', marginBottom: 16 },
     sectionTitle: { fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted, #666)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 12 },

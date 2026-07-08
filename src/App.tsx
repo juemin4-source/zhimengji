@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useMemo, useEffect } from 'react';
+﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation } from './types/world';
 import { CANVAS_TABS, OBJECT_TYPES, CANON_LEVELS, OBJECT_STATUSES } from './types/world';
 import { TEMPLATES } from './data/seed';
@@ -65,6 +65,8 @@ export default function App() {
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [activeNavTab, setActiveNavTab] = useState<NavTab>('文档');
   const [canvasStates, setCanvasStates] = useState<Record<CanvasTab, CanvasTabState>>(createDefaultCanvasStates);
+  const canvasStatesRef = useRef(canvasStates);
+  useEffect(() => { canvasStatesRef.current = canvasStates; }, [canvasStates]);
 
   // Load projects on mount
   useEffect(() => {

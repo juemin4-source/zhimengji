@@ -218,6 +218,7 @@ export default function CanvasView({
   const canvasRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const autoLayoutRun = useRef<Set<string>>(new Set());
+  const gridPlacedRun = useRef<Set<string>>(new Set());
   const state = canvasStates[activeTab];
 
   const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allObjects.forEach(o => m.set(o.name, o)); return m; }, [allObjects]);
@@ -297,6 +298,8 @@ export default function CanvasView({
 
   // Grid-place any new objects added after auto-layout
   useEffect(() => {
+    if (gridPlacedRun.current.has(activeTab)) return;
+
     const newPositions = { ...state.positions };
     let changed = false;
     const objectsInBoard = allObjects.filter(o => o.selectedBoards.includes(activeTab));
@@ -310,7 +313,8 @@ export default function CanvasView({
       changed = true;
     });
     if (changed) onUpdateCanvasState(activeTab, { positions: newPositions });
-  }, [allObjects.length]);
+    gridPlacedRun.current.add(activeTab);
+  }, [allObjects.length, activeTab]);
 
   const canvasObjects = useMemo(() => {
     let objects = allObjects.filter(o => o.selectedBoards.includes(activeTab));
@@ -367,7 +371,7 @@ export default function CanvasView({
   const handleCanvasMouseUp = useCallback((e: React.MouseEvent) => {
     setPanning(false);
     setDraggingNode(null);
-    setDragStartPositions({});
+    setDragStartPositions(prev => Object.keys(prev).length === 0 ? prev : {});
 
     // Connection drop detection
     if (connSource) {

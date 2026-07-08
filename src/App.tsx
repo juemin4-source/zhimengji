@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+﻿import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation } from './types/world';
 import { CANVAS_TABS, OBJECT_TYPES, CANON_LEVELS, OBJECT_STATUSES } from './types/world';
 import { TEMPLATES } from './data/seed';
@@ -246,6 +246,7 @@ export default function App() {
     }
   }, [activeBookId]);
 
+
   const onCreateNamedObject = useCallback(async (name: string, objectType: ObjectType) => {
     const template = TEMPLATES.find(t => t.type === objectType);
     const now = Date.now();
@@ -370,14 +371,14 @@ export default function App() {
   //  Canvas Object Creation (AC1: double-click to create at position)
   // ══════════════════════════════════════════
 
-  const onCanvasCreateObject = useCallback((templateType: ObjectType, board: CanvasTab, x: number, y: number) => {
+  const onCanvasCreateObject = useCallback((templateType: ObjectType, x: number, y: number, tabId: CanvasTab) => {
     const template = TEMPLATES.find(t => t.type === templateType);
     const now = Date.now();
     const newObj: WorldObject = {
       id: uid(), projectId: activeBookId || '', name: `新${templateType}`,
       type: templateType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
       canonLevel: '未收录' as CanonLevel,
-      tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [board],
+      tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [tabId],
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
@@ -389,11 +390,11 @@ export default function App() {
     }
     // Set the position immediately on the canvas
     setCanvasStates(prev => {
-      const tab = prev[board];
+      const tab = prev[tabId];
       if (!tab) return prev;
       return {
         ...prev,
-        [board]: {
+        [tabId]: {
           ...tab,
           positions: {
             ...tab.positions,

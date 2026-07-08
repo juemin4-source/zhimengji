@@ -463,3 +463,48 @@ body {
 }
 .canon-demote:hover { background: #3e2723; }
 .canon-demote:disabled { background: #222; color: #555; cursor: not-allowed; }
+
+/* ===== Inline Type Bubble (AC1: Batch 3) ===== */
+.type-bubble {
+  position: absolute; z-index: 100; min-width: 240px;
+  background: #1e1e1e; border: 1px solid #444; border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); padding: 10px;
+  transform: translate(-50%, -100%); margin-top: -8px;
+}
+.type-bubble-header {
+  font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #333;
+}
+.type-bubble-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;
+}
+.type-bubble-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 4px; border: 1px solid #333; border-radius: 6px;
+  background: #141414; color: #aaa; cursor: pointer; font-size: 11px;
+  text-align: center; transition: all 0.12s; min-width: 52px;
+}
+.type-bubble-btn:hover { border-color: #B7FF00; background: #1a2e1a; color: #B7FF00; }
+.type-bubble-icon { font-size: 18px; line-height: 1; }
+.type-bubble-label { font-size: 10px; white-space: nowrap; }
+
+/* ===== Inline Connection Type Popup (AC2: Batch 3) ===== */
+.conn-type-popup {
+  position: absolute; z-index: 100; min-width: 300px;
+  background: #1e1e1e; border: 1px solid #444; border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); padding: 10px;
+  transform: translate(-50%, -100%); margin-top: -8px;
+}
+.conn-popup-header {
+  font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #333;
+}
+.conn-popup-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;
+}
+.conn-popup-btn {
+  padding: 6px 4px; border: 1px solid #333; border-radius: 6px;
+  background: #141414; color: #FF9800; cursor: pointer; font-size: 12px;
+  text-align: center; transition: all 0.12s;
+}
+.conn-popup-btn:hover { border-color: #FF9800; background: #2a1a00; color: #FFB74D; }

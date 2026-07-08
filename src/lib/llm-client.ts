@@ -1,4 +1,4 @@
-﻿// ===== LLM Client — 织梦机 v1.3 =====
+﻿// ===== LLM Client — Zhimengji v1.3 =====
 // Wraps Tauri invoke('call_llm', ...) with streaming and error handling.
 // Falls back to local API call when Tauri backend is unavailable.
 
@@ -34,7 +34,6 @@ export class LlmError extends Error {
 
 const FREELLM_ENDPOINT = 'http://localhost:3001/v1';
 
-// ===== Token counting =====
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
@@ -42,18 +41,21 @@ function estimateTokens(text: string): number {
 function calculateCost(tokensIn: number, tokensOut: number, model: AiModel): number {
   return ((tokensIn + tokensOut) / 1000) * model.costPer1KTokens;
 }
-
-// ===== Non-streaming call =====
-export async function callLlm(messages: Pick<Message, 'role' | 'content'>[], options: LlmCallOptions): Promise<LlmResponse> {
+export async function callLlm(
+  messages: Pick<Message, 'role' | 'content'>[],
+  options: LlmCallOptions
+): Promise<LlmResponse> {
   const { model, apiKey, timeout = 30000, signal } = options;
   const endpoint = options.endpoint || FREELLM_ENDPOINT;
   const token = apiKey || '';
 
   try {
     // Try Tauri invoke first
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+    const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+    if (hasTauri) {
       try {
-        const result: any = await invokeTauri('call_llm', {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const result: any = await invoke('call_llm', {
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           model: model.name,
           endpoint,
@@ -70,31 +72,31 @@ export async function callLlm(messages: Pick<Message, 'role' | 'content'>[], opt
           cost: calculateCost(tokensIn, tokensOut, model),
         };
       } catch (e: any) {
-        if (e.code === 'TAURI_NOT_FOUND') throw e;
         throw mapTauriError(e);
       }
     }
 
-    // Fallback: direct API call for development
-    const response = await fetch(${endpoint}/chat/completions, {
+    // Fallback: direct API call
+    const url = endpoint + '/chat/completions';
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': Bearer ,
+        'Authorization': 'Bearer ' + token,
       },
       body: JSON.stringify({
         model: model.name,
         messages: messages.map(m => ({ role: m.role, content: m.content })),
         max_tokens: 4096,
       }),
-      signal,
+      signal: signal,
     });
 
     if (!response.ok) {
-      if (response.status === 401) throw new LlmError('auth_failed', 'API Key 认证失败');
-      if (response.status === 429) throw new LlmError('rate_limited', '请求频率过高，请稍后重试');
-      if (response.status >= 500) throw new LlmError('server_error', 服务端错误 ());
-      throw new LlmError('unknown', 请求失败 ());
+      if (response.status === 401) throw new LlmError('auth_failed', 'API Key ren zheng shi bai');
+      if (response.status === 429) throw new LlmError('rate_limited', 'Qing qiu pin lu guo gao');
+      if (response.status >= 500) throw new LlmError('server_error', 'Fu wu duan cuo wu (' + response.status + ')');
+      throw new LlmError('unknown', 'Qing qiu shi bai (' + response.status + ')');
     }
 
     const data = await response.json();
@@ -111,13 +113,13 @@ export async function callLlm(messages: Pick<Message, 'role' | 'content'>[], opt
     };
   } catch (e) {
     if (e instanceof LlmError) throw e;
-    if ((e as Error).name === 'AbortError') throw new LlmError('timeout', '请求已取消');
-    if ((e as TypeError).message?.includes('fetch')) throw new LlmError('network_error', '网络连接失败，请检查网络或端点 URL');
-    throw new LlmError('unknown', (e as Error).message || '未知错误');
+    if ((e as Error).name === 'AbortError') throw new LlmError('timeout', 'Qing qiu yi qu xiao');
+    if ((e as TypeError).message?.includes('fetch')) {
+      throw new LlmError('network_error', 'Wang luo lian jie shi bai');
+    }
+    throw new LlmError('unknown', (e as Error).message || 'Wei zhi cuo wu');
   }
 }
-
-// ===== Streaming call =====
 export async function callLlmStream(
   messages: Pick<Message, 'role' | 'content'>[],
   options: LlmCallOptions
@@ -125,14 +127,15 @@ export async function callLlmStream(
   const { model, apiKey, onToken, timeout = 30000, signal } = options;
   const endpoint = options.endpoint || FREELLM_ENDPOINT;
   const token = apiKey || '';
-
   let fullContent = '';
   let tokensOut = 0;
 
   try {
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+    const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+    if (hasTauri) {
       try {
-        const result: any = await invokeTauri('call_llm_stream', {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const result: any = await invoke('call_llm_stream', {
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           model: model.name,
           endpoint,
@@ -146,11 +149,12 @@ export async function callLlmStream(
         throw mapTauriError(e);
       }
     } else {
-      const response = await fetch(${endpoint}/chat/completions, {
+      const url = endpoint + '/chat/completions';
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': Bearer ,
+          'Authorization': 'Bearer ' + token,
         },
         body: JSON.stringify({
           model: model.name,
@@ -158,14 +162,14 @@ export async function callLlmStream(
           max_tokens: 4096,
           stream: true,
         }),
-        signal,
+        signal: signal,
       });
 
       if (!response.ok) {
         if (response.status === 401) throw new LlmError('auth_failed', 'API Key 认证失败');
         if (response.status === 429) throw new LlmError('rate_limited', '请求频率过高');
-        if (response.status >= 500) throw new LlmError('server_error', 服务端错误 ());
-        throw new LlmError('unknown', 请求失败 ());
+        if (response.status >= 500) throw new LlmError('server_error', '服务端错误 (' + response.status + ')');
+        throw new LlmError('unknown', '请求失败 (' + response.status + ')');
       }
 
       const reader = response.body?.getReader();
@@ -177,7 +181,6 @@ export async function callLlmStream(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
@@ -211,18 +214,20 @@ export async function callLlmStream(
     throw new LlmError('unknown', (e as Error).message || '未知错误');
   }
 }
-
-// ===== Test connection =====
-export async function testConnection(endpoint: string, apiKey: string): Promise<{ success: boolean; latency: number; models: string[]; error?: string }> {
+export async function testConnection(
+  endpoint: string,
+  apiKey: string
+): Promise<{ success: boolean; latency: number; models: string[]; error?: string }> {
   const start = performance.now();
   try {
-    const response = await fetch(${endpoint}/models, {
-      headers: { 'Authorization': Bearer  },
+    const url = endpoint + '/models';
+    const response = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + apiKey },
       signal: AbortSignal.timeout(10000),
     });
     const latency = Math.round(performance.now() - start);
     if (!response.ok) {
-      return { success: false, latency, models: [], error: HTTP :  };
+      return { success: false, latency, models: [], error: 'HTTP ' + response.status + ': ' + response.statusText };
     }
     const data = await response.json();
     const models = (data.data || data.models || []).map((m: any) => m.id || m.name || m);
@@ -231,12 +236,6 @@ export async function testConnection(endpoint: string, apiKey: string): Promise<
     const latency = Math.round(performance.now() - start);
     return { success: false, latency, models: [], error: e.message || '连接失败' };
   }
-}
-
-// ===== Tauri invoke helper =====
-async function invokeTauri(cmd: string, args: Record<string, unknown>): Promise<any> {
-  const { invoke } = await import('@tauri-apps/api/core');
-  return invoke(cmd, args);
 }
 
 function mapTauriError(e: any): LlmError {

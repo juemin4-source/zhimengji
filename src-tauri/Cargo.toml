@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "zhimengji"
 version = "0.0.1"
 description = "缁囨ⅵ鏈?- AI-native content creation platform"
@@ -20,3 +20,9 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 zip = "2"
+aes-gcm = "0.10"
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"], default-features = false }
+base64 = "0.22"
+rand = "0.8"
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"

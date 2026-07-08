@@ -1,4 +1,6 @@
-﻿mod commands;
+﻿mod byok;
+mod byok_commands;
+mod commands;
 mod db;
 mod models;
 
@@ -15,6 +17,16 @@ pub fn run() {
             let db_path = app_data_dir.join("zhimengji.db");
             let database = Database::new(db_path.to_str().expect("Invalid db path"))
                 .expect("Failed to initialize database");
+
+            // Initialize BYOK tables
+            {
+                let conn = database.conn.lock().unwrap();
+                byok::key_manager::init_tables(&conn)
+                    .expect("Failed to init BYOK key tables");
+                byok::usage_tracker::init_tables(&conn)
+                    .expect("Failed to init BYOK usage tables");
+            }
+
             app.manage(database);
             Ok(())
         })
@@ -46,6 +58,15 @@ pub fn run() {
             commands::ping,
             commands::export_project,
             commands::import_project,
+            // v1.3 BYOK commands
+            byok_commands::store_api_key,
+            byok_commands::get_api_key,
+            byok_commands::remove_api_key,
+            byok_commands::list_providers,
+            byok_commands::test_connection,
+            byok_commands::call_llm,
+            byok_commands::get_usage_stats,
+            byok_commands::set_budget_limit,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

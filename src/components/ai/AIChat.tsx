@@ -125,8 +125,8 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }, [handleSend]);
 
-  const btnHover = (e: React.MouseEvent) => { if (!(e.currentTarget as HTMLButtonElement).disabled) { Object.assign(e.currentTarget.style, { background: 'rgba(183,255,0,0.12)', borderColor: '#444' }); } };
-  const btnLeave = (e: React.MouseEvent) => { Object.assign(e.currentTarget.style, { background: 'transparent', borderColor: 'var(--border-default, #2a2a2a)' }); };
+  const btnHover = (e: React.MouseEvent) => { if (!(e.currentTarget as HTMLButtonElement).disabled) { Object.assign((e.currentTarget as HTMLElement).style, { background: 'rgba(183,255,0,0.12)', borderColor: '#444' }); } };
+  const btnLeave = (e: React.MouseEvent) => { Object.assign((e.currentTarget as HTMLElement).style, { background: 'transparent', borderColor: 'var(--border-default, #2a2a2a)' }); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
@@ -185,7 +185,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
         {/* Sidebar reveal */}
         {sidebarCollapsed && (
           <button onClick={() => setSidebarCollapsed(false)}
-            style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 20, width: 24, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: '0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0', background: 'var(--sidebar-bg, #0e0e0e)', border: '1px solid var(--border-default, #2a2a2a)', borderLeft: 'none', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', fontSize: '0.875rem' }}
+            style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 20, width: 24, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: '0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0', background: 'var(--sidebar-bg, #0e0e0e)', borderLeft: 'none', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', fontSize: '0.875rem' }}
             title="展开大纲">▶</button>
         )}
 
@@ -340,3 +340,4 @@ function simulateAiDocs(text: string): DocCardData[] | undefined {
   }
   return undefined;
 }
+

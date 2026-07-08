@@ -828,9 +828,7 @@ function AppInner() {
             <button className="tb-btn" onClick={() => setShowGlobalSearch(true)} title="全局搜索 (Ctrl+K)" style={{ fontSize: 13, gap: 4 }}>
               🔍 <kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
             </button>
-            <button className="tb-btn" onClick={() => setShowAiSettings(true)} title="AI 设置" style="{{ fontSize: 13 }}"
-              onMouseEnter={{e => e.currentTarget.style.color='var(--accent, #B7FF00)'}}
-              onMouseLeave={{e => e.currentTarget.style.color=''}}
+            <button className="tb-btn" onClick={() => setShowAiSettings(true)} title="AI 设置" style={{ fontSize: 13 }}
             >⚙️</button>
           </nav>
           <div className="main-area">
@@ -889,5 +887,8 @@ function AppInner() {
     </div>
   );
 }
+
+
+
 
 

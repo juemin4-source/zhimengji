@@ -1,4 +1,4 @@
-﻿use rusqlite::{params, Connection, Result as SqlResult};
+use rusqlite::{params, Connection, Result as SqlResult};
 use std::sync::Mutex;
 
 use crate::models::{

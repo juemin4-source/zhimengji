@@ -23,7 +23,7 @@ const BACKOFF_BASE_MS = 2000;
 export class SyncManager {
   private db: IDBDatabase | null = null;
   private dbReady: Promise<void>;
-  private isOnline = navigator.onLine;
+  private _isOnline = navigator.onLine;
   private processing = false;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private retryTimers: ReturnType<typeof setTimeout>[] = [];
@@ -33,15 +33,48 @@ export class SyncManager {
   private _failedCount = 0;
   private _saveStatus: SaveStatus = 'saved';
 
-  constructor(
-    private pingUrl: string,
+    constructor(
+    private pingUrl: string = '',
     private pingTimeout: number = 3000,
   ) {
     this.dbReady = this.initDB();
-    this.startPing();
+    if (this.pingUrl) this.startPing();
   }
 
   // ═══ Public API ═══
+
+  get isOnlineAccessor(): boolean {
+    return this._isOnline;
+  }
+
+  isOnline(): boolean {
+    return this._isOnline;
+  }
+
+  async clearAll(): Promise<void> {
+    await this.dbReady;
+    const tx = this.db!.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async retryFailed(): Promise<void> {
+    await this.dbReady;
+    this.processQueue();
+  }
+
+  async getFailedOperations(): Promise<SyncOperation[]> {
+    await this.dbReady;
+    const all = await this.getAllFromDB();
+    return all.filter(o => o.retryCount > o.maxRetries);
+  }
+
+  getFailedCount(): number {
+    return this._failedCount;
+  }
 
   getSaveStatus(): SaveStatus {
     return this._saveStatus;
@@ -61,7 +94,7 @@ export class SyncManager {
   }
 
   private setOnlineStatus(online: boolean): void {
-    this.isOnline = online;
+    this._isOnline = online;
     this.onlineListeners.forEach(cb => cb(online));
     if (!online) {
       this.setSaveStatus('offline');
@@ -83,7 +116,7 @@ export class SyncManager {
     await this.saveToDB(op);
     this.pendingCount = (await this.getAllFromDB()).length;
 
-    if (!this.isOnline) {
+    if (!this._isOnline) {
       this.setSaveStatus('offline');
       return;
     }
@@ -180,7 +213,7 @@ export class SyncManager {
   }
 
   async processQueue(): Promise<void> {
-    if (this.processing || !this.isOnline) return;
+    if (this.processing || !this._isOnline) return;
     this.processing = true;
 
     try {
@@ -239,9 +272,9 @@ export class SyncManager {
       const response = await fetch(this.pingUrl, {
         signal: AbortSignal.timeout(this.pingTimeout),
       });
-      const wasOffline = !this.isOnline;
+      const wasOffline = !this._isOnline;
       this.setOnlineStatus(response.ok);
-      if (wasOffline && this.isOnline) {
+      if (wasOffline && this._isOnline) {
         this.processQueue();
       }
     } catch {
@@ -255,4 +288,6 @@ export class SyncManager {
     this.onlineListeners = [];
   }
 }
+
+
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * StatusBar — Bottom status bar with save indicator and metadata (P1-05, P2-04).
  *
  * Left: save status (5-state: saved/saving/unsaved/offline/failed) + sync queue count
@@ -13,10 +13,10 @@ interface StatusBarProps {
   saveStatus: SaveStatus;
   wordCount: number;
   linkCount?: number;
-  canvasNodeCount?: number;
-  activeNavTab?: string;
   onRetrySave?: () => void;
   onSaveClick?: () => void;
+  canonLabel?: string;
+  lastUpdateText?: string;
 }
 
 const STATUS_CONFIG: Record<SaveStatus, { text: string; color: string; cls: string }> = {
@@ -143,4 +143,3 @@ export default function StatusBar({
     </div>
   );
 }
-

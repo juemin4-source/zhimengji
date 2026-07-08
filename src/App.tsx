@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
-import { CANVAS_TABS, CANON_LEVELS, PROJECT_TEMPLATES } from './types/world';
+import { CANVAS_TABS, CANON_LEVELS, CANON_COLORS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
 import { TEMPLATES } from './data/seed';
 
@@ -93,6 +93,12 @@ function AppInner() {
   const [contentDirty, setContentDirty] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // v1.2: Editor mode (nav-bar controlled)
+  const [editorMode, setEditorMode] = useState<'source' | 'preview' | 'wysiwyg'>('source');
+
+  // v1.2: Offline detection
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
   // v1.2: Modal states
   const [showCreationWizard, setShowCreationWizard] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -110,6 +116,18 @@ function AppInner() {
       setSaveStatus(status);
     });
     return () => { syncManager.stopPing(); };
+  }, []);
+
+  // ── Online/Offline detection ──
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
   }, []);
 
   // ── Keyboard shortcuts ──
@@ -655,11 +673,33 @@ function AppInner() {
     });
   }, [activeBookId, showToast]);
 
+  const TYPE_ICONS: Record<string, string> = {
+    '人物': '👤', '地点': '📍', '组织': '🏛', '规则/机制': '⚙️',
+    '事件': '📅', '物品': '📦', '术语': '📖', '章节': '📄',
+  };
+
   const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录'];
   // Compute total word count for status bar
   const totalWordCount = useMemo(() => {
     return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
   }, [objects]);
+
+  // Compute total wiki link count for status bar
+  const totalLinkCount = useMemo(() => {
+    return objects.reduce((sum, o) => {
+      const matches = (o.content || '').match(/\[\[([^\]]+)\]\]/g);
+      return sum + (matches ? matches.length : 0);
+    }, 0);
+  }, [objects]);
+
+  // Compute total canvas node count for status bar
+  const totalCanvasNodeCount = useMemo(() => {
+    let count = 0;
+    for (const tab of CANVAS_TABS) {
+      count += Object.keys(canvasStates[tab]?.positions || {}).length;
+    }
+    return count;
+  }, [canvasStates]);
 
   const renderMainContent = () => {
     switch (activeNavTab) {
@@ -669,6 +709,7 @@ function AppInner() {
         onLockObject={onLockObject} onDiscardObject={onDiscardObject}
         onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject}
         saveStatus={saveStatus} onTriggerSave={triggerAutoSave}
+        
       />;
       case '画板': return <CanvasView
         allObjects={objects} connections={connections} canvasStates={canvasStates}
@@ -676,7 +717,7 @@ function AppInner() {
         onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState}
         onAddConnection={onAddConnection} onAddSticky={onAddSticky}
         onAddToBoard={onAddToBoard} onCreateObject={onCreateObject}
-        onCanvasCreateObject={onCanvasCreateObject}
+        
       />;
       case '设定集': return <SettingCollection
         allObjects={objects} onSelectObject={onSelectObject}
@@ -705,14 +746,34 @@ function AppInner() {
         <Bookshelf projects={bookshelfProjects} onEnterProject={handleEnterProject} onCreateProject={handleCreateProjectClick} />
       ) : (
         <>
+          {isOffline && (
+            <div className="offline-banner">离线 ● 当前处于离线状态，编辑内容将在恢复连接后自动同步。</div>
+          )}
           <nav className="nav-bar">
-            <button onClick={handleBackToBookshelf} className="nav-back-btn" title="返回书架">← 书架</button>
-            <span className="app-title">{activeBook?.title ?? '设定管理器'}</span>
+            <button onClick={handleBackToBookshelf} className="nav-back" title="返回书架">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+              书架
+            </button>
+            <div className="nav-divider" />
+            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span>
+            {activeNavTab === '文档' && (
+              <div className="nav-modes">
+                <button className={`nav-mode-btn ${editorMode === 'source' ? 'active' : ''}`} onClick={() => setEditorMode('source')} data-mode='source'>源码</button>
+                <button className={`nav-mode-btn ${editorMode === 'preview' ? 'active' : ''}`} onClick={() => setEditorMode('preview')} data-mode='preview'>预览</button>
+                <button className={`nav-mode-btn ${editorMode === 'wysiwyg' ? 'active' : ''}`} onClick={() => setEditorMode('wysiwyg')} data-mode='wysiwyg'>WYSIWYG</button>
+              </div>
+            )}
             {NAV_TABS.map(tab => (
               <button key={tab} className={`nav-tab ${activeNavTab === tab ? 'active' : ''}`} onClick={() => setActiveNavTab(tab)}>{tab}</button>
             ))}
             <div style={{ flex: 1 }} />
             {/* Search button */}
+            {currentObject && (
+              <div className="nav-badges">
+                <span className="nav-badge">{TYPE_ICONS[currentObject.type] || '📄'} {currentObject.type}</span>
+                <span className="nav-badge"><span className="dot" style={{ background: CANON_COLORS[currentObject.canonLevel] }}></span>{currentObject.canonLevel}</span>
+              </div>
+            )}
             <button className="tb-btn" onClick={() => setShowGlobalSearch(true)} title="全局搜索 (Ctrl+K)" style={{ fontSize: 13, gap: 4 }}>
               🔍 <kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
             </button>
@@ -725,6 +786,7 @@ function AppInner() {
           <StatusBar
             saveStatus={saveStatus}
             wordCount={totalWordCount}
+            linkCount={totalLinkCount}
             onRetrySave={() => { syncManager.retryFailed(); }}
           />
         </>
@@ -772,4 +834,3 @@ function AppInner() {
     </div>
   );
 }
-

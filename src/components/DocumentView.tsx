@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DocumentView — Markdown-first editor for 织梦机 v1.2 (P1-03, P1-04, P1-05).
  *
  * Default mode: source (beautified Markdown with syntax hints)
@@ -33,14 +33,27 @@ interface DocumentViewProps {
   onCreateNamedObject?: (name: string, objectType: ObjectType) => void;
   saveStatus?: SaveStatus;
   onTriggerSave?: () => void;
+  editMode?: 'source' | 'preview' | 'wysiwyg';
+  onEditorModeChange?: (mode: 'source' | 'preview' | 'wysiwyg') => void;
 }
 
 export default function DocumentView({
   currentObject, allObjects,
   onUpdateObject, onNavigate, onCreateObject, onCreateNamedObject,
-  saveStatus, onTriggerSave
+  saveStatus, onTriggerSave,
+  editMode: externalEditorMode,
+  onEditorModeChange
 }: DocumentViewProps) {
-  const [editMode, setEditMode] = useState<EditMode>('source');
+  const [localEditMode, setLocalEditMode] = useState<EditMode>('source');
+  // Use external editMode when provided by parent (nav-bar controlled)
+  const editMode = externalEditorMode ?? localEditMode;
+  const setEditMode = (mode: EditMode) => {
+    if (onEditorModeChange) {
+      onEditorModeChange(mode);
+    } else {
+      setLocalEditMode(mode);
+    }
+  };
   const sourceRef = useRef<HTMLTextAreaElement>(null);
   const [contentDirty, setContentDirty] = useState(false);
   const markdownMigratedRef = useRef<Set<string>>(new Set());
@@ -119,7 +132,7 @@ export default function DocumentView({
         editor.commands.setContent(html);
       }
     }
-  }, [editor, currentObject?.id]);
+  },   [editor, currentObject?.id, editMode]);
 
   const wikiLinks = useMemo(() => {
     if (!currentObject) return [];
@@ -466,4 +479,5 @@ export default function DocumentView({
     </div>
   );
 }
+
 

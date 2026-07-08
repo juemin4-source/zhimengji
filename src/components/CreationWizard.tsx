@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CreationWizard — Single-step new project creation modal for 织梦机 v1.2.
  *
  * Full-screen modal with backdrop blur, name + genre + template selection.
@@ -468,7 +468,7 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
               ref={inputRef}
               type="text"
               style={s.input}
-              placeholder={'输入作品名称…'}
+              placeholder={'输入作品名称...'}
               maxLength={40}
               value={title}
               onChange={handleTitleChange}

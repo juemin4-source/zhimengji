@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
@@ -10,14 +10,14 @@ interface PartitionZone { id: string; label: string; x: number; y: number; width
 interface ToolDef { mode: CanvasToolMode; icon: string; label: string; shortcut?: string; }
 
 const SIDEBAR_TOOLS: ToolDef[] = [
-  { mode: 'select', icon: '鈫?, label: '閫夋嫨', shortcut: 'V' },
-  { mode: 'drag', icon: '鉁?, label: '鎷栧姩鐢诲竷', shortcut: 'H' },
-  { mode: 'addObject', icon: '鈻?, label: '瀵硅薄鍗? },
-  { mode: 'text', icon: 'T', label: '鏂囨湰' },
-  { mode: 'addSticky', icon: '馃摑', label: '渚跨' },
-  { mode: 'addConnection', icon: '鈫?, label: '杩炵嚎' },
-  { mode: 'partition', icon: '鈯?, label: '鍒嗗尯' },
-  { mode: 'template', icon: '鈻?, label: '妯℃澘' },
+  { mode: 'select', icon: '↖', label: '选择', shortcut: 'V' },
+  { mode: 'drag', icon: '✋', label: '拖动画布', shortcut: 'H' },
+  { mode: 'addObject', icon: '▦', label: '对象卡' },
+  { mode: 'text', icon: 'T', label: '文本' },
+  { mode: 'addSticky', icon: '📝', label: '便签' },
+  { mode: 'addConnection', icon: '→', label: '连线' },
+  { mode: 'partition', icon: '⊞', label: '分区' },
+  { mode: 'template', icon: '◫', label: '模板' },
 ];
 
 interface CanvasViewProps {
@@ -32,7 +32,6 @@ interface CanvasViewProps {
   onAddSticky: (tabId: CanvasTab, text: string) => void;
   onAddToBoard: (objectId: string, board: string) => void;
   onCreateObject: (templateType: ObjectType) => void;
-  onCanvasCreateObject?: (type: ObjectType, x: number, y: number, tabId: CanvasTab) => void;
 }
 
 const NODE_W = 130;
@@ -58,150 +57,36 @@ function getLabelPoint(from: CanvasNodePosition, to: CanvasNodePosition) {
 }
 
 const STATUS_TO_ZONE: Record<string, string> = {
-  '鍗犱綅': '闂鍖?, '鑽夌': '闂鍖?, '寰呭畾': '鍊欓€夋柟妗堝尯', '寰呴獙璇?: '寰呴獙璇佸尯', '閿佸畾': '宸查攣瀹氬尯', '搴熷純': '搴熷純鍖?,
+  '占位': '问题区', '草稿': '问题区', '待定': '候选方案区', '待验证': '待验证区', '锁定': '已锁定区', '废弃': '废弃区',
 };
-const DEDUCTION_ZONE_NAMES = ['闂鍖?, '鍊欓€夋柟妗堝尯', '宸查攣瀹氬尯', '搴熷純鍖?, '寰呴獙璇佸尯'];
+
+const DEDUCTION_ZONE_NAMES = ['问题区', '候选方案区', '已锁定区', '废弃区', '待验证区'];
 
 const TIMELINE_EVENTS = [
-  { name: '绗竴娆¤儗鍙? },
-  { name: '鏇挎崲璁″垝' },
-  { name: '閫冪' },
+  { name: '第一次背叛' },
+  { name: '替换计划' },
+  { name: '逃离' },
 ];
 
 let _textId = 0, _zoneId = 0;
-
-/**
- * Simple force-directed layout.
- * Nodes repel each other, connected nodes attract, center gravity.
- */
-function forceDirectedLayout(
-  nodes: Array<{ id: string; x: number; y: number }>,
-  edges: Array<{ sourceId: string; targetId: string }>,
-  width: number = 800,
-  height: number = 600,
-  iterations: number = 60
-): Array<{ id: string; x: number; y: number }> {
-  const centerX = width / 2;
-  const centerY = height / 2;
-
-  const positions = new Map<string, { x: number; y: number }>();
-  const velocities = new Map<string, { vx: number; vy: number }>();
-
-  // Initialize positions (grid for uninitialized)
-  const cols = Math.max(3, Math.ceil(Math.sqrt(nodes.length)));
-  nodes.forEach((node, i) => {
-    if (node.x || node.y) {
-      positions.set(node.id, { x: node.x, y: node.y });
-    } else {
-      positions.set(node.id, {
-        x: centerX - (Math.min(cols, nodes.length) * 180) / 2 + (i % cols) * 180 + 40,
-        y: centerY - (Math.ceil(nodes.length / cols) * 120) / 2 + Math.floor(i / cols) * 120 + 40,
-      });
-    }
-    velocities.set(node.id, { vx: 0, vy: 0 });
-  });
-
-  // Build adjacency set
-  const adj = new Map<string, Set<string>>();
-  for (const node of nodes) adj.set(node.id, new Set());
-  for (const edge of edges) {
-    adj.get(edge.sourceId)?.add(edge.targetId);
-    adj.get(edge.targetId)?.add(edge.sourceId);
-  }
-
-  const repulsion = 6000;
-  const attraction = 0.004;
-  const gravity = 0.02;
-  const damping = 0.8;
-  const idealEdgeLen = 160;
-  const minDist = 20;
-
-  for (let iter = 0; iter < iterations; iter++) {
-    const alpha = 1 - iter / iterations;
-
-    // Repulsion between all pairs
-    const nodeArr = Array.from(positions.entries());
-    for (let i = 0; i < nodeArr.length; i++) {
-      for (let j = i + 1; j < nodeArr.length; j++) {
-        const [idA, pa] = nodeArr[i];
-        const [idB, pb] = nodeArr[j];
-        let dx = pb.x - pa.x;
-        let dy = pb.y - pa.y;
-        let dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < minDist) dist = minDist;
-        const force = repulsion * alpha / (dist * dist);
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        const va = velocities.get(idA)!;
-        const vb = velocities.get(idB)!;
-        va.vx -= fx; va.vy -= fy;
-        vb.vx += fx; vb.vy += fy;
-      }
-    }
-
-    // Attraction along edges
-    for (const edge of edges) {
-      const pa = positions.get(edge.sourceId);
-      const pb = positions.get(edge.targetId);
-      if (!pa || !pb) continue;
-      let dx = pb.x - pa.x;
-      let dy = pb.y - pa.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 1) continue;
-      const force = (dist - idealEdgeLen) * attraction * alpha;
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-      const va = velocities.get(edge.sourceId)!;
-      const vb = velocities.get(edge.targetId)!;
-      va.vx += fx; va.vy += fy;
-      vb.vx -= fx; vb.vy -= fy;
-    }
-
-    // Gravity toward center + boundary
-    for (const [id, p] of positions) {
-      const v = velocities.get(id)!;
-      v.vx += (centerX - p.x) * gravity * alpha;
-      v.vy += (centerY - p.y) * gravity * alpha;
-    }
-
-    // Apply velocities with damping
-    for (const [id, p] of positions) {
-      const v = velocities.get(id)!;
-      v.vx *= damping;
-      v.vy *= damping;
-      p.x += v.vx;
-      p.y += v.vy;
-      p.x = Math.max(30, Math.min(width - 30, p.x));
-      p.y = Math.max(30, Math.min(height - 30, p.y));
-    }
-  }
-
-  return nodes.map(n => ({
-    id: n.id,
-    x: Math.round(positions.get(n.id)!.x),
-    y: Math.round(positions.get(n.id)!.y),
-  }));
-}
 
 export default function CanvasView({
   allObjects, connections, canvasStates,
   selectedObjectId, onSelectObject, onNavigate,
   onUpdateCanvasState, onAddConnection, onAddSticky,
-  onAddToBoard, onCreateObject, onCanvasCreateObject
+  onAddToBoard, onCreateObject
 }: CanvasViewProps) {
-  const [activeTab, setActiveTab] = useState<CanvasTab>('瑙掕壊鍏崇郴鍥?);
+  const [activeTab, setActiveTab] = useState<CanvasTab>('角色关系图');
   const [toolMode, setToolMode] = useState<CanvasToolMode>('select');
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [dragStartPositions, setDragStartPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [connSource, setConnSource] = useState<string | null>(null);
-  const [connDragPos, setConnDragPos] = useState<{ x: number; y: number } | null>(null);
-  const [pendingConn, setPendingConn] = useState<{ sourceId: string; targetId: string; x: number; y: number } | null>(null);
   const [stickyText, setStickyText] = useState('');
   const [showStickyDialog, setShowStickyDialog] = useState(false);
+  const [connDialog, setConnDialog] = useState<{ source: string; target: string } | null>(null);
   const [hoveredConn, setHoveredConn] = useState<string | null>(null);
   const [showObjectPool, setShowObjectPool] = useState(false);
   const [poolSearch, setPoolSearch] = useState('');
@@ -212,55 +97,43 @@ export default function CanvasView({
   const [showTextDialog, setShowTextDialog] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [textInputPos, setTextInputPos] = useState({ x: 0, y: 0 });
-  const [showTypeBubble, setShowTypeBubble] = useState(false);
-  const [bubblePos, setBubblePos] = useState({ x: 0, y: 0 });
-  const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const autoLayoutRun = useRef<Set<string>>(new Set());
-  const gridPlacedRun = useRef<Set<string>>(new Set());
-  // Stable refs to break callback recreation chain
-  const positionsRef = useRef<Record<string, CanvasNodePosition>>({});
-  const pendingDragRef = useRef<{
-    objectId: string;
-    clientX: number;
-    clientY: number;
-    startPositions: Record<string, { x: number; y: number }>;
-    dragOffsetX: number;
-    dragOffsetY: number;
-  } | null>(null);
   const state = canvasStates[activeTab];
-  const scale = state?.scale ?? 1;
+const scale = state?.scale ?? 1;
 
-  const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allObjects.forEach(o => m.set(o.name, o)); return m; }, [allObjects]);
+  const handleZoomChange = useCallback((newScale: number) => {
+    onUpdateCanvasState(activeTab, { scale: newScale });
+  }, [activeTab, onUpdateCanvasState]);
+const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allObjects.forEach(o => m.set(o.name, o)); return m; }, [allObjects]);
 
-  // Keep positionsRef in sync (stable ref avoids callback recreation on every parent render)
-  useEffect(() => { positionsRef.current = state.positions; }, [state.positions]);
-
-  // Auto-layout: force-directed on first load per tab
+  // Auto-position nodes
   useEffect(() => {
-    if (autoLayoutRun.current.has(activeTab)) return;
-
     const newPositions = { ...state.positions };
     let changed = false;
-
-    if (activeTab === '鏃堕棿绾?) {
-      TIMELINE_EVENTS.forEach((evt, i) => {
-        const obj = allObjects.find(o => o.name === evt.name);
-        if (obj && !newPositions[obj.id]) {
-          newPositions[obj.id] = { objectId: obj.id, x: 120 + i * 260, y: 100 };
+    if (activeTab === '角色关系图') {
+      const objectsInBoard = allObjects.filter(o => o.selectedBoards.includes('角色关系图'));
+      const cols = 3;
+      objectsInBoard.forEach((obj, i) => {
+        if (!newPositions[obj.id]) {
+          newPositions[obj.id] = { objectId: obj.id, x: 60 + (i % cols) * 300, y: 40 + Math.floor(i / cols) * 200 };
           changed = true;
         }
       });
-    } else if (activeTab === '璁惧畾鎺ㄦ紨鍥?) {
-      const deductionObjects = allObjects.filter(o => o.selectedBoards.includes('璁惧畾鎺ㄦ紨鍥?));
+    } else if (activeTab === '时间线') {
+      TIMELINE_EVENTS.forEach((evt, i) => {
+        const obj = allObjects.find(o => o.name === evt.name);
+        if (obj && !newPositions[obj.id]) { newPositions[obj.id] = { objectId: obj.id, x: 120 + i * 260, y: 100 }; changed = true; }
+      });
+    } else if (activeTab === '设定推演图') {
+      const deductionObjects = allObjects.filter(o => o.selectedBoards.includes('设定推演图'));
       const zoneCounts: Record<string, number> = {};
       DEDUCTION_ZONE_NAMES.forEach(z => { zoneCounts[z] = 0; });
-      const zoneLayout: Record<string, { x: number; y: number }> = { '闂鍖?: { x: 30, y: 50 }, '鍊欓€夋柟妗堝尯': { x: 430, y: 50 }, '宸查攣瀹氬尯': { x: 30, y: 250 }, '搴熷純鍖?: { x: 430, y: 250 }, '寰呴獙璇佸尯': { x: 30, y: 450 } };
+      const zoneLayout: Record<string, { x: number; y: number }> = { '问题区': { x: 30, y: 50 }, '候选方案区': { x: 430, y: 50 }, '已锁定区': { x: 30, y: 250 }, '废弃区': { x: 430, y: 250 }, '待验证区': { x: 30, y: 450 } };
       deductionObjects.forEach(obj => {
         if (!newPositions[obj.id]) {
-          const zone = STATUS_TO_ZONE[obj.status] || '闂鍖?;
+          const zone = STATUS_TO_ZONE[obj.status] || '问题区';
           const base = zoneLayout[zone] || { x: 30, y: 50 };
           const count = zoneCounts[zone] || 0;
           newPositions[obj.id] = { objectId: obj.id, x: base.x + 10, y: base.y + count * 50 };
@@ -268,276 +141,62 @@ export default function CanvasView({
           changed = true;
         }
       });
-    } else {
-      // 瑙掕壊鍏崇郴鍥?force-directed layout
-      const objectsInBoard = allObjects.filter(o => o.selectedBoards.includes(activeTab));
-      const unpositioned = objectsInBoard.filter(o => !newPositions[o.id]);
-
-      if (unpositioned.length > 0) {
-        const nodes = objectsInBoard.map(o => ({
-          id: o.id,
-          x: newPositions[o.id]?.x || 0,
-          y: newPositions[o.id]?.y || 0,
-        }));
-        const tabConnections = state.connections.length > 0 ? state.connections : connections.filter(c => {
-          const srcOnBoard = objectsInBoard.some(o => o.id === c.sourceId);
-          const tgtOnBoard = objectsInBoard.some(o => o.id === c.targetId);
-          return srcOnBoard && tgtOnBoard;
-        });
-        const edges = tabConnections.map(c => ({ sourceId: c.sourceId, targetId: c.targetId }));
-
-        if (nodes.length > 1) {
-          const laidOut = forceDirectedLayout(
-            nodes, edges,
-            800, Math.max(400, Math.ceil(nodes.length / 3) * 150 + 100),
-            Math.min(100, 20 + nodes.length * 5)
-          );
-          for (const n of laidOut) {
-            if (n.x && n.y) {
-              newPositions[n.id] = { objectId: n.id, x: n.x, y: n.y };
-              changed = true;
-            }
-          }
-        } else if (unpositioned.length > 0) {
-          unpositioned.forEach((obj, i) => {
-            newPositions[obj.id] = { objectId: obj.id, x: 60 + i * 180, y: 40 };
-            changed = true;
-          });
-        }
-      }
     }
-
     if (changed) onUpdateCanvasState(activeTab, { positions: newPositions });
-    autoLayoutRun.current.add(activeTab);
   }, [activeTab]);
-
-  // Grid-place any new objects added after auto-layout
-  useEffect(() => {
-    if (gridPlacedRun.current.has(activeTab)) return;
-
-    const newPositions = { ...state.positions };
-    let changed = false;
-    const objectsInBoard = allObjects.filter(o => o.selectedBoards.includes(activeTab));
-    const unpositioned = objectsInBoard.filter(o => !newPositions[o.id]);
-    unpositioned.forEach((obj, i) => {
-      newPositions[obj.id] = {
-        objectId: obj.id,
-        x: 60 + (i % 3) * 200,
-        y: 40 + Math.floor(i / 3) * 150,
-      };
-      changed = true;
-    });
-    if (changed) onUpdateCanvasState(activeTab, { positions: newPositions });
-    gridPlacedRun.current.add(activeTab);
-  }, [allObjects.length, activeTab]);
 
   const canvasObjects = useMemo(() => {
     let objects = allObjects.filter(o => o.selectedBoards.includes(activeTab));
-    if (activeTab === '鏃堕棿绾?) {
+    if (activeTab === '时间线') {
       TIMELINE_EVENTS.forEach(evt => { const obj = nameToObj.get(evt.name); if (obj && !objects.find(o => o.id === obj.id)) objects = [...objects, obj]; });
     }
     return objects;
   }, [allObjects, activeTab, nameToObj]);
 
   const wordCount = useMemo(() => {
-    return canvasObjects.reduce((sum, o) => sum + (o.name?.length || 0) + (o.type?.length || 0), 0);
+    return canvasObjects.reduce((sum, obj) => sum + obj.name.length + obj.type.length, 0);
   }, [canvasObjects]);
+
+  const handleFitCanvas = useCallback(() => {
+    if (canvasObjects.length === 0) { handleZoomChange(1); return; }
+    handleZoomChange(1);
+  }, [canvasObjects, handleZoomChange]);
 
   const displayConnections = useMemo(() => {
     return [...state.connections];
   }, [state.connections]);
-  // 鈹€鈹€ Zoom handlers (P1-06) 鈹€鈹€
-  const handleZoomChange = useCallback((newScale: number) => {
-    onUpdateCanvasState(activeTab, { scale: newScale });
-  }, [activeTab, onUpdateCanvasState]);
 
-  const handleFitCanvas = useCallback(() => {
-    if (canvasObjects.length === 0) { handleZoomChange(1); return; }
-    const container = canvasRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const obj of canvasObjects) {
-      const pos = state.positions[obj.id];
-      if (pos) {
-        minX = Math.min(minX, pos.x);
-        minY = Math.min(minY, pos.y);
-        maxX = Math.max(maxX, pos.x + 130);
-        maxY = Math.max(maxY, pos.y + 60);
-      }
-    }
-    if (minX === Infinity) { handleZoomChange(1); return; }
-    const margin = 60;
-    const contentW = (maxX - minX) + margin * 2;
-    const contentH = (maxY - minY) + margin * 2;
-    const scaleX = rect.width / contentW;
-    const scaleY = rect.height / contentH;
-    const fitScale = Math.min(scaleX, scaleY, 2.0);
-    handleZoomChange(Math.max(0.2, Math.round(fitScale * 10) / 10));
-  }, [canvasObjects, state.positions, handleZoomChange]);
-
-  // 鈹€鈹€ Ctrl+wheel zoom 鈹€鈹€
-  useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const delta = -e.deltaY * 0.001;
-        const currentScale = state?.scale ?? 1;
-        const newScale = Math.max(0.2, Math.min(3.0, currentScale + delta));
-        handleZoomChange(Math.round(newScale * 10) / 10);
-      }
-    };
-    el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
-  }, [state?.scale, handleZoomChange]);
-
-  // 鈹€鈹€ Keyboard shortcuts 鈹€鈹€
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        handleFitCanvas();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleFitCanvas]);
-
-  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
-    if (toolMode === 'drag') { setPanning(true); setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }); }
-  }, [toolMode, panOffset]);
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => { if (toolMode === 'drag') { setPanning(true); setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }); } }, [toolMode, panOffset]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
-    // Promote pending drag to actual drag when mouse moves > 3px threshold
-    // Prevents single-click from entering the drag render loop
-    const pending = pendingDragRef.current;
-    if (pending && !draggingNode) {
-      const dx = e.clientX - pending.clientX;
-      const dy = e.clientY - pending.clientY;
-      if (dx * dx + dy * dy > 9) {
-        setDraggingNode(pending.objectId);
-        setDragOffset({ x: pending.dragOffsetX, y: pending.dragOffsetY });
-        setDragStartPositions(pending.startPositions);
-        pendingDragRef.current = null;
-      }
-    }
-
     if (panning) { setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y }); }
-
-    // Connection drag line
-    if (connSource) {
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (rect) {
-        setConnDragPos({ x: e.clientX - rect.left + panOffset.x, y: e.clientY - rect.top + panOffset.y });
-      }
-    }
-
-    // Dragging node(s) 鈥?use positionsRef for stable ref to avoid dependency chain
     if (draggingNode) {
-      const pos = positionsRef.current[draggingNode];
+      const pos = state.positions[draggingNode];
       if (pos) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
-        const currentX = e.clientX - dragOffset.x - rect.left + panOffset.x;
-        const currentY = e.clientY - dragOffset.y - rect.top + panOffset.y;
-        const primaryStart = dragStartPositions[draggingNode];
-        if (!primaryStart) return;
-        const dx = currentX - primaryStart.x;
-        const dy = currentY - primaryStart.y;
-
-        // Snap-to-grid when dragging (20px grid)
-        const snapGrid = 20;
-        const snap = (v: number) => Math.round(v / snapGrid) * snapGrid;
-
-        const newPositions = { ...positionsRef.current };
-        for (const id of Object.keys(dragStartPositions)) {
-          const start = dragStartPositions[id];
-          if (start && newPositions[id]) {
-            newPositions[id] = { ...newPositions[id], x: snap(Math.round(start.x + dx)), y: snap(Math.round(start.y + dy)) };
-          }
-        }
-        onUpdateCanvasState(activeTab, { positions: newPositions });
+        const newX = e.clientX - dragOffset.x - rect.left + panOffset.x;
+        const newY = e.clientY - dragOffset.y - rect.top + panOffset.y;
+        onUpdateCanvasState(activeTab, { positions: { ...state.positions, [draggingNode]: { ...pos, x: activeTab === '时间线' ? newX : newX, y: activeTab === '时间线' ? pos.y : newY } } });
       }
     }
-  }, [panning, connSource, draggingNode, dragOffset, dragStartPositions, activeTab, panOffset, onUpdateCanvasState, panStart]);
+  }, [panning, draggingNode, dragOffset, state.positions, activeTab, panOffset, onUpdateCanvasState]);
 
-  const handleCanvasMouseUp = useCallback((e: React.MouseEvent) => {
-    pendingDragRef.current = null;  // cancel any pending drag
-    setPanning(false);
-    setDraggingNode(null);
-    setDragStartPositions(prev => Object.keys(prev).length === 0 ? prev : {});
-
-    // Connection drop detection 鈥?use positionsRef to avoid dep chain
-    if (connSource) {
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (rect) {
-        const mouseX = e.clientX - rect.left + panOffset.x;
-        const mouseY = e.clientY - rect.top + panOffset.y;
-
-        for (const [id, pos] of Object.entries(positionsRef.current)) {
-          if (id !== connSource &&
-            mouseX >= pos.x && mouseX <= pos.x + NODE_W &&
-            mouseY >= pos.y && mouseY <= pos.y + NODE_H) {
-            setPendingConn({ sourceId: connSource, targetId: id, x: pos.x + NODE_W / 2, y: pos.y - 20 });
-            setConnSource(null);
-            setConnDragPos(null);
-            return;
-          }
-        }
-      }
-      // Not over any node cancel
-      setConnSource(null);
-      setConnDragPos(null);
-    }
-  }, [connSource, panOffset]);
+  const handleCanvasMouseUp = useCallback(() => { setPanning(false); setDraggingNode(null); }, []);
 
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, objectId: string) => {
     e.stopPropagation();
-    const isCtrl = e.ctrlKey || e.metaKey;
-
-    if (toolMode === 'addConnection') {
-      if (connSource === null) {
-        setConnSource(objectId);
-      }
-      return;
-    }
-
+    if (toolMode === 'select') onSelectObject(objectId);
     if (toolMode === 'select' || toolMode === 'drag') {
-      if (isCtrl) {
-        setMultiSelectedIds(prev => {
-          if (prev.includes(objectId)) return prev.filter(id => id !== objectId);
-          return [...prev, objectId];
-        });
-        onSelectObject(objectId);
-      } else {
-        setMultiSelectedIds([]);
-        onSelectObject(objectId);
-      }
-
-      // Don't start drag on mousedown 鈥?record potential drag and start only on actual mouse movement
-      // Prevents a single click from entering the drag render loop via accidental mousemove
-      const selected = isCtrl
-        ? (multiSelectedIds.includes(objectId) ? [...multiSelectedIds] : [...multiSelectedIds, objectId])
-        : [objectId];
-      const starts: Record<string, { x: number; y: number }> = {};
-      for (const id of selected) {
-        const p = positionsRef.current[id];
-        if (p) starts[id] = { x: p.x, y: p.y };
-      }
       const rect = canvasRef.current?.getBoundingClientRect();
-      const nodePos = positionsRef.current[objectId];
-      pendingDragRef.current = {
-        objectId,
-        clientX: e.clientX,
-        clientY: e.clientY,
-        startPositions: starts,
-        dragOffsetX: e.clientX - (nodePos?.x || 0) - (rect?.left || 0) + panOffset.x,
-        dragOffsetY: e.clientY - (nodePos?.y || 0) - (rect?.top || 0) + panOffset.y,
-      };
+      if (rect) { setDraggingNode(objectId); setDragOffset({ x: e.clientX - (state.positions[objectId]?.x || 0) - rect.left + panOffset.x, y: e.clientY - (state.positions[objectId]?.y || 0) - rect.top + panOffset.y }); }
     }
-  }, [toolMode, connSource, panOffset, onSelectObject, multiSelectedIds]);
+    if (toolMode === 'addConnection') {
+      if (connSource === null) setConnSource(objectId);
+      else if (connSource !== objectId) { setConnDialog({ source: connSource, target: objectId }); setConnSource(null); }
+      else setConnSource(null);
+    }
+  }, [toolMode, connSource, state.positions, panOffset, onSelectObject]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (toolMode === 'addObject') { setShowObjectPool(true); setToolMode('select'); return; }
@@ -551,57 +210,17 @@ export default function CanvasView({
     if (toolMode === 'partition') {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-      setPartitionZones(prev => [...prev, { id: `zone_${_zoneId++}`, label: `鍒嗗尯 ${prev.length + 1}`, x: e.clientX - rect.left + panOffset.x - 100, y: e.clientY - rect.top + panOffset.y - 50, width: 200, height: 100 }]);
+      setPartitionZones(prev => [...prev, { id: `zone_${_zoneId++}`, label: `分区 ${prev.length + 1}`, x: e.clientX - rect.left + panOffset.x - 100, y: e.clientY - rect.top + panOffset.y - 50, width: 200, height: 100 }]);
       return;
     }
     if (toolMode === 'template') { setShowTemplatePicker(true); setToolMode('select'); return; }
-
-    // Click background to deselect
-    const target = e.target as HTMLElement;
-    if (!target.closest('.canvas-node') && !target.closest('.canvas-sticky')) {
-      onSelectObject(null);
-      setMultiSelectedIds([]);
-    }
-  }, [toolMode, panOffset, onSelectObject]);
-
-  const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('.canvas-node') || target.closest('.canvas-sticky') || target.closest('.text-annotation') || target.closest('.conn-type-popup')) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const canvasX = e.clientX - rect.left + panOffset.x;
-    const canvasY = e.clientY - rect.top + panOffset.y;
-    setBubblePos({ x: canvasX, y: canvasY });
-    setShowTypeBubble(true);
-  }, [panOffset]);
-
-  // Close type bubble on outside click
-  useEffect(() => {
-    if (!showTypeBubble) return;
-    const h = () => setShowTypeBubble(false);
-    window.addEventListener('click', h);
-    return () => window.removeEventListener('click', h);
-  }, [showTypeBubble]);
-
-  const handleTypeSelect = useCallback((type: ObjectType) => {
-    if (onCanvasCreateObject) {
-      onCanvasCreateObject(type, bubblePos.x, bubblePos.y, activeTab);
-    } else {
-      onCreateObject(type);
-    }
-    setShowTypeBubble(false);
-  }, [bubblePos, activeTab, onCanvasCreateObject, onCreateObject]);
+  }, [toolMode, panOffset]);
 
   const handleConfirmText = useCallback(() => { if (textInput.trim()) { setTextLabels(prev => [...prev, { id: `text_${_textId++}`, text: textInput.trim(), x: textInputPos.x, y: textInputPos.y }]); setTextInput(''); setShowTextDialog(false); } }, [textInput, textInputPos]);
 
   const handleConfirmSticky = useCallback(() => { if (stickyText.trim()) { onAddSticky(activeTab, stickyText.trim()); setStickyText(''); setShowStickyDialog(false); } }, [stickyText, activeTab, onAddSticky]);
 
-  const handleConnTypeSelect = useCallback((type: ConnectionType) => {
-    if (pendingConn) {
-      onAddConnection(pendingConn.sourceId, pendingConn.targetId, type, '');
-      setPendingConn(null);
-    }
-  }, [pendingConn, onAddConnection]);
+  const handleConfirmConnection = useCallback((type: ConnectionType) => { if (connDialog) { onAddConnection(connDialog.source, connDialog.target, type, ''); setConnDialog(null); } }, [connDialog, onAddConnection]);
 
   const handleSelectFromPool = useCallback((obj: WorldObject) => {
     onAddToBoard(obj.id, activeTab);
@@ -624,25 +243,11 @@ export default function CanvasView({
     setToolMode(prev => prev === mode ? 'select' : mode);
   }, []);
 
-  const handleAutoLayout = useCallback(() => {
-    autoLayoutRun.current.delete(activeTab);
-    const newPositions: Record<string, CanvasNodePosition> = {};
-    onUpdateCanvasState(activeTab, { positions: newPositions });
-    setTimeout(() => {
-      autoLayoutRun.current.delete(activeTab);
-      onUpdateCanvasState(activeTab, { positions: {} });
-    }, 50);
-  }, [activeTab, onUpdateCanvasState]);
-
-  const isNodeSelected = useCallback((id: string) => {
-    return selectedObjectId === id || multiSelectedIds.includes(id);
-  }, [selectedObjectId, multiSelectedIds]);
-
   useEffect(() => { if (!showObjectPool) setPoolSearch(''); }, [showObjectPool]);
   useEffect(() => { if (!contextMenu) return; const h = () => setContextMenu(null); window.addEventListener('click', h); return () => window.removeEventListener('click', h); }, [contextMenu]);
 
   const renderConnections = () => {
-    if (activeTab !== '瑙掕壊鍏崇郴鍥?) return null;
+    if (activeTab !== '角色关系图') return null;
     return <g>{displayConnections.map(conn => {
       const from = state.positions[conn.sourceId];
       const to = state.positions[conn.targetId];
@@ -651,20 +256,11 @@ export default function CanvasView({
       const isHovered = hoveredConn === conn.id;
       const labelPt = getLabelPoint(from, to);
       return <g key={conn.id}>
-        <path d={path} fill="none" stroke={isHovered ? '#1a73e8' : '#555'} strokeWidth={isHovered ? 2.5 : 1.5} strokeDasharray={conn.type === '鍐茬獊' ? '6,3' : conn.type === '鏇夸唬' ? '3,3' : undefined} onMouseEnter={() => setHoveredConn(conn.id)} onMouseLeave={() => setHoveredConn(null)} style={{ cursor: 'pointer', transition: 'stroke 0.2s' }} />
+        <path d={path} fill="none" stroke={isHovered ? '#1a73e8' : '#555'} strokeWidth={isHovered ? 2.5 : 1.5} strokeDasharray={conn.type === '冲突' ? '6,3' : conn.type === '替代' ? '3,3' : undefined} onMouseEnter={() => setHoveredConn(conn.id)} onMouseLeave={() => setHoveredConn(null)} style={{ cursor: 'pointer', transition: 'stroke 0.2s' }} />
         <g><rect x={labelPt.x - 30} y={labelPt.y - 10} width={60} height={20} rx={4} fill="#1e1e1e" fillOpacity={0.9} stroke={isHovered ? '#1a73e8' : '#444'} strokeWidth={0.5} />
           <text x={labelPt.x} y={labelPt.y + 4} textAnchor="middle" fontSize={11} fill={isHovered ? '#1a73e8' : '#aaa'} style={{ pointerEvents: 'none', fontWeight: isHovered ? 600 : 400 }}>{conn.label || conn.type}</text></g>
       </g>;
-    })}
-
-      {/* Connection drag line */}
-      {connSource && connDragPos && (() => {
-        const from = state.positions[connSource];
-        if (!from) return null;
-        const center = getNodeCenter(from);
-        return <line x1={center.x} y1={center.y} x2={connDragPos.x} y2={connDragPos.y} stroke="#FF9800" strokeWidth={2} strokeDasharray="6,3" />;
-      })()}
-    </g>;
+    })}</g>;
   };
 
   const renderNode = (obj: WorldObject) => {
@@ -672,43 +268,37 @@ export default function CanvasView({
     if (!pos) return null;
     const sd = STATUS_DISPLAY[obj.status];
     const isSelected = selectedObjectId === obj.id;
-    const isMultiSelected = multiSelectedIds.includes(obj.id);
     const isConnSource = connSource === obj.id;
-    const isTimeline = activeTab === '鏃堕棿绾?;
-    const isKeyEvent = isTimeline && (obj.name === '绗竴娆¤儗鍙? || obj.name === '鏇挎崲璁″垝');
-    const isDiscarded = obj.status === '搴熷純';
-
-    const borderStyle = isConnSource ? '0 0 0 3px #FF9800, 0 4px 16px rgba(0,0,0,0.3)' :
-      isSelected ? '0 0 0 2px #1a73e8, 0 4px 16px rgba(0,0,0,0.3)' :
-        isMultiSelected ? '0 0 0 2px #4FC3F7, 0 4px 16px rgba(0,0,0,0.3)' :
-          '0 2px 8px rgba(0,0,0,0.2)';
+    const isTimeline = activeTab === '时间线';
+    const isKeyEvent = isTimeline && (obj.name === '第一次背叛' || obj.name === '替换计划');
+    const isDiscarded = obj.status === '废弃';
 
     if (isTimeline) {
-      return <div key={obj.id} className="canvas-node" data-node-id={obj.id} style={{
+      return <div key={obj.id} className="canvas-node" style={{
         position: 'absolute', left: pos.x - panOffset.x, top: pos.y - panOffset.y, width: 200, minHeight: 60,
         background: sd.background, border: sd.border, color: sd.text, borderRadius: 8, padding: '8px 14px', fontSize: 12, cursor: 'pointer',
-        boxShadow: borderStyle, userSelect: 'none',
+        boxShadow: isSelected ? '0 0 0 2px #1a73e8, 0 4px 16px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)', userSelect: 'none',
         opacity: isDiscarded ? 0.65 : 1, textDecoration: isDiscarded ? 'line-through' : 'none', zIndex: 10, ...(isKeyEvent ? { borderLeft: '4px solid #f44336' } : {}),
-      }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={(e) => { e.stopPropagation(); onNavigate(obj.name); }}>
-          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 1 }}>{obj.name}</div>
-          <div style={{ fontSize: 11, opacity: 0.7 }}>{isDiscarded ? '宸插簾寮? : obj.type}</div>
-        </div>;
+      }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={() => onNavigate(obj.name)}>
+        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 1 }}>{obj.name}</div>
+        <div style={{ fontSize: 11, opacity: 0.7 }}>{isDiscarded ? '已废弃' : obj.type}</div>
+      </div>;
     }
 
-    return <div key={obj.id} className={`canvas-node ${isSelected ? 'selected' : ''}`} data-node-id={obj.id} style={{
+    return <div key={obj.id} className={`canvas-node ${isSelected ? 'selected' : ''}`} style={{
       ...{ border: sd.border, background: sd.background, color: sd.text, borderRadius: 8, padding: '8px 12px', position: 'absolute', cursor: 'pointer', minWidth: 100, maxWidth: 200, fontSize: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', userSelect: 'none' },
       left: pos.x - panOffset.x, top: pos.y - panOffset.y,
       opacity: isDiscarded ? 0.7 : 1,
-      boxShadow: borderStyle,
+      boxShadow: isConnSource ? '0 0 0 3px #FF9800, 0 4px 16px rgba(0,0,0,0.3)' : isSelected ? '0 0 0 2px #1a73e8, 0 4px 16px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
       textDecoration: isDiscarded ? 'line-through' : 'none',
-    }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={(e) => { e.stopPropagation(); onNavigate(obj.name); }}>
-        <div className="node-name">{obj.name}</div>
-        <div className="node-type">{obj.type}</div>
-      </div>;
+    }} onMouseDown={(e) => handleNodeMouseDown(e, obj.id)} onDoubleClick={() => onNavigate(obj.name)}>
+      <div className="node-name">{obj.name}</div>
+      <div className="node-type">{obj.type}</div>
+    </div>;
   };
 
   const renderTimelineFeatures = () => {
-    if (activeTab !== '鏃堕棿绾?) return null;
+    if (activeTab !== '时间线') return null;
     const axisY = 55;
     const eventItems = TIMELINE_EVENTS.map(evt => { const obj = nameToObj.get(evt.name); if (!obj) return null; const pos = state.positions[obj.id]; if (!pos) return null; return { obj, pos }; }).filter(Boolean) as Array<{ obj: WorldObject; pos: CanvasNodePosition }>;
     if (eventItems.length === 0) return null;
@@ -720,17 +310,17 @@ export default function CanvasView({
         <line x1={eventItems[0].pos.x + 100 - panOffset.x} y1={axisY} x2={eventItems[eventItems.length - 1].pos.x + 100 - panOffset.x} y2={axisY} stroke="#555" strokeWidth={2} strokeLinecap="round" />
         {eventItems.map(item => {
           const cx = item.pos.x + 100 - panOffset.x;
-          const isKey = item.obj.name === '绗竴娆¤儗鍙? || item.obj.name === '鏇挎崲璁″垝';
+          const isKey = item.obj.name === '第一次背叛' || item.obj.name === '替换计划';
           return <g key={item.obj.id}>
             <line x1={cx} y1={axisY} x2={cx} y2={item.pos.y + 5 - panOffset.y} stroke="#444" strokeWidth={1} strokeDasharray="4,3" />
             <circle cx={cx} cy={axisY} r={isKey ? 6 : 4} fill={isKey ? '#f44336' : '#666'} stroke="#1e1e1e" strokeWidth={2} />
-            {isKey && <text x={cx} y={axisY - 14} textAnchor="middle" fontSize={10} fill="#f44336" fontWeight={600}>鍏抽敭杞姌</text>}
+            {isKey && <text x={cx} y={axisY - 14} textAnchor="middle" fontSize={10} fill="#f44336" fontWeight={600}>关键转折</text>}
           </g>;
         })}
       </svg>
       <div style={{ position: 'absolute', left: 40 - panOffset.x, top: 220 - panOffset.y, width: 850, minHeight: 100, border: '2px dashed #333', borderRadius: 8, padding: 12, background: '#141414', pointerEvents: 'auto' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 8 }}>寰呮帓浜嬩欢鍖?/div>
-        {pendingObjects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', padding: '12px 0' }}>鏆傛棤寰呮帓浜嬩欢</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 8 }}>待排事件区</div>
+        {pendingObjects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', padding: '12px 0' }}>暂无待排事件</div>
           : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{pendingObjects.map(obj => (
             <div key={obj.id} style={{ padding: '4px 10px', background: STATUS_DISPLAY[obj.status].background, border: STATUS_DISPLAY[obj.status].border, color: STATUS_DISPLAY[obj.status].text, borderRadius: 4, fontSize: 11, cursor: 'pointer' }}
               onClick={() => onSelectObject(obj.id)} onDoubleClick={() => onNavigate(obj.name)}>{obj.name}</div>))}</div>}
@@ -739,15 +329,15 @@ export default function CanvasView({
   };
 
   const renderDeductionZones = () => {
-    if (activeTab !== '璁惧畾鎺ㄦ紨鍥?) return null;
+    if (activeTab !== '设定推演图') return null;
     const zoneLayout: Record<string, { x: number; y: number; w: number; h: number }> = {
-      '闂鍖?: { x: 20, y: 20, w: 390, h: 180 }, '鍊欓€夋柟妗堝尯': { x: 430, y: 20, w: 390, h: 180 },
-      '宸查攣瀹氬尯': { x: 20, y: 220, w: 390, h: 180 }, '搴熷純鍖?: { x: 430, y: 220, w: 390, h: 180 },
-      '寰呴獙璇佸尯': { x: 20, y: 420, w: 800, h: 140 },
+      '问题区': { x: 20, y: 20, w: 390, h: 180 }, '候选方案区': { x: 430, y: 20, w: 390, h: 180 },
+      '已锁定区': { x: 20, y: 220, w: 390, h: 180 }, '废弃区': { x: 430, y: 220, w: 390, h: 180 },
+      '待验证区': { x: 20, y: 420, w: 800, h: 140 },
     };
     const zoneObjects: Record<string, WorldObject[]> = {};
     DEDUCTION_ZONE_NAMES.forEach(z => { zoneObjects[z] = []; });
-    allObjects.filter(o => o.selectedBoards.includes('璁惧畾鎺ㄦ紨鍥?)).forEach(obj => { const zone = STATUS_TO_ZONE[obj.status] || '闂鍖?; if (!zoneObjects[zone]) zoneObjects[zone] = []; zoneObjects[zone].push(obj); });
+    allObjects.filter(o => o.selectedBoards.includes('设定推演图')).forEach(obj => { const zone = STATUS_TO_ZONE[obj.status] || '问题区'; if (!zoneObjects[zone]) zoneObjects[zone] = []; zoneObjects[zone].push(obj); });
 
     return <>{DEDUCTION_ZONE_NAMES.map(zoneName => {
       const layout = zoneLayout[zoneName];
@@ -755,15 +345,15 @@ export default function CanvasView({
       const objects = zoneObjects[zoneName] || [];
       return <div key={zoneName} className="deduction-zone" style={{ position: 'absolute', left: layout.x - panOffset.x, top: layout.y - panOffset.y, width: layout.w, height: layout.h, border: '2px solid #333', borderRadius: 8, background: '#141414', overflowY: 'auto' }}>
         <div style={{ background: '#1e1e1e', padding: '5px 12px', fontSize: 13, fontWeight: 600, color: '#aaa', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{zoneName}</span><span style={{ fontWeight: 400, fontSize: 11, color: '#666' }}>{objects.length} 椤?/span>
+          <span>{zoneName}</span><span style={{ fontWeight: 400, fontSize: 11, color: '#666' }}>{objects.length} 项</span>
         </div>
         <div style={{ padding: 6 }}>
-          {objects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', paddingTop: 20 }}>鏆傛棤</div>
+          {objects.length === 0 ? <div style={{ fontSize: 11, color: '#555', textAlign: 'center', paddingTop: 20 }}>暂无</div>
             : objects.map(obj => (
-              <div key={obj.id} style={{ padding: '5px 10px', marginBottom: 4, background: STATUS_DISPLAY[obj.status].background, border: STATUS_DISPLAY[obj.status].border, color: STATUS_DISPLAY[obj.status].text, borderRadius: 4, fontSize: 12, cursor: 'pointer', ...(obj.status === '搴熷純' ? { textDecoration: 'line-through', opacity: 0.7 } : {}) }}
+              <div key={obj.id} style={{ padding: '5px 10px', marginBottom: 4, background: STATUS_DISPLAY[obj.status].background, border: STATUS_DISPLAY[obj.status].border, color: STATUS_DISPLAY[obj.status].text, borderRadius: 4, fontSize: 12, cursor: 'pointer', ...(obj.status === '废弃' ? { textDecoration: 'line-through', opacity: 0.7 } : {}) }}
                 onClick={() => onSelectObject(obj.id)} onDoubleClick={() => onNavigate(obj.name)}>
                 <div style={{ fontWeight: 500 }}>{obj.name}</div>
-                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 1 }}>{obj.type}{obj.status === '搴熷純' ? ' 路 宸插簾寮? : ''}</div>
+                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 1 }}>{obj.type}{obj.status === '废弃' ? ' · 已废弃' : ''}</div>
               </div>
             ))}
         </div>
@@ -775,7 +365,7 @@ export default function CanvasView({
     <div className="canvas-view">
       <div className="canvas-tabs">
         {CANVAS_TABS.map(tab => (
-          <button key={tab} className={`canvas-tab ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); setConnSource(null); setPendingConn(null); }}>{tab}</button>
+          <button key={tab} className={`canvas-tab ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); setConnSource(null); }}>{tab}</button>
         ))}
       </div>
       <div className="canvas-body">
@@ -787,18 +377,16 @@ export default function CanvasView({
             </button>;
           })}
           <div className="canvas-sb-separator" />
-          <button className="canvas-sb-btn" onClick={() => { onUpdateCanvasState(activeTab, { scale: 1, panX: 0, panY: 0 }); setPanOffset({ x: 0, y: 0 }); }} title="閫傚簲鐢诲竷">鈯?span className="sb-tooltip">閫傚簲鐢诲竷</span></button>
-          <button className="canvas-sb-btn" onClick={handleAutoLayout} title="鑷姩甯冨眬">鉄?span className="sb-tooltip">鑷姩甯冨眬</span></button>
+          <button className="canvas-sb-btn" onClick={() => { onUpdateCanvasState(activeTab, { scale: 1, panX: 0, panY: 0 }); setPanOffset({ x: 0, y: 0 }); }} title="适应画布">⊞<span className="sb-tooltip">适应画布</span></button>
         </div>
         <div className="canvas-main">
           <div className="canvas-info-bar">
-            <span>鑺傜偣: {Object.keys(state.positions).length}</span><span>|</span><span>杩炵嚎: {displayConnections.length}</span>
-            {toolMode === 'addConnection' && <><span>|</span><span style={{ color: '#FF9800' }}>{connSource ? '鎷栨嫿鍒扮洰鏍囪妭鐐瑰缓绔嬭繛绾? : '鐐瑰嚮涓€涓妭鐐瑰紑濮嬭繛绾?}</span></>}
-            {multiSelectedIds.length > 0 && <><span>|</span><span style={{ color: '#4FC3F7' }}>宸查€?{multiSelectedIds.length + (selectedObjectId && !multiSelectedIds.includes(selectedObjectId) ? 1 : 0)} 涓妭鐐?/span></>}
+            <span>节点: {Object.keys(state.positions).length}</span><span>|</span><span>连线: {displayConnections.length}</span>
+            {activeTab === '角色关系图' && toolMode === 'addConnection' && <><span>|</span><span style={{ color: '#FF9800' }}>{connSource ? '点击第二个节点建立连线' : '点击一个节点作为连线起点'}</span></>}
           </div>
-          <div ref={canvasRef} className="canvas-container" onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp} onClick={handleCanvasClick} onDoubleClick={handleCanvasDoubleClick}
+          <div ref={canvasRef} className="canvas-container" onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp} onClick={handleCanvasClick}
             style={{ cursor: toolMode === 'drag' ? 'grab' : toolMode === 'addConnection' && connSource ? 'crosshair' : toolMode === 'text' ? 'text' : toolMode === 'partition' ? 'crosshair' : 'default' }}>
-            {activeTab === '瑙掕壊鍏崇郴鍥? && <svg className="canvas-svg">{renderConnections()}</svg>}
+            {activeTab === '角色关系图' && <svg className="canvas-svg">{renderConnections()}</svg>}
             {renderTimelineFeatures()}
             {renderDeductionZones()}
 
@@ -810,7 +398,7 @@ export default function CanvasView({
             ))}
 
             {/* Nodes */}
-            {activeTab !== '璁惧畾鎺ㄦ紨鍥? && canvasObjects.map(obj => renderNode(obj))}
+            {activeTab !== '设定推演图' && canvasObjects.map(obj => renderNode(obj))}
 
             {/* Text annotations */}
             {textLabels.map(label => (
@@ -823,73 +411,51 @@ export default function CanvasView({
                 onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, stickyId: note.id }); }}>{note.text}</div>
             ))}
 
-            {/* Inline type bubble at double-click position */}
-            {showTypeBubble && (
-              <div className="type-bubble" style={{ left: bubblePos.x - panOffset.x, top: bubblePos.y - panOffset.y }} onClick={e => e.stopPropagation()}>
-                <div className="type-bubble-header">鏂板缓瀵硅薄</div>
-                <div className="type-bubble-grid">
-                  {TEMPLATES.map(t => (
-                    <button key={t.type} className="type-bubble-btn" onClick={() => handleTypeSelect(t.type)}>
-                      <span className="type-bubble-icon">
-                        {t.type === '浜虹墿' ? '馃懁' : t.type === '鍦扮偣' ? '馃搷' : t.type === '缁勭粐' ? '馃彌' : t.type === '瑙勫垯/鏈哄埗' ? '鈿欙笍' : t.type === '浜嬩欢' ? '馃搮' : t.type === '鐗╁搧' ? '馃摝' : t.type === '鏈' ? '馃摉' : '馃搫'}
-                      </span>
-                      <span className="type-bubble-label">{t.type}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Inline connection type popup */}
-            {pendingConn && (
-              <div className="conn-type-popup" style={{ left: pendingConn.x - panOffset.x, top: pendingConn.y - panOffset.y }} onClick={e => e.stopPropagation()}>
-                <div className="conn-popup-header">杩炵嚎绫诲瀷</div>
-                <div className="conn-popup-grid">
-                  {CONNECTION_TYPES.map(type => (
-                    <button key={type} className="conn-popup-btn" onClick={() => handleConnTypeSelect(type)}>{type}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {canvasObjects.length === 0 && activeTab !== '鏃堕棿绾? && (
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: '#666', pointerEvents: 'none' }}>
-                <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.6 }}>馃搵</div>
-                <div style={{ fontSize: 14, color: '#888' }}>姝ょ敾鏉挎殏鏃犲璞?/div>
-                <div style={{ fontSize: 12, marginTop: 6, color: '#555', lineHeight: 1.8 }}>
-                  <div>馃柋 鍙屽嚮绌虹櫧鍖哄煙鍒涘缓鏂板璞?/div>
-                  <div>馃搫 鍦ㄦ枃妗ｈ鍥句腑灏嗗璞°€屾斁鍏ョ敾鏉裤€?/div>
-                  <div>馃敆 浠庝晶鏍忋€屽璞℃睜銆嶆坊鍔犲凡鏈夊璞?/div>
-                </div>
+            {canvasObjects.length === 0 && activeTab !== '时间线' && (
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: '#666' }}>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
+                <div style={{ fontSize: 14 }}>在文档视图中将对象「放入画板」</div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-
-            <ZoomControls scale={scale} onZoomChange={handleZoomChange} onFitCanvas={handleFitCanvas} />
-
       {/* Dialogs */}
       {showStickyDialog && (
         <div className="canvas-overlay" onClick={() => setShowStickyDialog(false)}>
-          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>娣诲姞渚跨</h4>
-            <textarea style={{ width: '100%', height: 80, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="渚跨鍐呭..." value={stickyText} onChange={e => setStickyText(e.target.value)} autoFocus />
+          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>添加便签</h4>
+            <textarea style={{ width: '100%', height: 80, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="便签内容..." value={stickyText} onChange={e => setStickyText(e.target.value)} autoFocus />
             <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-              <button className="tb-btn" onClick={() => setShowStickyDialog(false)}>鍙栨秷</button>
-              <button className="tb-btn primary" onClick={handleConfirmSticky}>娣诲姞</button>
+              <button className="tb-btn" onClick={() => setShowStickyDialog(false)}>取消</button>
+              <button className="tb-btn primary" onClick={handleConfirmSticky}>添加</button>
             </div>
           </div>
         </div>
       )}
 
+      <ZoomControls scale={scale} onZoomChange={handleZoomChange} onFitCanvas={handleFitCanvas} />
+
+      <div className="canvas-status-bar" style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:28,padding:"0 12px",background:"var(--bg-header)",borderTop:"1px solid var(--border-default)",fontSize:'0.6875rem',color:"var(--text-muted)",flexShrink:0}}>
+        <div className="canvas-status-left" style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#4CAF50",display:"inline-block"}}></span>
+            已保存
+          </span>
+        </div>
+        <div className="canvas-status-right" style={{display:"flex",alignItems:"center",gap:12,marginLeft:"auto"}}>
+          <span>{wordCount} 字</span>
+          <span>{Object.keys(state.positions).length} 节点</span>
+        </div>
+      </div>
+
       {showTextDialog && (
         <div className="canvas-overlay" onClick={() => setShowTextDialog(false)}>
-          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>娣诲姞鏂囨湰</h4>
-            <textarea style={{ width: '100%', height: 60, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="鏂囨湰鍐呭..." value={textInput} onChange={e => setTextInput(e.target.value)} autoFocus />
+          <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}><h4>添加文本</h4>
+            <textarea style={{ width: '100%', height: 60, padding: 8, border: '1px solid #333', borderRadius: 4, fontSize: 13, resize: 'vertical', background: '#0a0a0a', color: '#ccc' }} placeholder="文本内容..." value={textInput} onChange={e => setTextInput(e.target.value)} autoFocus />
             <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-              <button className="tb-btn" onClick={() => setShowTextDialog(false)}>鍙栨秷</button>
-              <button className="tb-btn primary" onClick={handleConfirmText}>娣诲姞</button>
+              <button className="tb-btn" onClick={() => setShowTextDialog(false)}>取消</button>
+              <button className="tb-btn primary" onClick={handleConfirmText}>添加</button>
             </div>
           </div>
         </div>
@@ -898,11 +464,11 @@ export default function CanvasView({
       {showObjectPool && (
         <div className="canvas-overlay" onClick={() => { setShowObjectPool(false); setPoolSearch(''); }}>
           <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}>
-            <h4>瀵硅薄姹?鈥?閫夋嫨瀵硅薄娣诲姞鍒扮敾鏉?/h4>
-            <input className="pool-search" type="text" placeholder="鎼滅储瀵硅薄鍚嶇О銆佺被鍨嬨€佹爣绛?.." value={poolSearch} onChange={e => setPoolSearch(e.target.value)} autoFocus />
+            <h4>对象池 — 选择对象添加到画板</h4>
+            <input className="pool-search" type="text" placeholder="搜索对象名称、类型、标签..." value={poolSearch} onChange={e => setPoolSearch(e.target.value)} autoFocus />
             <div className="pool-list">
               {filteredPoolItems.length === 0 ? (
-                <div className="pool-empty">{poolSearch.trim() ? '鏃犲尮閰嶅璞? : '鎵€鏈夊璞″凡鍦ㄦ鐢绘澘涓?}</div>
+                <div className="pool-empty">{poolSearch.trim() ? '无匹配对象' : '所有对象已在此画板中'}</div>
               ) : (
                 filteredPoolItems.map(obj => (
                   <div key={obj.id} className="pool-item" onClick={() => handleSelectFromPool(obj)}>
@@ -913,7 +479,21 @@ export default function CanvasView({
                 ))
               )}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => { setShowObjectPool(false); setPoolSearch(''); }}>鍙栨秷</button></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => { setShowObjectPool(false); setPoolSearch(''); }}>取消</button></div>
+          </div>
+        </div>
+      )}
+
+      {connDialog && (
+        <div className="canvas-overlay" onClick={() => setConnDialog(null)}>
+          <div className="canvas-overlay-panel" style={{ minWidth: 300 }} onClick={e => e.stopPropagation()}>
+            <h4>选择连线类型</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {CONNECTION_TYPES.map(type => (
+                <button key={type} className="tb-btn" style={{ width: 'auto', padding: '6px 12px' }} onClick={() => handleConfirmConnection(type)}>{type}</button>
+              ))}
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => setConnDialog(null)}>取消</button></div>
           </div>
         </div>
       )}
@@ -921,24 +501,23 @@ export default function CanvasView({
       {showTemplatePicker && (
         <div className="canvas-overlay" onClick={() => setShowTemplatePicker(false)}>
           <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}>
-            <h4>閫夋嫨鐢绘澘妯℃澘</h4>
+            <h4>选择画板模板</h4>
             <div className="template-grid">
-              <div className="template-card" onClick={() => setShowTemplatePicker(false)}><div className="template-icon">馃搫</div><div className="template-name">绌虹櫧鐢绘澘</div><div className="template-desc">浠庣┖鐧藉紑濮?/div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('瑙掕壊鍏崇郴鍥?); }}><div className="template-icon">馃敆</div><div className="template-name">瑙掕壊鍏崇郴鍥?/div><div className="template-desc">瑙掕壊鍏崇郴甯冨眬銆佽繛绾?/div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('鏃堕棿绾?); }}><div className="template-icon">馃搮</div><div className="template-name">鏃堕棿绾?/div><div className="template-desc">妯悜鏃堕棿杞村竷灞€</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('璁惧畾鎺ㄦ紨鍥?); }}><div className="template-icon">馃З</div><div className="template-name">璁惧畾鎺ㄦ紨鍥?/div><div className="template-desc">闂鈫掓柟妗堚啋閿佸畾 浜斿尯甯冨眬</div></div>
+              <div className="template-card" onClick={() => setShowTemplatePicker(false)}><div className="template-icon">📄</div><div className="template-name">空白画板</div><div className="template-desc">从空白开始</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('角色关系图'); }}><div className="template-icon">🔗</div><div className="template-name">角色关系图</div><div className="template-desc">角色关系布局、连线</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('时间线'); }}><div className="template-icon">📅</div><div className="template-name">时间线</div><div className="template-desc">横向时间轴布局</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('设定推演图'); }}><div className="template-icon">🧩</div><div className="template-name">设定推演图</div><div className="template-desc">问题→方案→锁定 五区布局</div></div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => setShowTemplatePicker(false)}>鍙栨秷</button></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => setShowTemplatePicker(false)}>取消</button></div>
           </div>
         </div>
       )}
 
       {contextMenu && (
         <div className="canvas-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={e => e.stopPropagation()}>
-          <button className="ctx-item" onClick={() => { onCreateObject('浜嬩欢'); setContextMenu(null); }}>鉃?杞负瀵硅薄</button>
+          <button className="ctx-item" onClick={() => { onCreateObject('事件'); setContextMenu(null); }}>➜ 转为对象</button>
         </div>
       )}
     </div>
   );
 }
-

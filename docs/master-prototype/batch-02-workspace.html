@@ -394,3 +394,395 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           <button class="mode-btn" onclick="switchMode(this,'richtext')">富文本</button>
         </div>
       </div>
+      <div class="editor-area">
+        <!-- Source Mode (default) -->
+        <div class="editor-source" id="editorSourceMode">
+          <div class="syntax-hl">
+<span class="h1"># 楔子 · 迷雾之城</span>
+<span class="separator">---</span>
+天启城，永夜第十七年。
+林北辰站在钟楼顶端，俯瞰着这座永远笼罩在灰雾中的城市。<span class="wikilink" onmouseenter="showWikiTooltip(event,'林北辰','人物','金','天启城总务司调查员，灵脉共鸣者。')" onmouseleave="hideWikiTooltip()">[[林北辰]]</span>的披风在寒风中猎猎作响。
+"三年前，我们在这里发现第一个"<span class="wikilink missing" onmouseenter="showWikiTooltip(event,'深渊之门','地点','','',true)" onmouseleave="hideWikiTooltip()">[[深渊之门]]</span>。"他低声说。
+<span class="blockquote">> 记忆像潮水一样涌来。那不是一扇门，是一个伤口——世界被撕开的伤口。</span>
+苏晚晴走到他身边。<span class="wikilink" onmouseenter="showWikiTooltip(event,'苏晚晴','人物','蓝','星月阁首席执事，精通灵脉术法。')" onmouseleave="hideWikiTooltip()">[[苏晚晴]]</span>的眼睛在暮色中泛着微光。
+"阁主传讯，"她说，"<span class="wikilink" onmouseenter="showWikiTooltip(event,'顾长生','人物','蓝','星月阁阁主，天启城守护者。')" onmouseleave="hideWikiTooltip()">[[顾长生]]</span>要我们撤回。深渊裂隙在扩大。"
+<span class="bold">"撤回？"</span>林北辰转过身，"我们花了三年才走到这里。"
+"这不是商量，北辰。这是命令。"
+<span class="separator">---</span>
+## 城区形势
+此时的天启城分为三个区域：
+- <span class="bold">内城区</span> — 由<span class="wikilink" onmouseenter="showWikiTooltip(event,'星月阁','组织','蓝','天启城最高灵脉管理机构，护城三阁之一。')" onmouseleave="hideWikiTooltip()">[[星月阁]]</span>掌控，秩序尚在
+- <span class="bold">外城区</span> — 灵脉稀薄，已出现多起"空洞化"事件
+- <span class="bold">深渊带</span> — 完全被<span class="wikilink missing" onmouseenter="showWikiTooltip(event,'深渊裂隙','地点','','',true)" onmouseleave="hideWikiTooltip()">[[深渊裂隙]]</span>吞噬
+<span class="code">`灵脉共鸣指数: 73.4% | 危险等级: 高危`</span>
+苏晚晴递过一张泛黄的纸，"这是<span class="wikilink" onmouseenter="showWikiTooltip(event,'墨离','人物','紫','星月阁执事，负责灵脉监测与情报。')" onmouseleave="hideWikiTooltip()">[[墨离]]</span>三天前送来的。你看这个图案。"
+林北辰接过纸，瞳孔骤然收缩。
+          </div>
+        </div>
+
+        <!-- Preview Mode -->
+        <div class="editor-preview" id="editorPreviewMode">
+          <h1>楔子 · 迷雾之城</h1>
+          <hr style="border-color:var(--border-light);margin:1em 0;">
+          <p>天启城，永夜第十七年。林北辰站在钟楼顶端，俯瞰着这座永远笼罩在灰雾中的城市。<span class="wikilink-preview" onclick="selectOutlineItemByData('char1')">[[林北辰]]</span>的披风在寒风中猎猎作响。</p>
+          <p>"三年前，我们在这里发现第一个"<span class="wikilink-preview missing">[[深渊之门]]</span>。"他低声说。</p>
+          <blockquote>记忆像潮水一样涌来。那不是一扇门，是一个伤口——世界被撕开的伤口。</blockquote>
+          <p>苏晚晴走到他身边。<span class="wikilink-preview" onclick="selectOutlineItemByData('char2')">[[苏晚晴]]</span>的眼睛在暮色中泛着微光。</p>
+          <p>"阁主传讯，"她说，"<span class="wikilink-preview" onclick="selectOutlineItemByData('char3')">[[顾长生]]</span>要我们撤回。深渊裂隙在扩大。"</p>
+          <p><strong>"撤回？"</strong>林北辰转过身，"我们花了三年才走到这里。"</p>
+          <p>"这不是商量，北辰。这是命令。"</p>
+          <hr style="border-color:var(--border-light);margin:1em 0;">
+          <h2>城区形势</h2>
+          <ul>
+            <li><strong>内城区</strong> — 由<span class="wikilink-preview" onclick="selectOutlineItemByData('org1')">[[星月阁]]</span>掌控</li>
+            <li><strong>外城区</strong> — 灵脉稀薄，已出现多起"空洞化"事件</li>
+            <li><strong>深渊带</strong> — 完全被<span class="wikilink-preview missing">[[深渊裂隙]]</span>吞噬</li>
+          </ul>
+          <p><code>灵脉共鸣指数: 73.4% | 危险等级: 高危</code></p>
+          <p>苏晚晴递过一张泛黄的纸，"这是<span class="wikilink-preview" onclick="selectOutlineItemByData('char4')">[[墨离]]</span>三天前送来的。"</p>
+        </div>
+
+        <!-- Rich Text placeholder -->
+        <div class="editor-richtext" id="editorRichTextMode">
+          <p>富文本编辑模式（开发中）</p>
+        </div>
+
+        <!-- Empty State CTA -->
+        <div class="empty-cta" id="emptyCta">
+          <div class="empty-cta-icon">📝</div>
+          <div class="empty-cta-title">创建第一个设定</div>
+          <div class="empty-cta-desc">从空白开始构建你的世界，或选择一个类型快速开始</div>
+          <div class="empty-cta-buttons">
+            <button class="empty-cta-btn primary" onclick="closeEmptyCta()">人物 👤</button>
+            <button class="empty-cta-btn" onclick="closeEmptyCta()">地点 🌍</button>
+            <button class="empty-cta-btn" onclick="closeEmptyCta()">组织 🏛</button>
+            <button class="empty-cta-btn" onclick="closeEmptyCta()">规则 ⚖</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editor Status Line -->
+      <div class="editor-status">
+        <span id="editorWordCount">字数: 342</span>
+        <span id="editorLinks">链接: 6</span>
+        <span>设定层级: 金</span>
+        <span id="editorUpdated">最后更新: 10 分钟前</span>
+      </div>
+    </div>
+
+    <div class="resize-handle-right" id="resizeHandleRight"></div>
+
+    <!-- RIGHT INSPECTOR (Screen 08) -->
+    <div class="right-inspector" id="rightInspector">
+      <div class="inspector-content">
+        <!-- Project Summary (default, no selection) -->
+        <div class="project-summary show" id="projectSummary">
+          <div class="summary-title">项目概览</div>
+          <div class="summary-stats">
+            <div class="stat-row"><span class="stat-label">总对象数</span><span class="stat-value">26</span></div>
+            <div class="stat-row"><span class="stat-label">关联链接</span><span class="stat-value">47</span></div>
+            <div class="stat-row"><span class="stat-label">总字数</span><span class="stat-value">12,840</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-breakdown">
+              <div class="stat-row"><span class="stat-label">人物</span><span class="stat-value">8</span></div>
+              <div class="stat-row"><span class="stat-label">地点</span><span class="stat-value">5</span></div>
+              <div class="stat-row"><span class="stat-label">组织</span><span class="stat-value">3</span></div>
+              <div class="stat-row"><span class="stat-label">规则</span><span class="stat-value">4</span></div>
+              <div class="stat-row"><span class="stat-label">章节</span><span class="stat-value">3</span></div>
+              <div class="stat-row"><span class="stat-label">草稿/废弃</span><span class="stat-value">3</span></div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-row"><span class="stat-label">金层设定</span><span class="stat-value" style="color:#d4a017;">4</span></div>
+            <div class="stat-row"><span class="stat-label">蓝层设定</span><span class="stat-value" style="color:#4a90d9;">9</span></div>
+            <div class="stat-row"><span class="stat-label">紫层设定</span><span class="stat-value" style="color:#9b59b6;">8</span></div>
+            <div class="stat-row"><span class="stat-label">灰层设定</span><span class="stat-value" style="color:#666;">5</span></div>
+          </div>
+        </div>
+
+        <!-- Object Inspector (shown on outline selection) -->
+        <div class="object-inspector" id="objectInspector">
+          <div class="inspector-section">
+            <div class="inspector-section-title">对象信息</div>
+            <div class="inspector-field">
+              <div class="field-label">类型</div>
+              <div class="field-value" id="objType">人物 👤</div>
+            </div>
+            <div class="inspector-field">
+              <div class="field-label">设定层级</div>
+              <select class="canon-select">
+                <option value="gold" style="color:#d4a017;">金 — 核心设定</option>
+                <option value="blue" selected style="color:#4a90d9;">蓝 — 权威设定</option>
+                <option value="purple" style="color:#9b59b6;">紫 — 试行设定</option>
+                <option value="gray" style="color:#999;">灰 — 草稿</option>
+              </select>
+            </div>
+            <div class="inspector-field">
+              <div class="field-label">状态</div>
+              <div class="field-value" id="objStatus" style="color:#4ade80;">已发布</div>
+            </div>
+            <div class="inspector-field">
+              <div class="field-label">创建时间</div>
+              <div class="field-value" id="objCreated">2026-06-12 14:30</div>
+            </div>
+            <div class="inspector-field">
+              <div class="field-label">最后修改</div>
+              <div class="field-value" id="objModified">2026-07-08 09:15</div>
+            </div>
+          </div>
+          <div class="inspector-section">
+            <div class="inspector-section-title">关联对象</div>
+            <div class="field-label" style="margin-bottom:4px;">被引用 (3)</div>
+            <div class="link-list">
+              <div class="link-item" onclick="selectOutlineItemByData('ch1')">
+                <span class="dot dot-gold"></span><span>楔子 · 迷雾之城</span><span class="link-type">章</span>
+              </div>
+              <div class="link-item" onclick="selectOutlineItemByData('loc1')">
+                <span class="dot dot-gold"></span><span>天启城</span><span class="link-type">地点</span>
+              </div>
+              <div class="link-item" onclick="selectOutlineItemByData('org1')">
+                <span class="dot dot-blue"></span><span>星月阁</span><span class="link-type">组织</span>
+              </div>
+            </div>
+            <div class="field-label" style="margin-bottom:4px;margin-top:var(--space-2);">引用 (2)</div>
+            <div class="link-list">
+              <div class="link-item" onclick="selectOutlineItemByData('rule1')">
+                <span class="dot dot-blue"></span><span>灵脉体系</span><span class="link-type">规则</span>
+              </div>
+              <div class="link-item" onclick="selectOutlineItemByData('char4')">
+                <span class="dot dot-purple"></span><span>墨离</span><span class="link-type">人物</span>
+              </div>
+            </div>
+          </div>
+          <div class="inspector-section">
+            <div class="inspector-section-title">判断历程</div>
+            <div class="timeline">
+              <div class="timeline-item"><span class="tl-date">2026-07-08</span><br><span class="tl-action">🔒 锁定为金层设定</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-07-01</span><br><span class="tl-action">⬆ 从蓝层提升至金层</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-06-28</span><br><span class="tl-action">📝 内容修订 — 新增 120 字</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-06-20</span><br><span class="tl-action">✅ 审核通过 (顾长生 审批)</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-06-12</span><br><span class="tl-action">✨ 创建对象</span></div>
+            </div>
+          </div>
+          <div class="inspector-section">
+            <div class="inspector-section-title">操作</div>
+            <div class="action-buttons">
+              <button class="action-btn" onclick="showAddToBoard()">📋 添加到面板</button>
+              <button class="action-btn" onclick="showAddToBoard()">📌 固定到速览</button>
+              <button class="action-btn promote" onclick="showReasonDialog('promote')">⬆ 提升层级</button>
+              <button class="action-btn" onclick="showReasonDialog('lock')">🔒 锁定对象</button>
+              <button class="action-btn danger" onclick="showReasonDialog('discard')">🗑 弃置对象</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Status Bar (Screen 05 bottom) -->
+  <div class="status-bar">
+    <span class="save-indicator saved" id="saveIndicator">
+      <span id="saveIcon">✓</span>
+      <span id="saveLabel">已保存</span>
+    </span>
+    <span class="status-divider"></span>
+    <span id="syncQueue">队列: 0 项待同步</span>
+    <span class="status-divider"></span>
+    <span class="status-right">
+      <span>字数: 12,840</span>
+      <span>链接: 47</span>
+      <span>金:4 蓝:9 紫:8 灰:5</span>
+    </span>
+  </div>
+</div>
+
+<!-- WikiLink Tooltip (Screen 06) -->
+<div class="wiki-tooltip" id="wikiTooltip">
+  <div class="wt-name" id="wtName"></div>
+  <div><span class="wt-type" id="wtType"></span> · <span class="wt-status" id="wtStatus"></span></div>
+  <div class="wt-summary" id="wtSummary"></div>
+</div>
+
+<!-- Reason Dialog (Screen 08) -->
+<div class="reason-dialog-overlay" id="reasonDialog">
+  <div class="reason-dialog">
+    <div class="dialog-title" id="dialogTitle">确认操作</div>
+    <div class="dialog-desc" id="dialogDesc">请说明原因：</div>
+    <textarea class="dialog-input" id="dialogInput" placeholder="输入操作原因..."></textarea>
+    <div class="dialog-actions">
+      <button class="dialog-btn" onclick="closeReasonDialog()">取消</button>
+      <button class="dialog-btn primary" onclick="confirmReasonDialog()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Screen Navigation Dots -->
+<div class="screen-dot-nav">
+  <span class="screen-dot" title="Loading Spinner" onclick="showScreen('loading')"></span>
+  <span class="screen-dot" title="Offline Banner" onclick="showScreen('offline')"></span>
+  <span class="screen-dot active" title="Workspace (default)" onclick="showScreen('workspace')"></span>
+  <span class="screen-dot" title="Empty State CTA" onclick="showScreen('empty')"></span>
+  <span class="screen-dot" title="Canon Level Popup" onclick="showCanonPopup()"></span>
+</div>
+
+<div class="prototype-legend">
+  <span><span class="key">点击</span> 大纲项目 → 切换右侧检查器</span>
+  <span><span class="key">悬停</span> [[WikiLink]] → 查看对象提示</span>
+  <span><span class="key">点击</span> 金/蓝/紫/灰标签 → 层级说明弹窗</span>
+  <span><span class="key">点击</span> ◀ 按钮 → 折叠左侧栏</span>
+</div>
+
+<script>
+function showScreen(name) {
+  var dots = document.querySelectorAll('.screen-dot');
+  var screens = ['loading','offline','workspace','empty','canon'];
+  var idx = screens.indexOf(name);
+  dots.forEach(function(d){d.classList.remove('active')});
+  if(idx>=0&&dots[idx]) dots[idx].classList.add('active');
+  var lo=document.getElementById('loadingOverlay'), bn=document.getElementById('offlineBanner');
+  var sh=document.getElementById('appShell'), ec=document.getElementById('emptyCta');
+  var es=document.getElementById('editorSourceMode'), cp=document.getElementById('canonPopup');
+  lo.classList.remove('show');bn.classList.remove('show');sh.style.display='flex';
+  ec.classList.remove('show');es.style.display='block';cp.classList.remove('show');
+  switch(name){
+    case'loading':lo.classList.add('show');sh.style.display='none';break;
+    case'offline':bn.classList.add('show');sh.style.paddingTop='28px';break;
+    case'workspace':sh.style.paddingTop='0';break;
+    case'empty':ec.classList.add('show');es.style.display='none';sh.style.paddingTop='0';break;
+    case'canon':cp.classList.add('show');sh.style.paddingTop='0';break;
+  }
+}
+function switchNavTab(el){
+  document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+}
+function toggleSidebar(){
+  var s=document.getElementById('leftSidebar'),b=document.getElementById('sidebarCollapseBtn');
+  s.classList.toggle('collapsed');b.textContent=s.classList.contains('collapsed')?'▶':'◀';
+}
+function toggleGroup(h){
+  var a=h.querySelector('.arrow'),g=h.nextElementSibling;
+  a.classList.toggle('collapsed');g.classList.toggle('collapsed');
+}
+function selectOutlineItem(el){
+  document.querySelectorAll('.outline-item').forEach(function(i){i.classList.remove('active')});
+  el.classList.add('active');
+}
+function updateInspector(el){
+  var sum=document.getElementById('projectSummary'),ins=document.getElementById('objectInspector');
+  sum.classList.remove('show');ins.classList.add('show');
+  var t=el.querySelector('.type-tag').textContent;
+  var d=el.querySelector('.dot');
+  var tm={'章':'章节 📄','主':'人物 👤','要':'人物 👤','配':'人物 👤','地点':'地点 🌍','组织':'组织 🏛','规则':'规则 ⚖','草稿':'草稿 📝','废弃':'废弃 🗑'};
+  document.getElementById('objType').textContent=tm[t]||'其他';
+  var dc=Array.from(d.classList).find(function(c){return c.indexOf('dot-')===0});
+  var lm={'dot-gold':'金','dot-blue':'蓝','dot-purple':'紫','dot-gray':'灰'};
+  var lv=lm[dc]||'蓝';
+  var bd=document.getElementById('canonBadge');
+  bd.className='canon-badge '+dc.replace('dot-','');bd.textContent=lv;
+  var sm={'金':'gold','蓝':'blue','紫':'purple','灰':'gray'};
+  var sel=document.querySelector('.canon-select');
+  if(sel) sel.value=sm[lv]||'blue';
+  document.getElementById('objStatus').textContent=(lv==='金'||lv==='蓝')?'已发布':'草稿';
+  document.getElementById('objStatus').style.color=(lv==='金'||lv==='蓝')?'#4ade80':'#fbbf24';
+}
+function selectOutlineItemByData(id){
+  var el=document.querySelector('.outline-item[data-id="'+id+'"]');
+  if(el){selectOutlineItem(el);updateInspector(el);}
+}
+function switchMode(btn,mode){
+  document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  document.getElementById('editorSourceMode').style.display=mode==='source'?'block':'none';
+  document.getElementById('editorPreviewMode').classList.toggle('show',mode==='preview');
+  document.getElementById('editorRichTextMode').classList.toggle('show',mode==='richtext');
+}
+function toggleTool(btn){btn.classList.toggle('active')}
+var tooltip=document.getElementById('wikiTooltip');
+function showWikiTooltip(e,name,type,canon,summary,missing){
+  document.getElementById('wtName').textContent=name||'';
+  document.getElementById('wtType').textContent=(type||'')+(canon?' ['+canon+']':'');
+  document.getElementById('wtStatus').textContent=missing?'⚠ 未创建':'已创建';
+  var se=document.getElementById('wtSummary');
+  if(summary){se.textContent=summary;se.className='wt-summary';}
+  else{se.textContent='暂无摘要';se.className='wt-summary missing';}
+  tooltip.classList.add('show');
+  var r=e.target.getBoundingClientRect(),l=r.left,t=r.bottom+4;
+  if(l+260>window.innerWidth)l=window.innerWidth-270;
+  tooltip.style.left=l+'px';tooltip.style.top=t+'px';
+}
+function hideWikiTooltip(){tooltip.classList.remove('show')}
+function toggleCanonPopup(e){e.stopPropagation();document.getElementById('canonPopup').classList.toggle('show')}
+function showCanonPopup(){
+  document.getElementById('canonPopup').classList.add('show');
+  document.getElementById('appShell').style.display='flex';document.getElementById('appShell').style.paddingTop='0';
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+document.addEventListener('click',function(e){
+  var p=document.getElementById('canonPopup');
+  if(!e.target.closest('.canon-badge')&&!e.target.closest('.canon-popup'))p.classList.remove('show');
+});
+function closeEmptyCta(){
+  document.getElementById('emptyCta').classList.remove('show');
+  document.getElementById('editorSourceMode').style.display='block';
+  setSaveState('saving');setTimeout(function(){setSaveState('saved')},1500);
+}
+function setSaveState(s){
+  var i=document.getElementById('saveIndicator'),ic=document.getElementById('saveIcon'),lb=document.getElementById('saveLabel');
+  i.className='save-indicator '+s;
+  switch(s){case'saved':ic.textContent='✓';lb.textContent='已保存';break;
+  case'saving':ic.textContent='⟳';lb.textContent='保存中...';break;
+  case'unsaved':ic.textContent='●';lb.textContent='未保存';break;
+  case'offline':ic.textContent='●';lb.textContent='离线';break;
+  case'error':ic.textContent='⚠';lb.textContent='保存失败';break;}
+}
+var dialogAction=null;
+function showReasonDialog(a){
+  dialogAction=a;
+  var m={'promote':{title:'提升层级',desc:'确认要将此对象提升到更高设定层级吗？请说明原因：'},
+  'lock':{title:'锁定对象',desc:'锁定后内容不可编辑。请说明锁定原因：'},
+  'discard':{title:'弃置对象',desc:'此操作将把对象移至废弃区。请说明弃置原因：'}};
+  var d=m[a]||m.promote;
+  document.getElementById('dialogTitle').textContent=d.title;
+  document.getElementById('dialogDesc').textContent=d.desc;
+  document.getElementById('dialogInput').value='';
+  document.getElementById('reasonDialog').classList.add('show');
+}
+function closeReasonDialog(){document.getElementById('reasonDialog').classList.remove('show');dialogAction=null}
+function confirmReasonDialog(){
+  var inp=document.getElementById('dialogInput').value.trim();
+  if(!inp){alert('请输入操作原因');return}
+  var lb=dialogAction==='promote'?'提升层级':dialogAction==='lock'?'锁定':'弃置';
+  closeReasonDialog();setSaveState('saving');
+  document.getElementById('saveLabel').textContent=lb+'中...';
+  setTimeout(function(){setSaveState('saved')},1200);
+}
+function showAddToBoard(){
+  setSaveState('saving');
+  document.getElementById('saveLabel').textContent='添加到面板...';
+  setTimeout(function(){setSaveState('saved');document.getElementById('saveLabel').textContent='已添加到面板'},800);
+}
+function navigateBack(){setSaveState('unsaved')}
+setTimeout(function(){document.getElementById('loadingOverlay').classList.remove('show')},1500);
+(function(){
+  var rz=false,ch=null;
+  function ih(hid,tid,dir){
+    var h=document.getElementById(hid),t=document.getElementById(tid);
+    if(!h||!t)return;
+    h.addEventListener('mousedown',function(e){
+      rz=true;ch={target:t,startX:e.clientX,startW:t.offsetWidth,dir:dir};
+      document.body.style.cursor='col-resize';document.body.style.userSelect='none';
+    });
+  }
+  document.addEventListener('mousemove',function(e){
+    if(!rz||!ch)return;
+    var d=e.clientX-ch.startX,nw=ch.dir==='left'?ch.startW+d:ch.startW-d;
+    nw=Math.max(180,Math.min(400,nw));ch.target.style.width=nw+'px';
+  });
+  document.addEventListener('mouseup',function(){
+    if(rz){rz=false;ch=null;document.body.style.cursor='';document.body.style.userSelect=''}
+  });
+  ih('resizeHandleLeft','leftSidebar','left');
+  ih('resizeHandleRight','rightInspector','right');
+})();
+</script>
+</body>
+</html>

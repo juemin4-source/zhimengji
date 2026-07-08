@@ -36,9 +36,15 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
   const [focusObjectId, setFocusObjectId] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState<AiModel>(DEFAULT_MODELS[0]);
   const [tokenCount, setTokenCount] = useState(0);
+  const [sessionTokens, setSessionTokens] = useState({ in: 0, out: 0 });
   const [showModelPicker, setShowModelPicker] = useState(false);
 
-  // Models loaded from DEFAULT_MODELS
+  const AVAILABLE_MODELS: AiModel[] = [
+    { id: 'auto', name: 'FreeLLMAPI (Auto)', providerId: 'free_llm_api', providerName: 'FreeLLMAPI', description: '128K context · auto-routed', costPer1KTokens: 0, icon: '⚡', available: true },
+    { id: 'gpt-4o', name: 'GPT-4o', providerId: 'openai', providerName: 'OpenAI', description: '128K context · GPT-4o', costPer1KTokens: 0.01, icon: '🤖', available: true },
+    { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', providerId: 'anthropic', providerName: 'Anthropic', description: '200K context · Claude 3.5 Sonnet', costPer1KTokens: 0.015, icon: '🧠', available: true },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', providerId: 'google', providerName: 'Google', description: '1M context · Gemini 2.0 Flash', costPer1KTokens: 0, icon: '✨', available: true },
+  ];
   const [inputText, setInputText] = useState('');
   const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
 
@@ -97,7 +103,10 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
       docs: replyDocs, timestamp: Date.now(),
     };
     setMessages(prev => [...prev, assistantMsg]);
-    setTokenCount(prev => prev + Math.floor(Math.random() * 200 + 50));
+    const tokensIn = Math.floor(Math.random() * 100 + 30);
+    const tokensOut = Math.floor(Math.random() * 200 + 50);
+    setSessionTokens(prev => ({ in: prev.in + tokensIn, out: prev.out + tokensOut }));
+    setTokenCount(prev => prev + tokensIn + tokensOut);
     if (replyDocs && replyDocs.length > 0 && onShowToast) {
       onShowToast('AI 已生成 ' + replyDocs.length + ' 个文档', 'success');
     }
@@ -109,6 +118,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
   const confirmNewChat = useCallback(() => {
     setMessages([{ id: uid(), role: 'assistant', content: '你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。', timestamp: Date.now() }]);
     setTokenCount(0);
+    setSessionTokens({ in: 0, out: 0 });
     setFocusObjectId(null);
     setShowNewChatConfirm(false);
   }, []);
@@ -327,8 +337,8 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
                   border: activeModel.name === m.name ? '1px solid rgba(183,255,0,0.2)' : '1px solid transparent' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent, #B7FF00)', opacity: activeModel.name === m.name ? 1 : 0.2 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.label}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.provider} · {m.contextLength.toLocaleString()} ctx</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.providerName} · {m.description}</div>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.costPer1KTokens === 0 ? '免费' : `$${m.costPer1KTokens}/1K`}</div>
               </div>
@@ -367,6 +377,10 @@ function simulateAiDocs(text: string): DocCardData[] | undefined {
   }
   return undefined;
 }
+
+
+
+
 
 
 

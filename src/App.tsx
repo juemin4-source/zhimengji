@@ -146,6 +146,22 @@ function AppInner() {
     };
   }, []);
 
+  // ── AI usage stats from backend ──
+  useEffect(() => {
+    if (showAiSettings) {
+      const loadUsage = async () => {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const stats = await invoke('get_usage_stats');
+          if (stats) setAiUsageStats(stats as UsageStats);
+        } catch {
+          // Backend not available, keep defaults
+        }
+      };
+      loadUsage();
+    }
+  }, [showAiSettings]);
+
   // ── Keyboard shortcuts ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -913,7 +929,13 @@ function AppInner() {
         onClose={() => setShowAiSettings(false)}
         onSaveProviders={(providers) => setAiProviders(providers)}
         onChangeModel={(modelId) => setAiActiveModelId(modelId)}
-        onSaveBudget={(budget) => setAiUsageStats(prev => ({ ...prev, budgetLimit: budget }))}
+        onSaveBudget={async (budget) => {
+          setAiUsageStats(prev => ({ ...prev, budgetLimit: budget }));
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('set_budget_limit', { limit: budget * 1000 });
+          } catch {}
+        }}
       />}
     </div>
   );

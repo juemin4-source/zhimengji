@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CreationWizard — Single-step new project creation modal for 织梦机 v1.2.
  *
  * Full-screen modal with backdrop blur, name + genre + template selection.
@@ -36,7 +36,7 @@ const GENRES = [
 const templatePresets: Record<string, { name: string; items: string[]; desc: string; icon: string }> = {
   blank: {
     name: '从零开始',
-    icon: '\U0001F331',
+    icon: '🌱',
     desc: '一步步搭建你的世界，适合第一次使用',
     items: ['世界观核心', '主角', '关键地点'],
   },

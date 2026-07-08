@@ -138,9 +138,9 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
   }, [providers, selectedModel, budgetInput, onSaveProviders, onChangeModel, onSaveBudget, onClose]);
 
   const s = {
-    overlay: { position: 'fixed' as const, inset: 0, zIndex: 1000, display: 'flex', flexDirection: 'column' as const, background: 'var(--bg-canvas, #0a0a0a)' },
+    overlay: { position: 'fixed' as const, inset: 0, zIndex: 1000, display: 'flex', flexDirection: 'column' as const, background: 'rgba(0,0,0,0.75)' },
     nav: { display: 'flex', alignItems: 'center', height: 44, background: 'var(--bg-header, #0e0e0e)', borderBottom: '1px solid var(--border-default, #2a2a2a)', padding: '0 16px', gap: 12, flexShrink: 0 },
-    layout: { display: 'flex', flex: 1, overflow: 'hidden' },
+    layout: { display: 'flex', flex: 1, overflow: 'hidden', background: 'var(--bg-surface, #141414)', margin: '0 auto', width: '100%', maxWidth: 960 },
     sidebar: { width: 200, minWidth: 200, background: 'var(--bg-surface, #141414)', borderRight: '1px solid var(--border-default, #2a2a2a)', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
     content: { flex: 1, overflowY: 'auto' as const, padding: '24px 32px', background: 'var(--bg-surface, #141414)' },
     title: { fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary, #e0e0e0)', marginBottom: 4 },

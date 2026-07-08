@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
@@ -32,6 +32,7 @@ interface CanvasViewProps {
   onAddSticky: (tabId: CanvasTab, text: string) => void;
   onAddToBoard: (objectId: string, board: string) => void;
   onCreateObject: (templateType: ObjectType) => void;
+  onCreateCanvasObject: (templateType: ObjectType, board: CanvasTab, x: number, y: number) => void;
 }
 
 const NODE_W = 130;
@@ -69,14 +70,12 @@ const TIMELINE_EVENTS = [
 ];
 
 let _textId = 0, _zoneId = 0;
-// Module-level variable to persist pending double-click position across mount/unmount
-let _pendingCanvasCreate: {x: number; y: number; prevObjCount: number; tab: CanvasTab} | null = null;
 
 export default function CanvasView({
   allObjects, connections, canvasStates,
   selectedObjectId, onSelectObject, onNavigate,
   onUpdateCanvasState, onAddConnection, onAddSticky,
-  onAddToBoard, onCreateObject
+  onAddToBoard, onCreateObject, onCreateCanvasObject
 }: CanvasViewProps) {
   const [activeTab, setActiveTab] = useState<CanvasTab>('角色关系图');
   const [toolMode, setToolMode] = useState<CanvasToolMode>('select');
@@ -225,31 +224,11 @@ const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allO
     if (!rect) return;
     const x = e.clientX - rect.left + panOffset.x;
     const y = e.clientY - rect.top + panOffset.y;
-    _pendingCanvasCreate = { x, y, prevObjCount: allObjects.length, tab: activeTab };
-    onCreateObject('事件');
-  }, [toolMode, panOffset, allObjects.length, activeTab, onCreateObject]);
+    onCreateCanvasObject('事件', activeTab, x, y);
+  }, [toolMode, panOffset, activeTab, onCreateCanvasObject]);
 
   const handleConfirmText = useCallback(() => { if (textInput.trim()) { setTextLabels(prev => [...prev, { id: `text_${_textId++}`, text: textInput.trim(), x: textInputPos.x, y: textInputPos.y }]); setTextInput(''); setShowTextDialog(false); } }, [textInput, textInputPos]);
 
-  // Process pending canvas node creation when returning from document tab
-  useEffect(() => {
-    if (!_pendingCanvasCreate || _pendingCanvasCreate.tab !== activeTab) return;
-    const {x, y, prevObjCount} = _pendingCanvasCreate;
-    _pendingCanvasCreate = null;
-  
-    if (allObjects.length > prevObjCount) {
-      for (let i = prevObjCount; i < allObjects.length; i++) {
-        const obj = allObjects[i];
-        if (obj && !state.positions[obj.id]) {
-          onAddToBoard(obj.id, activeTab);
-          onUpdateCanvasState(activeTab, {
-            positions: { ...state.positions, [obj.id]: { objectId: obj.id, x, y } }
-          });
-          break;
-        }
-      }
-    }
-  }, [allObjects.length, activeTab, state, onAddToBoard, onUpdateCanvasState]);
 
   const handleConfirmSticky = useCallback(() => { if (stickyText.trim()) { onAddSticky(activeTab, stickyText.trim()); setStickyText(''); setShowStickyDialog(false); } }, [stickyText, activeTab, onAddSticky]);
 

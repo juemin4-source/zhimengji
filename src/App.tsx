@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
 import { CANVAS_TABS, CANON_LEVELS, CANON_COLORS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
@@ -52,7 +52,7 @@ function mapDTOtoProject(dto: api.ProjectDTO): Project {
   return {
     id: dto.id,
     title: dto.name,
-    genre: dto.genre || '未分类',
+    genre: dto.genre || '未分类?,
     status: (dto.status as Project['status']) || 'conceiving',
     wordCount: dto.wordCount ?? 0,
     gradient,
@@ -60,7 +60,7 @@ function mapDTOtoProject(dto: api.ProjectDTO): Project {
 }
 
 function mapProjectToCreate(name: string, genre?: string): Promise<api.ProjectDTO> {
-  return api.createProject(name, genre || '未分类', 'conceiving', 0, '["#6366f1","#8b5cf6"]');
+  return api.createProject(name, genre || '未分类?, 'conceiving', 0, '["#6366f1","#8b5cf6"]');
 }
 
 const syncManager = new SyncManager();
@@ -163,7 +163,7 @@ function AppInner() {
   const handleUndo = useCallback(() => {
     const entry = changelog.undo();
     if (!entry) {
-      showToast('没有可撤销的操作', 'info');
+      showToast('没有可撤销的操作?, 'info');
       return;
     }
     switch (entry.action) {
@@ -251,7 +251,7 @@ function AppInner() {
   const allBoardTabs = CANVAS_TABS;
   const bookshelfProjects = projects;
   const settingDefaultSelected = useMemo(
-    () => { const first = objects.find(o => o.canonLevel !== '未收录'); return first?.id; },
+    () => { const first = objects.find(o => o.canonLevel !== '未收录?); return first?.id; },
     [objects]
   );
 
@@ -364,7 +364,7 @@ function AppInner() {
             const newObj: WorldObject = {
               id: uid(), projectId: dto.id, name: preset.name,
               type: preset.type, status: '草稿' as ObjectStatus,
-              canonLevel: '未收录' as CanonLevel,
+              canonLevel: '未收录? as CanonLevel,
               tags: [preset.type], aliases: [], selectedBoards: [],
               content: `# ${preset.name}\n\n`,
               referencesCount: 0, judgmentHistory: [],
@@ -386,7 +386,7 @@ function AppInner() {
       setCanvasStates(createDefaultCanvasStates());
       setSelectedObjectId(null);
       setShowGuide(true);
-      showToast(`作品「${title}」已创建`, 'success');
+      showToast(`作品�?{title}」已创建`, 'success');
     } catch (e) {
       console.error('Failed to create project', e);
       showToast('创建作品失败', 'error');
@@ -401,7 +401,7 @@ function AppInner() {
     const obj = objects.find(o => o.id === objectId);
     if (!obj) return;
     const now = Date.now();
-    const statusOps: JudgmentOperation[] = ['锁定', '废弃', '待验证'];
+    const statusOps: JudgmentOperation[] = ['锁定', '废弃', '待验证?];
     const record = {
       id: jid(), objectId, objectName: obj.name, operationType,
       reason, timestamp: now, previousStatus: prevValue, newStatus: newValue,
@@ -435,7 +435,7 @@ function AppInner() {
 
   const onUnlockObject = useCallback((objectId: string, reason: string) => {
     const obj = objects.find(o => o.id === objectId);
-    if (obj) addJudgment(objectId, '待验证', reason || '解锁回退', obj.status, '待验证');
+    if (obj) addJudgment(objectId, '待验证?, reason || '解锁回退', obj.status, '待验证?);
   }, [objects, addJudgment]);
 
   // ══════════════════════════════════════════
@@ -446,13 +446,13 @@ function AppInner() {
     const before = objects.find(o => o.id === id);
     if (before) {
       if (updates.status && updates.status !== before.status) {
-        addJudgment(id, '待验证', `状态变更: ${before.status} → ${updates.status}`, before.status, updates.status);
+        addJudgment(id, '待验证?, `状态变�? ${before.status} �?${updates.status}`, before.status, updates.status);
       }
       if (updates.canonLevel && updates.canonLevel !== before.canonLevel) {
         const idxBefore = CANON_LEVELS.indexOf(before.canonLevel);
         const idxAfter = CANON_LEVELS.indexOf(updates.canonLevel);
         const op: JudgmentOperation = idxAfter > idxBefore ? '提升正典' : '收录';
-        addJudgment(id, op, `正典等级变更: ${before.canonLevel} → ${updates.canonLevel}`, before.canonLevel, updates.canonLevel);
+        addJudgment(id, op, `正典等级变更: ${before.canonLevel} �?${updates.canonLevel}`, before.canonLevel, updates.canonLevel);
       }
     }
     setObjects(prev => {
@@ -475,9 +475,9 @@ function AppInner() {
     const template = TEMPLATES.find(t => t.type === templateType);
     const now = Date.now();
     const newObj: WorldObject = {
-      id: uid(), projectId: activeBookId || '', name: `新${templateType}`,
+      id: uid(), projectId: activeBookId || '', name: `�?{templateType}`,
       type: templateType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
-      canonLevel: '未收录' as CanonLevel,
+      canonLevel: '未收录? as CanonLevel,
       tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [],
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
@@ -487,6 +487,43 @@ function AppInner() {
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
+    if (activeBookId) {
+      syncManager.enqueue('createObject', newObj).catch(() => {});
+      api.createWorldObject(newObj)
+        .then(() => showToast(`已创�?{templateType}`, 'success'))
+        .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
+    }
+  }, [activeBookId, showToast]);
+
+    const onCreateCanvasObject = useCallback((templateType: ObjectType, board: CanvasTab, x: number, y: number) => {
+    const template = TEMPLATES.find(t => t.type === templateType);
+    const now = Date.now();
+    const newObj: WorldObject = {
+      id: uid(), projectId: activeBookId || '', name: `新${templateType}`,
+      type: templateType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
+      canonLevel: '未收录' as CanonLevel,
+      tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [board],
+      content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
+      createdAt: now, updatedAt: now,
+    };
+    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
+    setObjects(prev => [...prev, newObj]);
+    setSelectedObjectId(newObj.id);
+    // Place the new object on the canvas at the double-clicked position
+    setCanvasStates(prev => {
+      const tabState = prev[board];
+      if (!tabState) return prev;
+      return {
+        ...prev,
+        [board]: {
+          ...tabState,
+          positions: {
+            ...tabState.positions,
+            [newObj.id]: { objectId: newObj.id, x, y }
+          }
+        }
+      };
+    });
     if (activeBookId) {
       syncManager.enqueue('createObject', newObj).catch(() => {});
       api.createWorldObject(newObj)
@@ -501,7 +538,7 @@ function AppInner() {
     const newObj: WorldObject = {
       id: uid(), projectId: activeBookId || '', name,
       type: objectType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
-      canonLevel: '未收录' as CanonLevel,
+      canonLevel: '未收录? as CanonLevel,
       tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [],
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
@@ -513,7 +550,7 @@ function AppInner() {
     if (activeBookId) {
       syncManager.enqueue('createObject', newObj).catch(() => {});
       api.createWorldObject(newObj)
-        .then(() => showToast(`已创建「${name}」`, 'success'))
+        .then(() => showToast(`已创建�?{name}」`, 'success'))
         .catch(e => { console.error('Failed to create named object', e); showToast('创建对象失败', 'error'); });
     }
   }, [activeBookId, showToast]);
@@ -527,7 +564,7 @@ function AppInner() {
     if (selectedObjectId === id) setSelectedObjectId(null);
     syncManager.enqueue('deleteObject', { id }).catch(() => {});
     api.deleteWorldObject(id)
-      .then(() => showToast('对象已删除', 'success'))
+      .then(() => showToast('对象已删�?, 'success'))
       .catch(e => { console.error('Failed to delete object', e); showToast('删除对象失败', 'error'); });
   }, [selectedObjectId, showToast]);
 
@@ -547,7 +584,7 @@ function AppInner() {
       if (activeBookId) {
         syncManager.enqueue('updateObject', { ...updated, projectId: activeBookId }).catch(() => {});
         api.updateWorldObject({ ...updated, projectId: activeBookId })
-          .then(() => showToast(`已放入「${board}」`, 'success'))
+          .then(() => showToast(`已放入�?{board}」`, 'success'))
           .catch(e => { console.error('Failed to update board', e); showToast('加入画板失败', 'error'); });
       }
       return updated;
@@ -556,10 +593,10 @@ function AppInner() {
 
   const onInspectorAction = useCallback((action: string, objectId: string, extra?: string) => {
     switch (action) {
-      case '收录为设定': {
+      case '收录为设定?: {
         const obj = objects.find(o => o.id === objectId);
-        if (!obj || obj.canonLevel !== '未收录') return;
-        addJudgment(objectId, '提升正典', '收录为设定', obj.canonLevel, '草案正典');
+        if (!obj || obj.canonLevel !== '未收录?) return;
+        addJudgment(objectId, '提升正典', '收录为设定?, obj.canonLevel, '草案正典');
         setObjects(prev => prev.map(o =>
           o.id === objectId ? { ...o, canonLevel: '草案正典' as CanonLevel, updatedAt: Date.now() } : o
         ));
@@ -594,7 +631,7 @@ function AppInner() {
     api.saveCanvasTabState({ ...canvasRecord, id: canvasId, projectId: activeBookId, version })
       .then((resp: any) => {
         if (resp && resp.error === 'VERSION_CONFLICT') {
-          showToast('版本冲突，已重新加载画板状态', 'error');
+          showToast('版本冲突，已重新加载画板状态?, 'error');
           loadProjectData(activeBookId);
         }
       })
@@ -647,9 +684,9 @@ function AppInner() {
     const template = TEMPLATES.find(t => t.type === templateType);
     const now = Date.now();
     const newObj: WorldObject = {
-      id: uid(), projectId: activeBookId || '', name: `新${templateType}`,
+      id: uid(), projectId: activeBookId || '', name: `�?{templateType}`,
       type: templateType, status: (template?.defaultStatus ?? '草稿') as ObjectStatus,
-      canonLevel: '未收录' as CanonLevel,
+      canonLevel: '未收录? as CanonLevel,
       tags: template?.defaultTags ?? [], aliases: [], selectedBoards: [tabId],
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
@@ -660,7 +697,7 @@ function AppInner() {
     if (activeBookId) {
       syncManager.enqueue('createObject', newObj).catch(() => {});
       api.createWorldObject(newObj)
-        .then(() => showToast(`已创建${templateType}`, 'success'))
+        .then(() => showToast(`已创�?{templateType}`, 'success'))
         .catch(e => { console.error('Failed to create object', e); showToast('创建对象失败', 'error'); });
     }
     setCanvasStates(prev => {
@@ -678,7 +715,7 @@ function AppInner() {
     '事件': '📅', '物品': '📦', '术语': '📖', '章节': '📄',
   };
 
-  const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录'];
+  const NAV_TABS: NavTab[] = ['文档', '画板', '设定�?, '判断记录'];
   // Compute total word count for status bar
   const totalWordCount = useMemo(() => {
     return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
@@ -717,9 +754,10 @@ function AppInner() {
         onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState}
         onAddConnection={onAddConnection} onAddSticky={onAddSticky}
         onAddToBoard={onAddToBoard} onCreateObject={onCreateObject}
+        onCreateCanvasObject={onCreateCanvasObject}
         
       />;
-      case '设定集': return <SettingCollection
+      case '设定�?: return <SettingCollection
         allObjects={objects} onSelectObject={onSelectObject}
         onNavigate={onNavigate} onUpdateObject={onUpdateObject}
         onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected}
@@ -733,7 +771,7 @@ function AppInner() {
     return (
       <div className="app-layout app-loading">
         <div className="spinner" />
-        <p style={{ color: '#888' }}>加载中...</p>
+        <p style={{ color: '#888' }}>加载�?..</p>
       </div>
     );
   }
@@ -747,7 +785,7 @@ function AppInner() {
       ) : (
         <>
           {isOffline && (
-            <div className="offline-banner">离线 ● 当前处于离线状态，编辑内容将在恢复连接后自动同步。</div>
+            <div className="offline-banner">离线 �?当前处于离线状态，编辑内容将在恢复连接后自动同步�?/div>
           )}
           <nav className="nav-bar">
             <button onClick={handleBackToBookshelf} className="nav-back" title="返回书架">
@@ -755,7 +793,7 @@ function AppInner() {
               书架
             </button>
             <div className="nav-divider" />
-            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span>
+            <span className="nav-project">{activeBook?.title ?? '设定管理�?}</span>
             {activeNavTab === '文档' && (
               <div className="nav-modes">
                 <button className={`nav-mode-btn ${editorMode === 'source' ? 'active' : ''}`} onClick={() => setEditorMode('source')} data-mode='source'>源码</button>

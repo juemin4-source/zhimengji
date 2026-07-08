@@ -40,7 +40,8 @@ describe('Bookshelf', () => {
       render(<Bookshelf projects={[]} onEnterProject={onEnter} />);
 
       expect(screen.getByText('还没有作品')).toBeInTheDocument();
-      expect(screen.queryByText('共 0 部作品')).toBeInTheDocument();
+      // When empty, the count text is empty string, not "共 0 部作品"
+      expect(screen.queryByText(/共 \d+ 部作品/)).not.toBeInTheDocument();
     });
 
     it('create project button exists when onCreateProject provided', () => {

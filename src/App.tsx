@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
 import { CANVAS_TABS, CANON_LEVELS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
@@ -48,7 +48,7 @@ function createDefaultCanvasStates(): Record<CanvasTab, CanvasTabState> {
 
 function mapDTOtoProject(dto: api.ProjectDTO): Project {
   let gradient: [string, string] = ['#6366f1', '#8b5cf6'];
-  try { const g = JSON.parse(dto.gradient); if (Array.isArray(g) && g.length >= 2) gradient = [g[0], g[1]]; } catch {}
+  try { const g = JSON.parse(dto.gradient); if (Array.isArray(g) && g.length >= 2) gradient = [g[0], g[1]]; } catch { console.warn('Failed to parse gradient', dto.gradient); }
   return {
     id: dto.id,
     title: dto.name,
@@ -354,7 +354,7 @@ function AppInner() {
             };
             try {
               await api.createWorldObject(newObj);
-            } catch { /* ignore individual failures */ }
+            } catch { console.warn('Failed to create preset object'); }
           }
         }
       }
@@ -771,3 +771,4 @@ function AppInner() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SyncManager — IndexedDB-backed retry queue for 织梦机 v1.2 (P0-01, P0-02).
  *
  * All write operations route through enqueue() before reaching Tauri invoke.
@@ -41,6 +41,7 @@ export class SyncManager {
   private statusListeners: StatusCallback[] = [];
   private onlineListeners: OnlineCallback[] = [];
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private _failedCount: number = 0;
   private processing: boolean = false;
 
   constructor() {
@@ -143,7 +144,7 @@ export class SyncManager {
   }
 
   getFailedCount(): number {
-    return 0; // Updated asynchronously
+    return this._failedCount;
   }
 
   async retryFailed(): Promise<void> {
@@ -176,6 +177,7 @@ export class SyncManager {
           if (op.retryCount > op.maxRetries) {
             op.error = 'Max retries exceeded';
             await this.updateInDB(op);
+            this._failedCount++;
             this.setSaveStatus('error');
           } else {
             await this.updateInDB(op);
@@ -280,6 +282,8 @@ export class SyncManager {
   }
 
   async clearAll(): Promise<void> {
+    this._failedCount = 0;
     await this.withDB(store => store.clear());
   }
 }
+

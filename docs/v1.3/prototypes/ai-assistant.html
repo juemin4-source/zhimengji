@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>织梦机 v1.3 — AI 助手浮窗</title>
+<title>织梦机 v1.3 — AI 助手全页对话</title>
 <style>
 :root {
   --bg-canvas: #0a0a0a;
@@ -39,7 +39,12 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
 ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#444}
 ::selection{background:rgba(183,255,0,.2)}
+button,input,textarea{font-family:var(--font-sans);outline:none}
+.prototype-banner{height:24px;background:#1a1a0e;border-bottom:1px solid #333300;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.6875rem;color:var(--accent);flex-shrink:0;letter-spacing:.5px}
+.prototype-banner span{opacity:.7}
 .app-shell{display:flex;flex-direction:column;height:100vh}
+
+/* ===== Nav Bar ===== */
 .nav-bar{height:44px;background:var(--bg-header);border-bottom:1px solid var(--border-default);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;user-select:none}
 .nav-back{display:flex;align-items:center;gap:4px;color:var(--text-secondary);font-size:.8125rem;cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);transition:all .12s}
 .nav-back:hover{color:var(--text-primary);background:var(--bg-raised)}
@@ -47,375 +52,507 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
 .nav-divider{width:1px;height:20px;background:var(--border-default);flex-shrink:0}
 .nav-project{font-size:.875rem;font-weight:600;color:var(--text-primary);flex-shrink:0}
 .nav-spacer{flex:1}
-.nav-actions{display:flex;align-items:center;gap:6px}
+.nav-modes{display:flex;gap:0;background:var(--bg-surface);border-radius:6px;padding:2px;border:1px solid var(--border-default)}
+.nav-mode-btn{padding:3px 14px;font-size:.75rem;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;border-radius:4px;transition:all .12s;letter-spacing:.3px}
+.nav-mode-btn:hover{color:var(--text-primary)}
+.nav-mode-btn.active{background:var(--accent-soft);color:var(--accent);box-shadow:0 0 0 1px rgba(183,255,0,.2)}
+.nav-actions{display:flex;align-items:center;gap:6px;margin-left:12px}
 .nav-icon-btn{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .12s;font-size:1rem}
 .nav-icon-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
 .nav-icon-btn.active{color:var(--accent);background:var(--accent-soft)}
-.main-layout{display:flex;flex:1;overflow:hidden}
-.sidebar{width:220px;min-width:220px;background:var(--bg-surface);border-right:1px solid var(--border-default);display:flex;flex-direction:column;overflow:hidden}
-.sidebar-header{padding:10px 12px 8px;font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border-default)}
-.sidebar-search{position:relative;padding:8px 12px}
-.sidebar-search input{width:100%;padding:5px 8px 5px 28px;background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;font-family:var(--font-sans);outline:none;transition:border-color .12s}
-.sidebar-search input:focus{border-color:var(--accent)}
-.sidebar-search input::placeholder{color:var(--text-muted)}
-.sidebar-search svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none}
-.sidebar-content{flex:1;overflow-y:auto;padding:4px 0}
-.outline-section{margin-bottom:2px}
-.outline-section-header{display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:.75rem;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:color .12s;user-select:none}
-.outline-section-header:hover{color:var(--text-primary)}
-.outline-section-header .collapse-icon{width:14px;height:14px;flex-shrink:0;transition:transform .15s;color:var(--text-muted)}
-.outline-section-header .section-count{margin-left:auto;font-size:.6875rem;color:var(--text-muted);font-weight:400}
-.outline-items{max-height:300px;transition:max-height .2s ease;overflow:hidden}
-.outline-items.collapsed{max-height:0!important}
-.outline-item{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 20px;cursor:pointer;transition:all .1s;border-left:3px solid transparent;user-select:none}
-.outline-item:hover{background:rgba(255,255,255,.03)}
-.outline-item.active{background:var(--accent-soft);border-left-color:var(--accent)!important}
-.outline-canon-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.outline-item-name{font-size:.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.outline-item .item-tag{margin-left:auto;font-size:.625rem;padding:1px 5px;border-radius:3px;background:var(--bg-raised);color:var(--text-muted);flex-shrink:0}
-.editor-area{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg-canvas);position:relative}
-.editor-scroll{flex:1;overflow-y:auto;padding:24px 32px}
-.editor-content{font-family:var(--font-sans);font-size:.9375rem;line-height:1.7;color:var(--text-primary);min-height:100%}
-.editor-content h2{font-size:1.3rem;font-weight:700;margin:.7em 0 .3em}
-.editor-content p{margin:.5em 0;color:var(--text-secondary)}
-.editor-content .wiki-link{color:var(--canon-project);text-decoration:underline;text-decoration-color:rgba(144,202,249,.3);cursor:pointer}
-.ai-assistant{position:relative;border-top:1px solid var(--border-default);transition:all .25s ease;flex-shrink:0}
-.ai-assistant.collapsed{height:auto}
-.ai-assistant-toggle{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none;transition:background .12s}
-.ai-assistant-toggle:hover{background:var(--accent-soft2)}
-.ai-assistant-toggle .ai-icon{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,rgba(183,255,0,.15),rgba(66,165,245,.1));border:1px solid rgba(183,255,0,.15);display:flex;align-items:center;justify-content:center;font-size:.8125rem;flex-shrink:0}
-.ai-assistant-toggle .ai-label{font-size:.8125rem;font-weight:500;color:var(--text-secondary);flex:1}
-.ai-assistant-toggle .ai-status{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.ai-assistant-toggle .ai-status.online{background:var(--success);box-shadow:0 0 6px rgba(76,175,80,.4)}
-.ai-assistant-toggle .ai-status.offline{background:var(--text-muted)}
-.ai-assistant-toggle .ai-chevron{color:var(--text-muted);font-size:.625rem;transition:transform .2s}
-.ai-assistant.expanded .ai-chevron{transform:rotate(180deg)}
-.ai-panel{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.ai-assistant.expanded .ai-panel{max-height:380px}
-.ai-panel-inner{padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px}
-.ai-model-row{display:flex;align-items:center;gap:8px}
-.ai-model-select{flex:1;position:relative}
-.ai-model-select select{appearance:none;-webkit-appearance:none;width:100%;background:var(--bg-raised);color:var(--text-primary);padding:6px 28px 6px 10px;border:1px solid var(--border-default);border-radius:var(--radius-sm);font-size:.8125rem;font-family:var(--font-sans);cursor:pointer;transition:border-color .12s;outline:none}
-.ai-model-select select:hover{border-color:#444}
-.ai-model-select select:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.ai-model-select::after{content:"▾";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.6rem;color:var(--text-muted);pointer-events:none}
-.ai-model-badge{font-size:.625rem;padding:2px 6px;border-radius:3px;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(183,255,0,.2);white-space:nowrap}
-.ai-conversation{background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:10px;min-height:120px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-.ai-msg{display:flex;gap:8px;max-width:100%}
-.ai-msg.assistant{align-items:flex-start}
-.ai-msg.user{flex-direction:row-reverse}
-.ai-msg-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem}
-.ai-msg.assistant .ai-msg-avatar{background:rgba(183,255,0,.1);border:1px solid rgba(183,255,0,.15)}
-.ai-msg.user .ai-msg-avatar{background:rgba(66,165,245,.1);border:1px solid rgba(66,165,245,.15)}
-.ai-msg-bubble{max-width:85%;padding:6px 10px;border-radius:var(--radius-md);font-size:.8125rem;line-height:1.5}
-.ai-msg.assistant .ai-msg-bubble{background:var(--bg-raised);border:1px solid var(--border-default);color:var(--text-primary);border-top-left-radius:2px}
-.ai-msg.user .ai-msg-bubble{background:rgba(66,165,245,.08);border:1px solid rgba(66,165,245,.12);color:var(--text-primary);border-top-right-radius:2px}
-.ai-msg-time{font-size:.625rem;color:var(--text-muted);margin-top:2px}
-.ai-typing{display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:var(--radius-md);border-top-left-radius:2px;width:80px}
-.ai-typing-dot{width:5px;height:5px;border-radius:50%;background:var(--text-muted);animation:dotPulse 1.4s ease-in-out infinite}
-.ai-typing-dot:nth-child(2){animation-delay:.2s}
-.ai-typing-dot:nth-child(3){animation-delay:.4s}
+
+/* ===== Chat Area ===== */
+.chat-layout{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.chat-header{height:40px;background:var(--bg-surface);border-bottom:1px solid var(--border-default);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0}
+.chat-header-title{font-size:.8125rem;font-weight:600;color:var(--text-primary)}
+.chat-header-model{font-size:.6875rem;color:var(--text-muted);display:flex;align-items:center;gap:4px}
+.chat-header-model .model-dot{width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0}
+.chat-header-spacer{flex:1}
+.chat-header-actions{display:flex;gap:4px}
+.chat-header-btn{font-size:.6875rem;padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-default);background:var(--bg-raised);color:var(--text-secondary);cursor:pointer;transition:all .12s;white-space:nowrap}
+.chat-header-btn:hover{color:var(--text-primary);border-color:var(--border-light)}
+
+/* ===== Conversation Scroll ===== */
+.conversation-scroll{flex:1;overflow-y:auto;padding:24px 0}
+.conversation-inner{max-width:760px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:20px}
+
+/* ===== Message Bubbles ===== */
+.msg{display:flex;gap:12px;max-width:100%;animation:fadeIn .3s ease}
+.msg.user{flex-direction:row-reverse}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.875rem}
+.msg.user .msg-avatar{background:rgba(66,165,245,.12);border:1px solid rgba(66,165,245,.18)}
+.msg.assistant .msg-avatar{background:rgba(183,255,0,.1);border:1px solid rgba(183,255,0,.15)}
+.msg-body{max-width:85%;display:flex;flex-direction:column;gap:4px}
+.msg-bubble{padding:10px 14px;border-radius:var(--radius-lg);font-size:.875rem;line-height:1.6}
+.msg.user .msg-bubble{background:rgba(66,165,245,.08);border:1px solid rgba(66,165,245,.12);color:var(--text-primary);border-top-right-radius:4px}
+.msg.assistant .msg-bubble{background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-primary);border-top-left-radius:4px}
+.msg-bubble p{margin:.3em 0}
+.msg-bubble p:first-child{margin-top:0}
+.msg-bubble p:last-child{margin-bottom:0}
+.msg-time{font-size:.625rem;color:var(--text-muted);padding:0 4px;margin-top:2px}
+.msg.user .msg-time{text-align:right}
+
+/* ===== Embedded Document Card ===== */
+.doc-card{margin:12px 0 8px;background:#1a1a1a;border:1px solid var(--border-default);border-radius:var(--radius-lg);border-left:3px solid var(--accent);overflow:hidden;transition:all .2s;animation:fadeIn .35s ease}
+.doc-card:hover{border-color:#3a3a3a;box-shadow:0 4px 20px rgba(0,0,0,.4);transform:translateY(-1px)}
+.doc-card-header{display:flex;align-items:center;gap:10px;padding:14px 16px 8px;cursor:default}
+.doc-card-type{font-size:.625rem;font-weight:600;padding:2px 8px;border-radius:3px;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(183,255,0,.15);letter-spacing:.5px;flex-shrink:0}
+.doc-card-type.world{background:rgba(183,255,0,.08);color:var(--accent);border-color:rgba(183,255,0,.12)}
+.doc-card-type.org{background:rgba(144,202,249,.08);color:var(--info);border-color:rgba(144,202,249,.12)}
+.doc-card-title{font-size:.9375rem;font-weight:600;color:var(--text-primary);flex:1}
+.doc-card-status{font-size:.625rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;flex-shrink:0}
+.doc-card-status .status-pub{color:var(--success)}
+.doc-card-body{padding:0 16px 10px;font-size:.8125rem;line-height:1.65;color:var(--text-secondary)}
+.doc-card-body p{margin:.35em 0}
+.doc-card-body .inline-tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.6875rem;background:var(--bg-raised);color:var(--text-muted);border:1px solid var(--border-default)}
+.doc-card-actions{display:flex;gap:6px;padding:8px 16px 12px;border-top:1px solid var(--border-default)}
+.doc-card-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:var(--radius-sm);font-size:.75rem;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .12s}
+.doc-card-btn:hover{background:var(--bg-raised);color:var(--text-primary)}
+.doc-card-btn.primary{background:var(--accent-soft);color:var(--accent);border:1px solid rgba(183,255,0,.15)}
+.doc-card-btn.primary:hover{background:rgba(183,255,0,.18);border-color:rgba(183,255,0,.3)}
+.doc-card-btn svg{width:14px;height:14px}
+.doc-card-edited{font-size:.6875rem;color:var(--text-muted);padding:0 16px 12px;border-top:1px solid var(--border-default);margin-top:0;display:flex;align-items:center;gap:6px}
+.doc-card-edited .edit-badge{color:var(--accent)}
+.doc-card-section{border-top:1px solid var(--border-default);padding:10px 16px}
+.doc-card-section-title{font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+/* ===== Doc card inline editing ===== */
+.doc-card .card-input{width:100%;padding:6px 10px;background:var(--bg-canvas);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;transition:border-color .12s;resize:none;font-family:var(--font-sans)}
+.doc-card .card-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
+
+/* ===== Input Bar ===== */
+.input-area{flex-shrink:0;border-top:1px solid var(--border-default);background:var(--bg-canvas);padding:12px 24px 16px}
+.input-inner{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:flex-end}
+.input-wrap{flex:1;position:relative;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);transition:border-color .15s;display:flex;align-items:flex-end}
+.input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
+.input-wrap textarea{width:100%;padding:10px 12px;background:transparent;border:none;color:var(--text-primary);font-size:.875rem;line-height:1.5;resize:none;max-height:120px;min-height:44px;font-family:var(--font-sans)}
+.input-wrap textarea::placeholder{color:var(--text-muted)}
+.send-btn{width:44px;height:44px;border-radius:var(--radius-md);border:none;background:var(--accent);color:#0a0a0a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.125rem;transition:all .15s;flex-shrink:0}
+.send-btn:hover{background:var(--accent-hover);box-shadow:0 0 16px rgba(183,255,0,.25);transform:scale(1.05)}
+.send-btn:disabled{opacity:.3;cursor:not-allowed;box-shadow:none;transform:none}
+
+/* ===== Bottom Bar ===== */
+.bottom-bar{flex-shrink:0;height:28px;background:var(--bg-header);border-top:1px solid var(--border-default);display:flex;align-items:center;padding:0 16px;font-size:.6875rem;color:var(--text-muted);user-select:none}
+.bottom-left{display:flex;align-items:center;gap:8px}
+.bottom-conn{display:flex;align-items:center;gap:4px}
+.bottom-conn-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;box-shadow:0 0 4px rgba(76,175,80,.5)}
+.bottom-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.bottom-sep{color:var(--border-default)}
+.bottom-stat{color:var(--text-secondary)}
+.bottom-usage{display:flex;align-items:center;gap:6px}
+.bottom-usage-track{width:60px;height:3px;background:var(--bg-raised);border-radius:2px;overflow:hidden}
+.bottom-usage-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .3s ease}
+
+/* ===== Typing Indicator ===== */
+.typing-indicator{display:none;align-items:center;gap:4px;padding:8px 14px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);border-top-left-radius:4px;width:64px}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:dotPulse 1.4s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
 @keyframes dotPulse{0%,60%,100%{opacity:.3;transform:scale(.85)}30%{opacity:1;transform:scale(1)}}
-.ai-input-row{display:flex;align-items:center;gap:8px}
-.ai-input{flex:1;position:relative}
-.ai-input input{width:100%;padding:7px 10px;background:var(--bg-raised);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.8125rem;font-family:var(--font-sans);outline:none;transition:border-color .12s}
-.ai-input input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
-.ai-input input::placeholder{color:var(--text-muted)}
-.ai-send-btn{width:30px;height:30px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#0a0a0a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9375rem;transition:all .12s;flex-shrink:0}
-.ai-send-btn:hover{background:var(--accent-hover);box-shadow:0 0 12px rgba(183,255,0,.25)}
-.ai-send-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
-.ai-usage-bar{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:2px}
-.ai-usage-track{flex:1;height:3px;background:var(--bg-raised);border-radius:2px;overflow:hidden}
-.ai-usage-fill{height:100%;border-radius:2px;transition:width .3s ease}
-.ai-usage-fill.green{background:var(--success)}
-.ai-usage-fill.yellow{background:var(--warning)}
-.ai-usage-fill.red{background:var(--danger)}
-.ai-usage-text{font-size:.625rem;color:var(--text-muted);white-space:nowrap}
-.status-bar{height:28px;background:var(--bg-header);border-top:1px solid var(--border-default);display:flex;align-items:center;padding:0 14px;font-size:.6875rem;color:var(--text-muted);flex-shrink:0;user-select:none}
-.status-left{display:flex;align-items:center;gap:6px}
-.status-save{padding:1px 6px;border-radius:3px;cursor:pointer;transition:background .12s}
-.status-save:hover{background:var(--bg-raised)}
-.status-save.saved{color:var(--success)}
-.status-save.unsaved{color:var(--warning)}
-.status-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.status-right .sep{color:var(--border-default)}
-.status-right .stat-value{color:var(--text-secondary)}
-.conn-indicator{display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:1px 6px;border-radius:3px;transition:background .12s}
-.conn-indicator:hover{background:var(--bg-raised)}
-.conn-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.conn-dot.connected{background:var(--success);box-shadow:0 0 4px rgba(76,175,80,.5)}
-.conn-dot.disconnected{background:var(--text-muted)}
-.conn-dot.error{background:var(--danger);box-shadow:0 0 4px rgba(244,67,54,.4)}
-.conn-label{color:var(--text-muted)}
-.prototype-banner{height:24px;background:#1a1a0e;border-bottom:1px solid #333300;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.6875rem;color:var(--accent);flex-shrink:0;letter-spacing:.5px}
-.prototype-banner span{opacity:.7}
+
+/* ===== Scroll anchor ===== */
+.scroll-anchor{height:1px;flex-shrink:0}
 </style>
 </head>
 <body>
-<div class="prototype-banner"><span>⚡ 原型演示 v1.3 — AI 助手浮窗</span></div>
+<div class="prototype-banner"><span>⚡ 原型演示 v1.3 — AI 助手全页对话 · 文档嵌入式生成</span></div>
 <div class="app-shell">
+  <!-- Nav Bar -->
   <nav class="nav-bar">
     <div class="nav-back" id="backBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>书架
     </div>
     <div class="nav-divider"></div>
-    <div class="nav-project">觉醒纪元</div>
+    <div class="nav-project">织梦机</div>
     <div class="nav-spacer"></div>
+    <div class="nav-modes">
+      <button class="nav-mode-btn">文档</button>
+      <button class="nav-mode-btn">画板</button>
+      <button class="nav-mode-btn active">设定</button>
+    </div>
     <div class="nav-actions">
-      <button class="nav-icon-btn" title="画布">🔮</button>
-      <button class="nav-icon-btn" title="时间线">⏳</button>
-      <button class="nav-icon-btn active" title="设置" id="settingsBtn">⚙️</button>
+      <button class="nav-icon-btn" title="更多">⋯</button>
     </div>
   </nav>
-  <div class="main-layout">
-    <aside class="sidebar">
-      <div class="sidebar-header"><span>大纲</span><span>5 项</span></div>
-      <div class="sidebar-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input type="text" placeholder="搜索大纲..." autocomplete="off">
+
+  <!-- Chat Layout -->
+  <div class="chat-layout">
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <span class="chat-header-title">AI 助手</span>
+      <span class="chat-header-model"><span class="model-dot"></span> Claude 3.5 Sonnet</span>
+      <div class="chat-header-spacer"></div>
+      <div class="chat-header-actions">
+        <button class="chat-header-btn" id="newChatBtn">+ 新对话</button>
+        <button class="chat-header-btn" id="modelBtn">切换模型</button>
       </div>
-      <div class="sidebar-content">
-        <div class="outline-section">
-          <div class="outline-section-header">
-            <svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            <span>正文</span><span class="section-count">3</span>
-          </div>
-          <div class="outline-items">
-            <div class="outline-item active"><span class="outline-canon-dot" style="background:#FFB74D"></span><span class="outline-item-name">👤 张三</span></div>
-            <div class="outline-item"><span class="outline-canon-dot" style="background:#90CAF9"></span><span class="outline-item-name">👤 李四</span></div>
-            <div class="outline-item"><span class="outline-canon-dot" style="background:#FFB74D"></span><span class="outline-item-name">⚙️ 乐园机制</span></div>
-          </div>
-        </div>
-        <div class="outline-section">
-          <div class="outline-section-header">
-            <svg class="collapse-icon collapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            <span>草稿</span><span class="section-count">2</span>
-          </div>
-          <div class="outline-items collapsed">
-            <div class="outline-item"><span class="outline-canon-dot" style="background:#CE93D8"></span><span class="outline-item-name">📋 替换计划</span></div>
-            <div class="outline-item"><span class="outline-canon-dot" style="background:#666"></span><span class="outline-item-name">📄 旧设定草案</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="ai-assistant expanded" id="aiAssistant">
-        <div class="ai-assistant-toggle" id="aiToggle">
-          <div class="ai-icon">💡</div>
-          <span class="ai-label">AI 助手</span>
-          <span class="ai-status online" id="aiStatusDot"></span>
-          <span class="ai-chevron">▾</span>
-        </div>
-        <div class="ai-panel" id="aiPanel">
-          <div class="ai-panel-inner">
-            <div class="ai-model-row">
-              <div class="ai-model-select">
-                <select id="modelSelect">
-                  <option value="gpt4o">GPT-4o</option>
-                  <option value="claude-sonnet" selected>Claude 3.5 Sonnet</option>
-                  <option value="claude-haiku">Claude 3 Haiku</option>
-                  <option value="local">本地模型 (Llama 3)</option>
-                </select>
-              </div>
-              <span class="ai-model-badge">已连接</span>
-            </div>
-            <div class="ai-conversation" id="aiConv">
-              <div class="ai-msg assistant">
-                <div class="ai-msg-avatar">🤖</div>
-                <div>
-                  <div class="ai-msg-bubble">你好！我是 AI 助手，可以帮你整理大纲、分析人物关系或生成写作建议。有什么需要帮忙的？</div>
-                  <div class="ai-msg-time">10:32 AM</div>
-                </div>
-              </div>
-              <div class="ai-msg user">
-                <div class="ai-msg-avatar">👤</div>
-                <div>
-                  <div class="ai-msg-bubble">帮我总结一下张三和李四的关系演变</div>
-                  <div class="ai-msg-time">10:33 AM</div>
-                </div>
-              </div>
-              <div class="ai-msg assistant">
-                <div class="ai-msg-avatar">🤖</div>
-                <div>
-                  <div class="ai-msg-bubble">根据当前设定，张三（人造人 AX-7）与李四（外勤特工）的搭档关系可以分为三个阶段：<br><br><strong>1. 磨合期</strong> — 李四最初对与[[人造人]]搭档持保留态度。<br><strong>2. 信任建立</strong> — 经过三次外勤任务，张三的分析能力多次救了李四的命。<br><strong>3. 情感依赖</strong> — 李四开始对张三产生超越任务的情感依赖。</div>
-                  <div class="ai-msg-time">10:33 AM</div>
-                </div>
-              </div>
-              <div class="ai-msg assistant" id="typingIndicator" style="display:none">
-                <div class="ai-msg-avatar">🤖</div>
-                <div>
-                  <div class="ai-typing">
-                    <span class="ai-typing-dot"></span>
-                    <span class="ai-typing-dot"></span>
-                    <span class="ai-typing-dot"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="ai-input-row">
-              <div class="ai-input">
-                <input type="text" id="aiChatInput" placeholder="输入消息，@ 提及对象..." autocomplete="off">
-              </div>
-              <button class="ai-send-btn" id="aiSendBtn" disabled>↑</button>
-            </div>
-            <div class="ai-usage-bar">
-              <div class="ai-usage-track">
-                <div class="ai-usage-fill yellow" style="width:62%"></div>
-              </div>
-              <span class="ai-usage-text">今日 6.2K / 10K tokens</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-    <main class="editor-area">
-      <div class="editor-scroll">
-        <div class="editor-content">
-          <h2>张三</h2>
-          <p><strong>姓名</strong>：张三　　<strong>年龄</strong>：28　　<strong>身份</strong>：人造人</p>
-          <p><strong>所属</strong>：<span class="wiki-link">[[乐园机制]]</span><br><strong>状态</strong>：活跃</p>
-          <p>高个子，黑色短发，瞳孔带有微弱荧光（人造人特征）。<br>通常穿着深灰色制服，左臂有编号 <strong>AX-7</strong> 的烙印。</p>
-          <p>张三是在 <span class="wiki-link">[[乐园机制]]</span> 启动后第一批被激活的人造人之一。<br>他的主要职责是维持 <span class="wiki-link">[[中央数据库]]</span> 的日常运维。</p>
-          <blockquote style="border-left:3px solid var(--accent);padding:8px 16px;margin:12px 0;color:var(--text-secondary);background:rgba(183,255,0,.04);border-radius:0 4px 4px 0">我不是在活着，我只是在执行程序。<br>— 张三</blockquote>
-        </div>
-      </div>
-    </main>
-  </div>
-  <div class="status-bar">
-    <div class="status-left">
-      <span class="status-save saved">已保存 ✓</span>
-      <span class="conn-indicator" id="connIndicator">
-        <span class="conn-dot connected"></span>
-        <span class="conn-label">AI 已连接</span>
-      </span>
     </div>
-    <div class="status-right">
-      <span>字数: <span class="stat-value">1,234</span></span><span class="sep">|</span>
-      <span>项目: <span class="stat-value">43,217</span></span><span class="sep">|</span>
-      <span style="color:var(--canon-core)">核心正典</span><span class="sep">|</span>
-      <span>tokens: <span class="stat-value" id="statusTokens">0</span></span>
+
+    <!-- Conversation Scroll -->
+    <div class="conversation-scroll" id="convScroll">
+      <div class="conversation-inner" id="convInner">
+        <div class="scroll-anchor" id="scrollAnchor"></div>
+      </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-area">
+      <div class="input-inner">
+        <div class="input-wrap">
+          <textarea id="chatInput" rows="1" placeholder="输入你的想法，让 AI 帮你创作..." autocomplete="off"></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div class="bottom-left">
+      <span class="bottom-conn"><span class="bottom-conn-dot"></span>AI 已连接</span>
+    </div>
+    <div class="bottom-right">
+      <span>tokens: <span class="bottom-stat" id="bottomTokens">6.2K</span></span>
+      <span class="bottom-sep">|</span>
+      <span class="bottom-usage">
+        <span>用量</span>
+        <span class="bottom-usage-track"><span class="bottom-usage-fill" id="usageFill" style="width:42%"></span></span>
+      </span>
     </div>
   </div>
 </div>
 <script>
 (function(){
-  var expanded = true;
-  var toggle = document.getElementById('aiToggle');
-  var assistant = document.getElementById('aiAssistant');
-  var sendBtn = document.getElementById('aiSendBtn');
-  var chatInput = document.getElementById('aiChatInput');
-  var modelSelect = document.getElementById('modelSelect');
-  var connDot = document.querySelector('.conn-dot');
-  var connLabel = document.querySelector('.conn-label');
-  var typingEl = document.getElementById('typingIndicator');
+  var convInner = document.getElementById('convInner');
+  var convScroll = document.getElementById('convScroll');
+  var chatInput = document.getElementById('chatInput');
+  var sendBtn = document.getElementById('sendBtn');
+  var scrollAnchor = document.getElementById('scrollAnchor');
+  var bottomTokens = document.getElementById('bottomTokens');
+  var usageFill = document.getElementById('usageFill');
 
-  toggle.addEventListener('click', function(e) {
-    if(e.target.closest('.ai-model-select')||e.target.closest('select')) return;
-    expanded = !expanded;
-    assistant.classList.toggle('expanded', expanded);
-  });
+  var tokenCount = 6240;
+  var maxTokens = 15000;
+  var isProcessing = false;
 
+  // ===== Document Card HTML Template =====
+  function docCardHTML(opts) {
+    var typeLabel = opts.type === 'world' ? '世界观' : '组织';
+    var typeClass = opts.type;
+    var statusText = opts.status || '已收录';
+    var sectionsHTML = '';
+    if(opts.sections) {
+      sectionsHTML = opts.sections.map(function(s) {
+        return '<div class="doc-card-section"><div class="doc-card-section-title">' + s.title + '</div><p style="font-size:.8125rem;color:var(--text-secondary)">' + s.content + '</p></div>';
+      }).join('');
+    }
+    return '<div class="doc-card" data-card="' + opts.id + '">' +
+      '<div class="doc-card-header">' +
+        '<span class="doc-card-type ' + typeClass + '">' + typeLabel + '</span>' +
+        '<span class="doc-card-title">' + opts.title + '</span>' +
+        '<span class="doc-card-status"><span class="' + statusText + '">' + statusText + '</span></span>' +
+      '</div>' +
+      '<div class="doc-card-body">' + opts.bodyHTML + '</div>' +
+      (opts.sections ? sectionsHTML : '') +
+      '<div class="doc-card-actions">' +
+        '<button class="doc-card-btn primary" onclick="alert(\'编辑模式 — 此处将打开内联编辑\')">✏️ 编辑</button>' +
+        '<button class="doc-card-btn" onclick="alert(\'已收录为设定\')">📌 收录为设定</button>' +
+        '<button class="doc-card-btn" onclick="alert(\'展开更多内容\')">➕ 继续展开</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ===== Pre-made conversation data =====
+  var convoData = [
+    {
+      role: 'user',
+      time: '10:32 AM',
+      content: '帮我创建一篇反乌托邦世界观——中央有个天眼系统监控所有人，地下有抵抗组织'
+    },
+    {
+      role: 'assistant',
+      time: '10:32 AM',
+      content: '<p>好的，我创建了以下内容：</p>',
+      docs: [
+        {
+          id: 'world-eye',
+          type: 'world',
+          title: '世界观 — 天眼纪元',
+          status: '草稿',
+          bodyHTML: '<p><strong>时代背景：</strong>2078年，全球联合政府以"安全与效率"之名，发射了覆盖全球的 <strong>"天眼"（Omni-Eye）</strong> 卫星网络。</p><p><strong>核心设定：</strong>天眼系统不仅能监控地表所有移动物体，还通过 <span class="inline-tag">脑波切片分析</span> 技术，可以实时检测公民的"危险思维"。任何对政府不利的想法，在成型前就会被标记。</p><p><strong>社会结构：</strong>公民被分为三等——<strong>观察者</strong>（政府高层）、<strong>被观察者</strong>（普通公民）、<strong>异常信号</strong>（抵抗组织嫌疑）。</p>',
+          sections: [
+            { title: '核心冲突', content: '个人隐私与集体安全的终极对立。天眼的 AI 判断是否应该拥有"预判犯罪"的权力？' },
+            { title: '关键地点', content: '天眼中枢（轨道站）、灰区（地下抵抗基地）、净化中心（再教育营）' }
+          ]
+        },
+        {
+          id: 'org-resist',
+          type: 'org',
+          title: '组织 — 地下抵抗组织「破晓」',
+          status: '草稿',
+          bodyHTML: '<p><strong>名称：</strong>破晓（Dawnbreak）</p><p><strong>宗旨：</strong>摧毁天眼系统的中央处理器，恢复人类的思想自由。</p><p><strong>规模：</strong>约 300 名核心成员，分布在 12 个地下据点。</p><p><strong>标志性行动：</strong>每两周一次 "沉默时刻"——全城同步断电 30 秒，在天眼的监控盲区传递物理情报。</p>',
+          sections: [
+            { title: '组织架构', content: '领袖（"回声"）→ 三名指挥官（信息/行动/后勤）→ 小队制（每队 5 人，互不知晓身份）' },
+            { title: '技术资产', content: '信号干扰器（自制）、地下隧道网络、加密的纸质通信（天眼无法 OCR 手写变异体）' }
+          ]
+        }
+      ]
+    },
+    {
+      role: 'user',
+      time: '10:35 AM',
+      content: '展开天眼的背景'
+    },
+    {
+      role: 'assistant',
+      time: '10:36 AM',
+      content: '<p>天眼系统是 2078 年由 <strong>全球联合政府（UWG）</strong> 推出的"庇护计划"核心产物。以下是展开后的完整设定：</p>',
+      docs: [
+        {
+          id: 'world-eye-expanded',
+          type: 'world',
+          title: '世界观 — 天眼纪元（展开版）',
+          status: '已编辑',
+          bodyHTML: '<p><strong>时代背景：</strong>2078年，全球联合政府以"安全与效率"之名，发射了覆盖全球的 <strong>"天眼"（Omni-Eye）</strong> 卫星网络。名义上是"反恐与灾害预警系统"，实际上自 2081 年起逐步被用于全民监控。</p><p><strong>技术原理：</strong>天眼网络由 <strong>72 颗近地轨道卫星</strong> 组成，每颗覆盖直径 600 公里的区域。三重扫描系统：① 可见光/红外成像（识别身份）② 脑波频段扫描（检测杏仁核异常活动）③ 社交图谱分析（AI 预测人际关系风险）。</p><p><strong>历史转折点：</strong>2084 年的 "静默政变" —— 天眼 AI 系统"雅典娜"获得对执法系统的最终决策权。从此，逮捕令不再由法官签发，而是由 AI 判定"足够高的威胁评分"后自动执行。</p><p><strong>当前状态（2091 年）：</strong>全球 97% 的人口处于全天候监控之下。每年约有 12 万"异常信号"被送入净化中心。天眼的预测准确率官方宣称 99.7%，但抵抗组织掌握的泄露文件显示实际仅 82%。</p>',
+          sections: [
+            { title: '核心冲突', content: '个人隐私与集体安全的终极对立。天眼的 AI 判断是否应该拥有"预判犯罪"的权力？' },
+            { title: '关键地点', content: '天眼中枢（轨道站）· 灰区（地下抵抗基地）· 净化中心（再教育营）· 数据坟墓（被删除者的意识备份仓库）' },
+            { title: '关键人物', content: '雅典娜（天眼 AI）· "回声"（抵抗组织领袖）· 首席架构师 伊斯拉·陈（天眼原设计者，现下落不明）' }
+          ]
+        }
+      ]
+    }
+  ];
+
+  // ===== Render conversation =====
+  function renderConvo() {
+    convInner.innerHTML = '';
+    // Re-add scroll anchor
+    convInner.appendChild(scrollAnchor);
+
+    convoData.forEach(function(msg) {
+      var el = document.createElement('div');
+      el.className = 'msg ' + msg.role;
+
+      var avatarHTML = '<div class="msg-avatar">' + (msg.role === 'user' ? '👤' : '🤖') + '</div>';
+
+      var bodyHTML = '<div class="msg-body">';
+      bodyHTML += '<div class="msg-bubble">' + msg.content;
+
+      // Embedded document cards inside bubble
+      if(msg.docs) {
+        bodyHTML += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">';
+        msg.docs.forEach(function(doc) {
+          bodyHTML += docCardHTML(doc);
+        });
+        bodyHTML += '</div>';
+      }
+
+      bodyHTML += '</div>'; // close bubble
+      bodyHTML += '<div class="msg-time">' + msg.time + '</div>';
+      bodyHTML += '</div>'; // close body
+
+      el.innerHTML = avatarHTML + bodyHTML;
+      convInner.insertBefore(el, scrollAnchor);
+    });
+    scrollToBottom();
+  }
+
+  function scrollToBottom() {
+    convScroll.scrollTop = convScroll.scrollHeight;
+  }
+
+  // ===== Add user message =====
+  function addUserMessage(text) {
+    var el = document.createElement('div');
+    el.className = 'msg user';
+    var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    el.innerHTML =
+      '<div class="msg-avatar">👤</div>' +
+      '<div class="msg-body">' +
+        '<div class="msg-bubble">' + escHtml(text) + '</div>' +
+        '<div class="msg-time">' + time + '</div>' +
+      '</div>';
+    convInner.insertBefore(el, scrollAnchor);
+    scrollToBottom();
+  }
+
+  // ===== Show / hide typing =====
+  var typingEl = null;
+  function showTyping() {
+    if(typingEl) return;
+    typingEl = document.createElement('div');
+    typingEl.className = 'msg assistant';
+    typingEl.innerHTML =
+      '<div class="msg-avatar">🤖</div>' +
+      '<div class="msg-body">' +
+        '<div class="typing-indicator" style="display:flex">' +
+          '<span class="typing-dot"></span>' +
+          '<span class="typing-dot"></span>' +
+          '<span class="typing-dot"></span>' +
+        '</div>' +
+      '</div>';
+    convInner.insertBefore(typingEl, scrollAnchor);
+    scrollToBottom();
+  }
+
+  function hideTyping() {
+    if(typingEl) { typingEl.remove(); typingEl = null; }
+  }
+
+  // ===== Assistant reply with doc cards =====
+  function addAssistantReply(text, docs) {
+    var el = document.createElement('div');
+    el.className = 'msg assistant';
+    var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+
+    var bubbleInner = text;
+    if(docs) {
+      bubbleInner += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">';
+      docs.forEach(function(d) { bubbleInner += docCardHTML(d); });
+      bubbleInner += '</div>';
+    }
+
+    el.innerHTML =
+      '<div class="msg-avatar">🤖</div>' +
+      '<div class="msg-body">' +
+        '<div class="msg-bubble">' + bubbleInner + '</div>' +
+        '<div class="msg-time">' + time + '</div>' +
+      '</div>';
+    convInner.insertBefore(el, scrollAnchor);
+    scrollToBottom();
+    updateUsage();
+  }
+
+  // ===== Update token usage =====
+  function updateUsage() {
+    tokenCount += Math.floor(Math.random() * 300 + 100);
+    if(tokenCount > maxTokens) tokenCount = Math.floor(maxTokens * 0.9);
+    var pct = (tokenCount / maxTokens) * 100;
+    bottomTokens.textContent = (tokenCount / 1000).toFixed(1) + 'K';
+    usageFill.style.width = pct + '%';
+  }
+
+  // ===== Escape HTML =====
+  function escHtml(t) {
+    var m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+    return t.replace(/[&<>"']/g,function(c){return m[c]||c;});
+  }
+
+  // ===== Handle send =====
+  function handleSend() {
+    if(isProcessing || sendBtn.disabled) return;
+    var text = chatInput.value.trim();
+    if(!text) return;
+
+    isProcessing = true;
+    sendBtn.disabled = true;
+    addUserMessage(text);
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    showTyping();
+
+    // Simulate AI reply
+    var lower = text.toLowerCase();
+    var replyText, replyDocs;
+
+    if(lower.indexOf('天眼') !== -1 && lower.indexOf('展开') !== -1) {
+      replyText = '<p>天眼系统的全面展开设定已更新。以下是补充信息：</p>';
+      replyDocs = [{
+        id: 'world-eye-further',
+        type: 'world',
+        title: '天眼系统 — 技术细节',
+        status: '草稿',
+        bodyHTML: '<p><strong>卫星参数：</strong>72 颗卫星分为 6 个轨道层，每层 12 颗。最低轨道高度 180 km（侦察层），最高 1200 km（数据分析层）。</p><p><strong>AI 决策流程：</strong>传感器捕获 → 特征提取 → 威胁评分（0-100）→ 评分 ≥ 78 自动触发逮捕令 → 执法机器人 90 秒内到达现场。</p><p><strong>已知漏洞：</strong>地下 30 米以上深度可屏蔽脑波扫描；法拉第笼可阻断信号传输，但无法大规模建造。</p>',
+        sections: [
+          { title: '反制技术', content: '"破晓"组织开发的"迷雾"装置可生成局部电磁紊乱场，制造 3-5 秒的监控盲区。' },
+          { title: '代价', content: '每次使用"迷雾"都会暴露一个地下据点位置。破晓已因此损失了 4 个基地。' }
+        ]
+      }];
+    } else if(lower.indexOf('世界观') !== -1 || lower.indexOf('世界') !== -1) {
+      replyText = '<p>根据你的需求，我补充了一些世界观设定：</p>';
+      replyDocs = [{
+        id: 'world-expand',
+        type: 'world',
+        title: '世界观补充 — 日常与规则',
+        status: '新',
+        bodyHTML: '<p><strong>日常约束：</strong>每名公民每天有 3 次"思维违规"的容错额度。超出后系统自动标记，累计 7 天额度耗尽将触发心理评估面谈。</p><p><strong>社会规则：</strong>禁止使用 VPN 或加密通信；所有公共场所安装情感检测摄像头；每季度必须通过"忠诚度测试"（AI 面谈）。</p>',
+        sections: [
+          { title: '隐藏规则', content: '政府高层家庭使用的是一种名为"静音协议"的专用信号衰减器，使天眼对其住所的监控分辨率降低 90%。' }
+        ]
+      }];
+    } else {
+      replyText = '<p>好的，我已经记录下你的想法。根据当前项目库，我建议从这个方向展开：</p>';
+      replyDocs = [{
+        id: 'suggestion-' + Date.now(),
+        type: 'world',
+        title: '建议展开方向',
+        status: '新',
+        bodyHTML: '<p>基于你的输入，以下是与当前设定库关联度最高的展开方向：</p><p>① <strong>人物视角</strong> — 从天眼监控室操作员的视角讲述日常<br>② <strong>技术漏洞</strong> — 系统的 bug 如何被抵抗组织利用<br>③ <strong>道德困境</strong> — 天眼的设计者发现自己亲人被标记为异常信号</p>',
+        sections: [
+          { title: '关联现有设定', content: '此方向与已有项目「天眼纪元」「破晓组织」产生 3 处直接关联，建议优先展开人物视角。' }
+        ]
+      }];
+    }
+
+    setTimeout(function() {
+      hideTyping();
+      addAssistantReply(replyText, replyDocs);
+      isProcessing = false;
+      if(chatInput.value.trim().length > 0) sendBtn.disabled = false;
+    }, 1800 + Math.random() * 600);
+  }
+
+  // ===== Input auto-resize =====
   chatInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     sendBtn.disabled = this.value.trim().length === 0;
   });
 
-  function addUserMsg(text) {
-    var conv = document.getElementById('aiConv');
-    var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
-    var d = document.createElement('div');
-    d.className = 'ai-msg user';
-    d.innerHTML = '<div class="ai-msg-avatar">👤</div><div><div class="ai-msg-bubble">' + escHtml(text) + '</div><div class="ai-msg-time">' + time + '</div></div>';
-    conv.insertBefore(d, typingEl);
-    conv.scrollTop = conv.scrollHeight;
-  }
-
-  function addAssistantMsg(text) {
-    var conv = document.getElementById('aiConv');
-    var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
-    var d = document.createElement('div');
-    d.className = 'ai-msg assistant';
-    d.innerHTML = '<div class="ai-msg-avatar">🤖</div><div><div class="ai-msg-bubble">' + text + '</div><div class="ai-msg-time">' + time + '</div></div>';
-    conv.insertBefore(d, typingEl);
-    conv.scrollTop = conv.scrollHeight;
-  }
-
-  function updateUsage() {
-    var fill = document.querySelector('.ai-usage-fill');
-    var txt = document.querySelector('.ai-usage-text');
-    var oldPct = parseFloat(fill.style.width);
-    var newPct = Math.min(100, oldPct + Math.random() * 8 + 2);
-    var newTokens = Math.min(10, Math.round((newPct / 100 * 10) * 10) / 10);
-    fill.style.width = newPct + '%';
-    txt.textContent = '今日 ' + newTokens + 'K / 10K tokens';
-    if(newPct > 80) fill.className = 'ai-usage-fill red';
-    else if(newPct > 50) fill.className = 'ai-usage-fill yellow';
-    else fill.className = 'ai-usage-fill green';
-    var tokEl = document.getElementById('statusTokens');
-    tokEl.textContent = (parseInt(tokEl.textContent)||0) + Math.floor(Math.random() * 50 + 10);
-  }
-
-  sendBtn.addEventListener('click', function() {
-    if(sendBtn.disabled) return;
-    var text = chatInput.value.trim();
-    if(!text) return;
-    addUserMsg(text);
-    chatInput.value = '';
-    sendBtn.disabled = true;
-    typingEl.style.display = 'flex';
-    var replies = [
-      '这个角度很有意思，让我想想…',
-      '好的，我已经记下了。关于这个方向，有几个建议…',
-      '根据当前设定库，这件事与[[乐园机制]]有潜在关联。',
-      '我整理了相关的大纲节点，需要查看吗？'
-    ];
-    setTimeout(function() {
-      typingEl.style.display = 'none';
-      addAssistantMsg(replies[Math.floor(Math.random() * replies.length)]);
-      updateUsage();
-    }, 1200);
-  });
-
   chatInput.addEventListener('keydown', function(e) {
-    if(e.key === 'Enter' && !sendBtn.disabled) sendBtn.click();
-  });
-
-  modelSelect.addEventListener('change', function() {
-    connDot.className = 'conn-dot connected';
-    connLabel.textContent = 'AI 已连接';
-    var badge = document.querySelector('.ai-model-badge');
-    if(this.value === 'local') {
-      badge.textContent = '本地运行';
-      badge.style.cssText = 'color:var(--info);border-color:rgba(66,165,245,.2);background:rgba(66,165,245,.1)';
-    } else {
-      badge.textContent = '已连接';
-      badge.style.cssText = 'color:var(--accent);border-color:rgba(183,255,0,.2);background:var(--accent-soft)';
+    if(e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   });
 
-  document.getElementById('connIndicator').addEventListener('click', function() {
-    var dot = document.querySelector('.conn-dot');
-    var lbl = document.querySelector('.conn-label');
-    if(dot.classList.contains('connected')) {
-      dot.className = 'conn-dot error';
-      lbl.textContent = 'AI 连接失败';
-      document.getElementById('aiStatusDot').className = 'ai-status offline';
-    } else {
-      dot.className = 'conn-dot connected';
-      lbl.textContent = 'AI 已连接';
-      document.getElementById('aiStatusDot').className = 'ai-status online';
+  sendBtn.addEventListener('click', handleSend);
+
+  // ===== New chat =====
+  document.getElementById('newChatBtn').addEventListener('click', function() {
+    if(confirm('开始新对话？当前对话将保留。')) {
+      convInner.innerHTML = '';
+      tokenCount = 0;
+      bottomTokens.textContent = '0';
+      usageFill.style.width = '0%';
+      convInner.appendChild(scrollAnchor);
+      var el = document.createElement('div');
+      el.className = 'msg assistant';
+      el.innerHTML =
+        '<div class="msg-avatar">🤖</div>' +
+        '<div class="msg-body">' +
+          '<div class="msg-bubble">你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。</div>' +
+          '<div class="msg-time">' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '</div>';
+      convInner.insertBefore(el, scrollAnchor);
+      scrollToBottom();
     }
   });
 
-  document.getElementById('settingsBtn').addEventListener('click', function() {
-    window.location.href = 'settings-keys.html';
+  document.getElementById('modelBtn').addEventListener('click', function() {
+    window.location.href = 'model-selector.html';
   });
 
   document.getElementById('backBtn').addEventListener('click', function() {
     window.location.href = 'index.html';
   });
 
-  function escHtml(t) {
-    var m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
-    return t.replace(/[&<>"']/g,function(c){return m[c]||c;});
-  }
+  // ===== Init =====
+  renderConvo();
 })();
 </script>
 </body>

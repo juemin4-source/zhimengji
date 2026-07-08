@@ -656,6 +656,10 @@ function AppInner() {
   }, [activeBookId, showToast]);
 
   const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录'];
+  // Compute total word count for status bar
+  const totalWordCount = useMemo(() => {
+    return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
+  }, [objects]);
 
   const renderMainContent = () => {
     switch (activeNavTab) {
@@ -693,10 +697,7 @@ function AppInner() {
     );
   }
 
-  // Compute total word count for status bar
-  const totalWordCount = useMemo(() => {
-    return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
-  }, [objects]);
+
 
   return (
     <div className="app-layout">

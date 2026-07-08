@@ -122,6 +122,7 @@ describe('Path 1: Story Creation (App level)', () => {
     // First call: listProjects returns initial projects
     // Second call: createProject returns new project
     mockInvoke
+      .mockResolvedValueOnce('pong') // SyncManager ping
       .mockResolvedValueOnce(mockProjects) // listProjects
       .mockResolvedValueOnce({ // createProject
         id: 'book-3',
@@ -158,6 +159,7 @@ describe('Path 1: Story Creation (App level)', () => {
 describe('Path 3: Canon Management (App level)', () => {
   it('loads world objects when entering a project', async () => {
     mockInvoke
+      .mockResolvedValueOnce('pong') // SyncManager ping
       .mockResolvedValueOnce(mockProjects) // listProjects
       .mockResolvedValueOnce(mockWorldObjects) // listWorldObjects
       .mockResolvedValueOnce([]) // listConnections
@@ -184,6 +186,7 @@ describe('Path 3: Canon Management (App level)', () => {
 describe('Path 4: Judgment Recording (App level)', () => {
   it('tabs include judgment records tab', async () => {
     mockInvoke
+      .mockResolvedValueOnce('pong') // SyncManager ping
       .mockResolvedValueOnce(mockProjects)
       .mockResolvedValueOnce(mockWorldObjects)
       .mockResolvedValueOnce([]) // connections

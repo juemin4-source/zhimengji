@@ -181,6 +181,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
 .offline-banner{display:none;align-items:center;justify-content:center;gap:6px;background:#332b00;color:var(--warning);font-size:.75rem;padding:4px 16px;border-bottom:1px solid #554400}
 .offline-banner.visible{display:flex}
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="offline-banner" id="offlineBanner">离线 ● 当前处于离线状态，编辑内容将在恢复连接后自动同步。</div>
@@ -196,7 +197,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
     <button class="nav-mode-btn" data-mode="wysiwyg">WYSIWYG</button>
   </div>
   <div class="nav-badges">
-    <span class="nav-badge">👤 人物</span>
+    <span class="nav-badge"><i data-lucide="user" size="16"></i> 人物</span>
     <span class="nav-badge"><span class="dot" style="background:#FFB74D"></span>核心正典</span>
   </div>
 </nav>
@@ -221,10 +222,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
   </div>
   <div class="toolbar-divider"></div>
   <div class="toolbar-group">
-    <button class="toolbar-btn" title="插入链接">🔗</button>
+    <button class="toolbar-btn" title="插入链接"><i data-lucide="link" size="16"></i></button>
   </div>
   <div class="toolbar-right">
-    <div class="toolbar-badge">👤 人物</div>
+    <div class="toolbar-badge"><i data-lucide="user" size="16"></i> 人物</div>
     <div class="toolbar-badge clickable" id="canonBadge"><span class="badge-dot" style="background:#FFB74D"></span>核心正典</div>
     <div class="toolbar-badge"><span class="badge-dot" style="background:#4CAF50"></span>活跃</div>
   </div>
@@ -252,7 +253,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
 </div>
 <div class="status-bar">
   <div class="status-left">
-    <span class="status-save saved" id="saveIndicator">已保存 ✓</span>
+    <span class="status-save saved" id="saveIndicator">已保存 <i data-lucide="check" size="12"></i></span>
     <span class="status-sync-queue" id="syncQueue">队列: 0 项待同步</span>
   </div>
   <div class="status-right">
@@ -277,11 +278,11 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-sans);font-size:.93
 var CANON={core:{label:"核心正典",color:"#FFB74D",cls:"core"},project:{label:"项目正典",color:"#90CAF9",cls:"project"},draft:{label:"草案",color:"#CE93D8",cls:"draft"},none:{label:"无",color:"#666",cls:"none"}};
 var OBJECTS={};
 var OUTLINE=[{id:"discard",name:"废弃",items:["旧设定草案"],color:"#666",collapsed:false},{id:"draft",name:"草稿",items:["替换计划"],color:"#CE93D8",collapsed:false},{id:"body",name:"正文",items:["张三","李四"],color:null,collapsed:false},{id:"setting",name:"设定",items:["乐园机制"],color:null,collapsed:false}];
-var currentObj="张三",currentMode="source",saveState=0;OBJECTS["张三"]={type:"人物",typeIcon:"👤",canon:"core",status:"活跃",statusColor:"#4CAF50",created:"2026-06-24",updated:"2026-07-06",summary:"人造人，负责中央数据库日常运维，具有数据分析与记忆回溯能力。",links:[{name:"李四",type:"人物",desc:"搭档，负责外勤任务"},{name:"乐园机制",type:"设定",desc:"创造者，也是枷锁"}],judgments:[{action:"提升为核心正典",date:"2天前"},{action:"从草案升级为项目正典",date:"5天前"},{action:"创建对象",date:"2周前"}],content:"## 基本信息\n\n**姓名**：张三    **年龄**：28    **身份**：人造人\n\n**所属**：[[乐园机制]]  \n**状态**：活跃\n\n## 外貌\n\n高个子，黑色短发，瞳孔带有微弱荧光（人造人特征）。\n通常穿着深灰色制服，左臂有编号 **AX-7** 的烙印。\n\n## 能力\n\n- **数据分析**：可以实时处理大量信息流\n- **记忆回溯**：能够读取 72 小时内的短期记忆\n- **弱点**：体温低于常人，容易被检测出人造人身份\n\n## 背景\n\n张三是在 [[乐园机制]] 启动后第一批被激活的人造人之一。\n他的主要职责是维持 [[中央数据库]] 的日常运维。\n\n> \"我不是在活着，我只是在执行程序。\"\n> — 张三\n\n### 关键关系\n\n- **[[李四]]**：搭档，负责外勤任务\n- **[[乐园机制]]**：创造者，也是枷锁"};
-OBJECTS["李四"]={type:"人物",typeIcon:"👤",canon:"project",status:"活跃",statusColor:"#4CAF50",created:"2026-06-25",updated:"2026-07-05",summary:"外勤特工，擅长格斗与潜入，与张三搭档三年。",links:[{name:"张三",type:"人物",desc:"搭档，人造人"},{name:"乐园机制",type:"设定",desc:"上级机构"}],judgments:[{action:"升级为项目正典",date:"5天前"},{action:"从草案提升",date:"1周前"},{action:"创建对象",date:"2周前"}],content:"## 基本信息\n\n**姓名**：李四    **年龄**：32    **身份**：外勤特工\n\n**所属**：[[乐园机制]]  \n**状态**：活跃\n\n## 外貌\n\n中等身材，短发，常戴墨镜。\n通常穿着黑色便装，佩戴隐藏式通讯设备。\n\n## 能力\n\n- **格斗技巧**：高级近身格斗术\n- **潜入**：精通各种潜入和侦察技术\n- **弱点**：对 [[张三]] 有情感依赖，影响判断\n\n## 背景\n\n李四是 [[乐园机制]] 的外勤特工，负责实地调查和回收任务。\n他与 [[张三]] 搭档已有三年。\n\n> \"有时候我真希望他只是个普通人。\"\n> — 李四\n\n### 关键关系\n\n- **[[张三]]**：搭档，人造人\n- **[[乐园机制]]**：上级机构"};
-OBJECTS["乐园机制"]={type:"设定",typeIcon:"⚙️",canon:"core",status:"运行中",statusColor:"#4CAF50",created:"2026-06-20",updated:"2026-07-07",summary:"掌控地下设施的核心系统，负责人造人管理与任务分配。",links:[{name:"张三",type:"人物",desc:"人造人，系统运维员"},{name:"李四",type:"人物",desc:"外勤特工"}],judgments:[{action:"设定为核心正典",date:"1周前"},{action:"从草案升级",date:"2周前"},{action:"创建对象",date:"3周前"}],content:"## 基本信息\n\n**类型**：系统    **状态**：运行中\n\n## 概述\n\n乐园机制是掌控整个地下设施的核心系统。\n它负责管理所有人造人的激活、任务分配和回收。\n\n## 功能\n\n- **激活协议**：控制人造人的启动和休眠\n- **任务分配**：根据需求分配外勤和内部任务\n- **数据管理**：维护中央数据库\n- **回收程序**：处理失效或叛逃的人造人\n\n## 子系统\n\n- **中央数据库**：存储所有操作记录\n- **监控网络**：实时追踪所有特工位置\n- **维护单元**：负责人造人的硬件维护\n\n> \"系统就是系统。没有感情，没有偏差。\"\n> — 系统日志"};
-OBJECTS["替换计划"]={type:"事件",typeIcon:"📋",canon:"draft",status:"草案",statusColor:"#CE93D8",created:"2026-06-28",updated:"2026-07-01",summary:"针对乐园机制核心系统失效的应急预案（草案阶段）。",links:[{name:"乐园机制",type:"设定",desc:"预案目标系统"}],judgments:[{action:"创建草案",date:"1周前"}],content:"## 基本信息\n\n**状态**：草案    **类型**：事件\n\n## 概述\n\n替换计划是一项假设性的应急预案，\n针对 [[乐园机制]] 核心系统失效的情况。\n\n## 触发条件\n\n- 核心系统连续宕机超过 72 小时\n- 人造人集体失控\n- 外部入侵成功\n\n## 执行步骤（草案）\n\n待补充"};
-OBJECTS["旧设定草案"]={type:"设定",typeIcon:"📄",canon:"none",status:"废弃",statusColor:"#666",created:"2026-06-15",updated:"2026-06-22",summary:"早期世界观设定草案，已被新版取代。",links:[],judgments:[{action:"标记为废弃",date:"1周前"},{action:"创建初版设定",date:"3周前"}],content:"## 基本信息\n\n**状态**：废弃\n\n## 说明\n\n本设定为早期版本，已被新版取代。\n\n## 废弃原因\n\n与原设定冲突，且不符合当前世界观发展方向。"};
+var currentObj="张三",currentMode="source",saveState=0;OBJECTS["张三"]={type:"人物",typeIcon:"<i data-lucide="user" size="16"></i>",canon:"core",status:"活跃",statusColor:"#4CAF50",created:"2026-06-24",updated:"2026-07-06",summary:"人造人，负责中央数据库日常运维，具有数据分析与记忆回溯能力。",links:[{name:"李四",type:"人物",desc:"搭档，负责外勤任务"},{name:"乐园机制",type:"设定",desc:"创造者，也是枷锁"}],judgments:[{action:"提升为核心正典",date:"2天前"},{action:"从草案升级为项目正典",date:"5天前"},{action:"创建对象",date:"2周前"}],content:"## 基本信息\n\n**姓名**：张三    **年龄**：28    **身份**：人造人\n\n**所属**：[[乐园机制]]  \n**状态**：活跃\n\n## 外貌\n\n高个子，黑色短发，瞳孔带有微弱荧光（人造人特征）。\n通常穿着深灰色制服，左臂有编号 **AX-7** 的烙印。\n\n## 能力\n\n- **数据分析**：可以实时处理大量信息流\n- **记忆回溯**：能够读取 72 小时内的短期记忆\n- **弱点**：体温低于常人，容易被检测出人造人身份\n\n## 背景\n\n张三是在 [[乐园机制]] 启动后第一批被激活的人造人之一。\n他的主要职责是维持 [[中央数据库]] 的日常运维。\n\n> \"我不是在活着，我只是在执行程序。\"\n> — 张三\n\n### 关键关系\n\n- **[[李四]]**：搭档，负责外勤任务\n- **[[乐园机制]]**：创造者，也是枷锁"};
+OBJECTS["李四"]={type:"人物",typeIcon:"<i data-lucide="user" size="16"></i>",canon:"project",status:"活跃",statusColor:"#4CAF50",created:"2026-06-25",updated:"2026-07-05",summary:"外勤特工，擅长格斗与潜入，与张三搭档三年。",links:[{name:"张三",type:"人物",desc:"搭档，人造人"},{name:"乐园机制",type:"设定",desc:"上级机构"}],judgments:[{action:"升级为项目正典",date:"5天前"},{action:"从草案提升",date:"1周前"},{action:"创建对象",date:"2周前"}],content:"## 基本信息\n\n**姓名**：李四    **年龄**：32    **身份**：外勤特工\n\n**所属**：[[乐园机制]]  \n**状态**：活跃\n\n## 外貌\n\n中等身材，短发，常戴墨镜。\n通常穿着黑色便装，佩戴隐藏式通讯设备。\n\n## 能力\n\n- **格斗技巧**：高级近身格斗术\n- **潜入**：精通各种潜入和侦察技术\n- **弱点**：对 [[张三]] 有情感依赖，影响判断\n\n## 背景\n\n李四是 [[乐园机制]] 的外勤特工，负责实地调查和回收任务。\n他与 [[张三]] 搭档已有三年。\n\n> \"有时候我真希望他只是个普通人。\"\n> — 李四\n\n### 关键关系\n\n- **[[张三]]**：搭档，人造人\n- **[[乐园机制]]**：上级机构"};
+OBJECTS["乐园机制"]={type:"设定",typeIcon:"<i data-lucide="settings" size="16"></i>️",canon:"core",status:"运行中",statusColor:"#4CAF50",created:"2026-06-20",updated:"2026-07-07",summary:"掌控地下设施的核心系统，负责人造人管理与任务分配。",links:[{name:"张三",type:"人物",desc:"人造人，系统运维员"},{name:"李四",type:"人物",desc:"外勤特工"}],judgments:[{action:"设定为核心正典",date:"1周前"},{action:"从草案升级",date:"2周前"},{action:"创建对象",date:"3周前"}],content:"## 基本信息\n\n**类型**：系统    **状态**：运行中\n\n## 概述\n\n乐园机制是掌控整个地下设施的核心系统。\n它负责管理所有人造人的激活、任务分配和回收。\n\n## 功能\n\n- **激活协议**：控制人造人的启动和休眠\n- **任务分配**：根据需求分配外勤和内部任务\n- **数据管理**：维护中央数据库\n- **回收程序**：处理失效或叛逃的人造人\n\n## 子系统\n\n- **中央数据库**：存储所有操作记录\n- **监控网络**：实时追踪所有特工位置\n- **维护单元**：负责人造人的硬件维护\n\n> \"系统就是系统。没有感情，没有偏差。\"\n> — 系统日志"};
+OBJECTS["替换计划"]={type:"事件",typeIcon:"<i data-lucide="clipboard" size="16"></i>",canon:"draft",status:"草案",statusColor:"#CE93D8",created:"2026-06-28",updated:"2026-07-01",summary:"针对乐园机制核心系统失效的应急预案（草案阶段）。",links:[{name:"乐园机制",type:"设定",desc:"预案目标系统"}],judgments:[{action:"创建草案",date:"1周前"}],content:"## 基本信息\n\n**状态**：草案    **类型**：事件\n\n## 概述\n\n替换计划是一项假设性的应急预案，\n针对 [[乐园机制]] 核心系统失效的情况。\n\n## 触发条件\n\n- 核心系统连续宕机超过 72 小时\n- 人造人集体失控\n- 外部入侵成功\n\n## 执行步骤（草案）\n\n待补充"};
+OBJECTS["旧设定草案"]={type:"设定",typeIcon:"<i data-lucide="file-text" size="16"></i>",canon:"none",status:"废弃",statusColor:"#666",created:"2026-06-15",updated:"2026-06-22",summary:"早期世界观设定草案，已被新版取代。",links:[],judgments:[{action:"标记为废弃",date:"1周前"},{action:"创建初版设定",date:"3周前"}],content:"## 基本信息\n\n**状态**：废弃\n\n## 说明\n\n本设定为早期版本，已被新版取代。\n\n## 废弃原因\n\n与原设定冲突，且不符合当前世界观发展方向。"};
 
 function updateMode(m){currentMode=m;document.querySelectorAll(".nav-mode-btn").forEach(function(b){b.classList.toggle("active",b.dataset.mode===m)});document.getElementById("editorSource").classList.toggle("editor-mode-hidden",m!=="source");document.getElementById("editorPreview").classList.toggle("editor-mode-hidden",m!=="preview");document.getElementById("editorWysiwyg").classList.toggle("editor-mode-hidden",m!=="wysiwyg");var o=OBJECTS[currentObj];if(o){var c=CANON[o.canon];document.querySelector(".nav-badges").innerHTML="<span class='nav-badge'>"+o.typeIcon+" "+o.type+"</span><span class='nav-badge'><span class='dot' style='background:"+c.color+"'>"+c.label+"</span>"}}
 
@@ -333,7 +334,7 @@ h+="<div class='inspector-timestamp'>更新: <span>"+o.updated+"</span></div></d
 
 h+="<div class='inspector-section'><div class='inspector-section-title'>关联对象 ("+o.links.length+")</div>";
 for(var i=0;i<o.links.length;i++){var lk=o.links[i];var lo=OBJECTS[lk.name];
-var li=lo?lo.typeIcon:"📄";
+var li=lo?lo.typeIcon:"<i data-lucide="file-text" size="16"></i>";
 h+="<div class='inspector-link-card' data-link='"+lk.name+"'><div class='link-icon'>"+li+"</div>";
 h+="<div class='link-info'><div class='link-name'>"+lk.name+"</div><div class='link-desc'>"+lk.desc+"</div></div>";
 h+="<span class='link-type-tag'>"+lk.type+"</span></div>"}
@@ -410,18 +411,18 @@ fP();fL();return h}
 function cycleSave(){
 	var el=document.getElementById('saveIndicator');
 	saveState=(saveState+1)%5;
-	if(saveState===0){el.className='status-save saved';el.textContent='已保存 ✓';
+	if(saveState===0){el.className='status-save saved';el.textContent='已保存 <i data-lucide="check" size="12"></i>';
 	setTimeout(function(){if(saveState===0){document.getElementById('lastUpdate').textContent='刚刚更新'}},500)
 	;document.getElementById('syncQueue').textContent='队列: 0 项待同步'}else 
 	if(saveState===1){el.className='status-save saving';el.textContent='保存中... ⟳'
-	;setTimeout(function(){if(saveState===1){saveState=0;el.className='status-save saved';el.textContent='已保存 ✓'
+	;setTimeout(function(){if(saveState===1){saveState=0;el.className='status-save saved';el.textContent='已保存 <i data-lucide="check" size="12"></i>'
 	;document.getElementById('lastUpdate').textContent='刚刚更新'
 	;document.getElementById('syncQueue').textContent='队列: 0 项待同步'}},1200)}else 
 	if(saveState===2){el.className='status-save unsaved';el.textContent='未保存 ●'
 	;document.getElementById('syncQueue').textContent='队列: 1 项待同步'}else 
 	if(saveState===3){el.className='status-save offline';el.textContent='离线 ●'
 	;document.getElementById('syncQueue').textContent='队列: 3 项待同步'}else 
-	{saveState=4;el.className='status-save failed';el.textContent='保存失败 ⚠ 点击重试'
+	{saveState=4;el.className='status-save failed';el.textContent='保存失败 <i data-lucide="alert-triangle" size="16"></i> 点击重试'
 	;document.getElementById('syncQueue').textContent='队列: 2 项待同步'}
 }
 
@@ -432,7 +433,7 @@ function updateOnlineStatus(){
 	if(navigator.onLine){
 		b.classList.remove('visible');
 		if(saveState===3){
-			saveState=0;el.className='status-save saved';el.textContent='已保存 ✓';
+			saveState=0;el.className='status-save saved';el.textContent='已保存 <i data-lucide="check" size="12"></i>';
 			document.getElementById('lastUpdate').textContent='刚刚更新';
 			sq.textContent='队列: 0 项待同步'
 		}
@@ -514,5 +515,6 @@ document.getElementById('editorPreview').innerHTML=renderPreview(o.content);
 document.getElementById('editorWysiwyg').innerHTML=renderPreview(o.content);
 updateStatusBar()}
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

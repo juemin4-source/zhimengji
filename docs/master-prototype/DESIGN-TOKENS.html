@@ -368,6 +368,7 @@
     .component-stage .stage-row{flex-direction:column;align-items:flex-start}
   }
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="prototype-banner"><span>Zhimengji</span> Design Tokens v1.2 &middot; Master Prototype Reference</div>
@@ -560,8 +561,8 @@
         <button class="nav-mode-btn">Settings</button>
       </div>
       <div class="nav-actions">
-        <button class="nav-icon-btn" data-tooltip="Search">&#128269;</button>
-        <button class="nav-icon-btn active" data-tooltip="Notifications">&#128276;</button>
+        <button class="nav-icon-btn" data-tooltip="Search"><i data-lucide="search" size="16"></i></button>
+        <button class="nav-icon-btn active" data-tooltip="Notifications"><i data-lucide="bell" size="16"></i></button>
       </div>
     </div>
     <div class="stage-row"><span class="stage-state-label">normal</span><button class="nav-back" style="position:relative">&larr; Back</button><span style="font-size:var(--fs-xs);color:var(--text-muted)">Default look</span></div>
@@ -569,8 +570,8 @@
     <div class="stage-row"><span class="stage-state-label">active</span><button class="nav-back" style="position:relative;background:var(--bg-surface);transform:scale(0.97)">&larr; Back</button><span style="font-size:var(--fs-xs);color:var(--text-muted)">Slight scale down + darker bg</span></div>
     <div class="stage-row"><span class="stage-state-label">mode inactive</span><button class="nav-mode-btn" style="position:relative">Write</button><span style="font-size:var(--fs-xs);color:var(--text-muted)">Unselected tab</span></div>
     <div class="stage-row"><span class="stage-state-label">mode active</span><button class="nav-mode-btn active" style="position:relative">Canvas</button><span style="font-size:var(--fs-xs);color:var(--accent)">Accent bg + accent text</span></div>
-    <div class="stage-row"><span class="stage-state-label">icon normal</span><button class="nav-icon-btn" style="position:relative">&#128269;</button><span style="font-size:var(--fs-xs);color:var(--text-muted)">Default</span></div>
-    <div class="stage-row"><span class="stage-state-label">icon active</span><button class="nav-icon-btn active" style="position:relative">&#128276;</button><span style="font-size:var(--fs-xs);color:var(--accent)">Accent bg + accent color</span></div>
+    <div class="stage-row"><span class="stage-state-label">icon normal</span><button class="nav-icon-btn" style="position:relative"><i data-lucide="search" size="16"></i></button><span style="font-size:var(--fs-xs);color:var(--text-muted)">Default</span></div>
+    <div class="stage-row"><span class="stage-state-label">icon active</span><button class="nav-icon-btn active" style="position:relative"><i data-lucide="bell" size="16"></i></button><span style="font-size:var(--fs-xs);color:var(--accent)">Accent bg + accent color</span></div>
   </div>
 </section>
 <section class="ds-section" id="status-bar">
@@ -644,8 +645,8 @@
       <button class="btn btn-primary btn-sm">Small</button>
       <button class="btn btn-primary">Default</button>
       <button class="btn btn-primary btn-lg">Large</button>
-      <button class="btn btn-primary btn-icon btn-sm" data-tooltip="Small icon">&#10003;</button>
-      <button class="btn btn-primary btn-icon" data-tooltip="Default icon">&#10003;</button>
+      <button class="btn btn-primary btn-icon btn-sm" data-tooltip="Small icon"><i data-lucide="check" size="16"></i></button>
+      <button class="btn btn-primary btn-icon" data-tooltip="Default icon"><i data-lucide="check" size="16"></i></button>
     </div>
     <div class="ds-label" style="margin-top:var(--space-3)">States</div>
     <div class="stage-row"><span class="stage-state-label">normal</span><button class="btn btn-primary">Primary</button><button class="btn btn-secondary">Secondary</button><button class="btn btn-ghost">Ghost</button></div>
@@ -757,10 +758,10 @@
   <div class="component-stage">
     <div class="stage-label">&lt;div class="canon-node canon-*"&gt;</div>
     <div class="ds-flex-row">
-      <div class="canon-node" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-none-soft)">&#128100;</div><span class="canon-node-name">Character</span></div><div class="canon-node-body">Unlisted canon level</div></div>
-      <div class="canon-node canon-core" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-core-soft)">&#128100;</div><span class="canon-node-name">Protagonist</span></div><div class="canon-node-body">Core canon &mdash; solid amber border</div></div>
-      <div class="canon-node canon-project" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-project-soft)">&#128100;</div><span class="canon-node-name">Side Character</span></div><div class="canon-node-body">Project canon &mdash; solid blue border</div></div>
-      <div class="canon-node canon-draft" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-draft-soft)">&#128100;</div><span class="canon-node-name">Draft Idea</span></div><div class="canon-node-body">Draft canon &mdash; dashed purple border</div></div>
+      <div class="canon-node" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-none-soft)"><i data-lucide="user" size="16"></i></div><span class="canon-node-name">Character</span></div><div class="canon-node-body">Unlisted canon level</div></div>
+      <div class="canon-node canon-core" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-core-soft)"><i data-lucide="user" size="16"></i></div><span class="canon-node-name">Protagonist</span></div><div class="canon-node-body">Core canon &mdash; solid amber border</div></div>
+      <div class="canon-node canon-project" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-project-soft)"><i data-lucide="user" size="16"></i></div><span class="canon-node-name">Side Character</span></div><div class="canon-node-body">Project canon &mdash; solid blue border</div></div>
+      <div class="canon-node canon-draft" style="position:relative;width:160px"><div class="canon-node-header"><div class="canon-node-icon" style="background:var(--canon-draft-soft)"><i data-lucide="user" size="16"></i></div><span class="canon-node-name">Draft Idea</span></div><div class="canon-node-body">Draft canon &mdash; dashed purple border</div></div>
     </div>
     <div class="ds-flex-row" style="margin-top:var(--space-4)">
       <div class="canon-node canon-core" style="position:relative;width:150px"><div class="canon-node-header"><span class="canon-node-name">Default</span></div></div>
@@ -833,5 +834,6 @@
   <p style="margin-top:var(--space-2)"><a href="#toc">Back to top</a></p>
 </footer>
 </div>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

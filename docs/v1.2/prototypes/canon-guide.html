@@ -168,6 +168,7 @@
   .badge-showcase .showcase-row .hint { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.85; transition: opacity .2s; }
   .badge-showcase .showcase-row:hover .hint { opacity: 1; }
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="demo-tabs">
@@ -180,7 +181,7 @@
   <div class="view-port" id="popup-container">
     <div class="popup-backdrop" id="popup-backdrop">
       <div class="popup-card" id="popup-card">
-        <h2><span>&#x1F310;</span> 世界构建入门</h2>
+        <h2><span><i data-lucide="globe" size="16"></i></span> 世界构建入门</h2>
         <p class="popup-intro">织梦机用「正典」来管理你的设定稳定性。每个设定有四个等级：</p>
         <div class="level-row tint-none">
           <div class="dot none"></div>
@@ -200,7 +201,7 @@
         </div>
         <div class="popup-actions">
           <button class="btn btn-secondary" id="btn-dismiss">
-            <span class="check-box" id="dismiss-check">&#x2713;</span> 不再显示
+            <span class="check-box" id="dismiss-check"><i data-lucide="check" size="16"></i></span> 不再显示
           </button>
           <button class="btn btn-outline" id="btn-handbook">进入手册 &rarr;</button>
           <button class="btn btn-primary" id="btn-start">开始使用</button>
@@ -208,7 +209,7 @@
       </div>
     </div>
     <div class="popup-closed-state" id="popup-closed" style="display:none;">
-      <span style="font-size:2rem;">&#x1F3E0;</span>
+      <span style="font-size:2rem;"><i data-lucide="building" size="16"></i></span>
       <span>正典系统已就绪，开始构建你的世界吧。</span>
       <button class="btn btn-outline" onclick="document.getElementById('btn-handbook').click()">进入正典手册 &rarr;</button>
     </div>
@@ -226,7 +227,7 @@
       </div>
       <div class="canon-section" data-section="core">
         <div class="canon-section-header" data-toggle>
-          <span class="icon">&#x1F31F;</span>
+          <span class="icon"><i data-lucide="star" size="16"></i></span>
           <span class="section-title">核心正典</span>
           <span class="section-count">2 个对象</span>
           <span class="collapse-icon">&#x25BC;</span>
@@ -242,7 +243,7 @@
       </div>
       <div class="canon-section" data-section="project">
         <div class="canon-section-header" data-toggle>
-          <span class="icon">&#x1F4D8;</span>
+          <span class="icon"><i data-lucide="book-open" size="16"></i></span>
           <span class="section-title">项目正典</span>
           <span class="section-count">3 个对象</span>
           <span class="collapse-icon">&#x25BC;</span>
@@ -258,7 +259,7 @@
       </div>
       <div class="canon-section" data-section="draft">
         <div class="canon-section-header" data-toggle>
-          <span class="icon">&#x1F7E3;</span>
+          <span class="icon"><i data-lucide="circle" size="16"></i></span>
           <span class="section-title">草案正典</span>
           <span class="section-count">4 个对象</span>
           <span class="collapse-icon">&#x25BC;</span>
@@ -275,7 +276,7 @@
       </div>
       <div class="canon-section" data-section="none">
         <div class="canon-section-header" data-toggle>
-          <span class="icon">&#x26AA;</span>
+          <span class="icon"><i data-lucide="circle" size="16"></i></span>
           <span class="section-title">未收录</span>
           <span class="section-count">7 个对象</span>
           <span class="collapse-icon">&#x25BC;</span>
@@ -295,7 +296,7 @@
       </div>
       <div class="canon-act">
         <div class="timeline-header">
-          <h3>&#x1F4C3; 判断记录时间线</h3>
+          <h3><i data-lucide="file-text" size="16"></i> 判断记录时间线</h3>
           <div class="filter-group" id="tl-filters">
             <button class="filter-btn active" data-filter="all">全部</button>
             <button class="filter-btn" data-filter="upgrade">提升</button>
@@ -528,6 +529,7 @@
   }
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>
 

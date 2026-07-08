@@ -222,6 +222,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
 .prototype-legend span { display: flex; align-items: center; gap: 4px; }
 .prototype-legend .key { display: inline-block; padding: 0 4px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 2px; font-family: var(--font-mono); font-size: 9px; color: var(--text-secondary); }
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <!-- Offline Banner (Screen 05) -->
@@ -241,7 +242,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
 <div class="app-shell no-banner" id="appShell">
   <!-- Top Nav Bar -->
   <nav class="top-nav">
-    <span class="nav-back" onclick="navigateBack()">← 书架</span>
+    <span class="nav-back" onclick="navigateBack()"><i data-lucide="arrow-left" size="12"></i> 书架</span>
     <span class="nav-divider"></span>
     <span class="nav-title">织梦机 v0.2</span>
     <span class="nav-tab active" onclick="switchNavTab(this)">文档</span>
@@ -265,7 +266,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
         <div class="outline-tree" id="outlineTree">
           <div class="outline-group">
             <div class="outline-group-header" onclick="toggleGroup(this)">
-              <span class="arrow">▼</span><span>正文</span>
+              <span class="arrow"><i data-lucide="chevron-down" size="12"></i></span><span>正文</span>
               <span style="margin-left:auto;font-weight:400;color:var(--text-muted)">3 章</span>
             </div>
             <div class="outline-group-items">
@@ -282,7 +283,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           </div>
           <div class="outline-group">
             <div class="outline-group-header" onclick="toggleGroup(this)">
-              <span class="arrow">▼</span><span>人物</span>
+              <span class="arrow"><i data-lucide="chevron-down" size="12"></i></span><span>人物</span>
               <span style="margin-left:auto;font-weight:400;color:var(--text-muted)">8</span>
             </div>
             <div class="outline-group-items">
@@ -305,7 +306,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           </div>
           <div class="outline-group">
             <div class="outline-group-header" onclick="toggleGroup(this)">
-              <span class="arrow">▼</span><span>设定</span>
+              <span class="arrow"><i data-lucide="chevron-down" size="12"></i></span><span>设定</span>
               <span style="margin-left:auto;font-weight:400;color:var(--text-muted)">12</span>
             </div>
             <div class="outline-group-items">
@@ -325,7 +326,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           </div>
           <div class="outline-group">
             <div class="outline-group-header" onclick="toggleGroup(this)">
-              <span class="arrow">▼</span><span>草稿</span>
+              <span class="arrow"><i data-lucide="chevron-down" size="12"></i></span><span>草稿</span>
               <span style="margin-left:auto;font-weight:400;color:var(--text-muted)">2</span>
             </div>
             <div class="outline-group-items">
@@ -339,7 +340,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           </div>
           <div class="outline-group">
             <div class="outline-group-header" onclick="toggleGroup(this)">
-              <span class="arrow">▼</span><span>废弃</span>
+              <span class="arrow"><i data-lucide="chevron-down" size="12"></i></span><span>废弃</span>
               <span style="margin-left:auto;font-weight:400;color:var(--text-muted)">1</span>
             </div>
             <div class="outline-group-items">
@@ -373,11 +374,11 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           <button class="tool-btn" onclick="toggleTool(this)">❝</button>
           <button class="tool-btn" onclick="toggleTool(this)">{ }</button>
           <button class="tool-btn" onclick="toggleTool(this)">≡</button>
-          <button class="tool-btn" onclick="toggleTool(this)">🔗</button>
-          <button class="tool-btn" onclick="toggleTool(this)">🖼</button>
+          <button class="tool-btn" onclick="toggleTool(this)"><i data-lucide="link" size="16"></i></button>
+          <button class="tool-btn" onclick="toggleTool(this)"><i data-lucide="image" size="16"></i></button>
         </div>
         <div class="badge-area">
-          <span class="type-badge">人物 👤</span>
+          <span class="type-badge">人物 <i data-lucide="user" size="16"></i></span>
           <span class="canon-badge gold" id="canonBadge" onclick="toggleCanonPopup(event)">金</span>
           <div class="canon-popup" id="canonPopup">
             <div class="canon-popup-title">设定层级体系 — 四层裁定</div>
@@ -449,14 +450,14 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
 
         <!-- Empty State CTA -->
         <div class="empty-cta" id="emptyCta">
-          <div class="empty-cta-icon">📝</div>
+          <div class="empty-cta-icon"><i data-lucide="edit-3" size="16"></i></div>
           <div class="empty-cta-title">创建第一个设定</div>
           <div class="empty-cta-desc">从空白开始构建你的世界，或选择一个类型快速开始</div>
           <div class="empty-cta-buttons">
-            <button class="empty-cta-btn primary" onclick="closeEmptyCta()">人物 👤</button>
-            <button class="empty-cta-btn" onclick="closeEmptyCta()">地点 🌍</button>
-            <button class="empty-cta-btn" onclick="closeEmptyCta()">组织 🏛</button>
-            <button class="empty-cta-btn" onclick="closeEmptyCta()">规则 ⚖</button>
+            <button class="empty-cta-btn primary" onclick="closeEmptyCta()">人物 <i data-lucide="user" size="16"></i></button>
+            <button class="empty-cta-btn" onclick="closeEmptyCta()">地点 <i data-lucide="globe" size="16"></i></button>
+            <button class="empty-cta-btn" onclick="closeEmptyCta()">组织 <i data-lucide="building" size="16"></i></button>
+            <button class="empty-cta-btn" onclick="closeEmptyCta()">规则 <i data-lucide="scale" size="16"></i></button>
           </div>
         </div>
       </div>
@@ -505,7 +506,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
             <div class="inspector-section-title">对象信息</div>
             <div class="inspector-field">
               <div class="field-label">类型</div>
-              <div class="field-value" id="objType">人物 👤</div>
+              <div class="field-value" id="objType">人物 <i data-lucide="user" size="16"></i></div>
             </div>
             <div class="inspector-field">
               <div class="field-label">设定层级</div>
@@ -556,21 +557,21 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
           <div class="inspector-section">
             <div class="inspector-section-title">判断历程</div>
             <div class="timeline">
-              <div class="timeline-item"><span class="tl-date">2026-07-08</span><br><span class="tl-action">🔒 锁定为金层设定</span></div>
-              <div class="timeline-item"><span class="tl-date">2026-07-01</span><br><span class="tl-action">⬆ 从蓝层提升至金层</span></div>
-              <div class="timeline-item"><span class="tl-date">2026-06-28</span><br><span class="tl-action">📝 内容修订 — 新增 120 字</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-07-08</span><br><span class="tl-action"><i data-lucide="lock" size="16"></i> 锁定为金层设定</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-07-01</span><br><span class="tl-action"><i data-lucide="arrow-up" size="16"></i> 从蓝层提升至金层</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-06-28</span><br><span class="tl-action"><i data-lucide="edit-3" size="16"></i> 内容修订 — 新增 120 字</span></div>
               <div class="timeline-item"><span class="tl-date">2026-06-20</span><br><span class="tl-action">✅ 审核通过 (顾长生 审批)</span></div>
-              <div class="timeline-item"><span class="tl-date">2026-06-12</span><br><span class="tl-action">✨ 创建对象</span></div>
+              <div class="timeline-item"><span class="tl-date">2026-06-12</span><br><span class="tl-action"><i data-lucide="sparkles" size="16"></i> 创建对象</span></div>
             </div>
           </div>
           <div class="inspector-section">
             <div class="inspector-section-title">操作</div>
             <div class="action-buttons">
-              <button class="action-btn" onclick="showAddToBoard()">📋 添加到面板</button>
-              <button class="action-btn" onclick="showAddToBoard()">📌 固定到速览</button>
-              <button class="action-btn promote" onclick="showReasonDialog('promote')">⬆ 提升层级</button>
-              <button class="action-btn" onclick="showReasonDialog('lock')">🔒 锁定对象</button>
-              <button class="action-btn danger" onclick="showReasonDialog('discard')">🗑 弃置对象</button>
+              <button class="action-btn" onclick="showAddToBoard()"><i data-lucide="clipboard" size="16"></i> 添加到面板</button>
+              <button class="action-btn" onclick="showAddToBoard()"><i data-lucide="pin" size="16"></i> 固定到速览</button>
+              <button class="action-btn promote" onclick="showReasonDialog('promote')"><i data-lucide="arrow-up" size="16"></i> 提升层级</button>
+              <button class="action-btn" onclick="showReasonDialog('lock')"><i data-lucide="lock" size="16"></i> 锁定对象</button>
+              <button class="action-btn danger" onclick="showReasonDialog('discard')"><i data-lucide="trash-2" size="16"></i> 弃置对象</button>
             </div>
           </div>
         </div>
@@ -580,7 +581,7 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
   <!-- Status Bar (Screen 05 bottom) -->
   <div class="status-bar">
     <span class="save-indicator saved" id="saveIndicator">
-      <span id="saveIcon">✓</span>
+      <span id="saveIcon"><i data-lucide="check" size="12"></i></span>
       <span id="saveLabel">已保存</span>
     </span>
     <span class="status-divider"></span>
@@ -624,10 +625,10 @@ body { font-family: var(--font-body); font-size: var(--text-base); color: var(--
 </div>
 
 <div class="prototype-legend">
-  <span><span class="key">点击</span> 大纲项目 → 切换右侧检查器</span>
-  <span><span class="key">悬停</span> [[WikiLink]] → 查看对象提示</span>
-  <span><span class="key">点击</span> 金/蓝/紫/灰标签 → 层级说明弹窗</span>
-  <span><span class="key">点击</span> ◀ 按钮 → 折叠左侧栏</span>
+  <span><span class="key">点击</span> 大纲项目 <i data-lucide="arrow-right" size="12"></i> 切换右侧检查器</span>
+  <span><span class="key">悬停</span> [[WikiLink]] <i data-lucide="arrow-right" size="12"></i> 查看对象提示</span>
+  <span><span class="key">点击</span> 金/蓝/紫/灰标签 <i data-lucide="arrow-right" size="12"></i> 层级说明弹窗</span>
+  <span><span class="key">点击</span> ◀ 按钮 <i data-lucide="arrow-right" size="12"></i> 折叠左侧栏</span>
 </div>
 
 <script>
@@ -671,7 +672,7 @@ function updateInspector(el){
   sum.classList.remove('show');ins.classList.add('show');
   var t=el.querySelector('.type-tag').textContent;
   var d=el.querySelector('.dot');
-  var tm={'章':'章节 📄','主':'人物 👤','要':'人物 👤','配':'人物 👤','地点':'地点 🌍','组织':'组织 🏛','规则':'规则 ⚖','草稿':'草稿 📝','废弃':'废弃 🗑'};
+  var tm={'章':'章节 <i data-lucide="file-text" size="16"></i>','主':'人物 <i data-lucide="user" size="16"></i>','要':'人物 <i data-lucide="user" size="16"></i>','配':'人物 <i data-lucide="user" size="16"></i>','地点':'地点 <i data-lucide="globe" size="16"></i>','组织':'组织 <i data-lucide="building" size="16"></i>','规则':'规则 <i data-lucide="scale" size="16"></i>','草稿':'草稿 <i data-lucide="edit-3" size="16"></i>','废弃':'废弃 <i data-lucide="trash-2" size="16"></i>'};
   document.getElementById('objType').textContent=tm[t]||'其他';
   var dc=Array.from(d.classList).find(function(c){return c.indexOf('dot-')===0});
   var lm={'dot-gold':'金','dot-blue':'蓝','dot-purple':'紫','dot-gray':'灰'};
@@ -700,7 +701,7 @@ var tooltip=document.getElementById('wikiTooltip');
 function showWikiTooltip(e,name,type,canon,summary,missing){
   document.getElementById('wtName').textContent=name||'';
   document.getElementById('wtType').textContent=(type||'')+(canon?' ['+canon+']':'');
-  document.getElementById('wtStatus').textContent=missing?'⚠ 未创建':'已创建';
+  document.getElementById('wtStatus').textContent=missing?'<i data-lucide="alert-triangle" size="16"></i> 未创建':'已创建';
   var se=document.getElementById('wtSummary');
   if(summary){se.textContent=summary;se.className='wt-summary';}
   else{se.textContent='暂无摘要';se.className='wt-summary missing';}
@@ -728,11 +729,11 @@ function closeEmptyCta(){
 function setSaveState(s){
   var i=document.getElementById('saveIndicator'),ic=document.getElementById('saveIcon'),lb=document.getElementById('saveLabel');
   i.className='save-indicator '+s;
-  switch(s){case'saved':ic.textContent='✓';lb.textContent='已保存';break;
+  switch(s){case'saved':ic.textContent='<i data-lucide="check" size="12"></i>';lb.textContent='已保存';break;
   case'saving':ic.textContent='⟳';lb.textContent='保存中...';break;
   case'unsaved':ic.textContent='●';lb.textContent='未保存';break;
   case'offline':ic.textContent='●';lb.textContent='离线';break;
-  case'error':ic.textContent='⚠';lb.textContent='保存失败';break;}
+  case'error':ic.textContent='<i data-lucide="alert-triangle" size="16"></i>';lb.textContent='保存失败';break;}
 }
 var dialogAction=null;
 function showReasonDialog(a){
@@ -784,5 +785,6 @@ setTimeout(function(){document.getElementById('loadingOverlay').classList.remove
   ih('resizeHandleRight','rightInspector','right');
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

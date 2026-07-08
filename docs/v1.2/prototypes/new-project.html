@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -326,6 +326,7 @@
     .shelf-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
   }
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="bookshelf" id="bookshelf">
@@ -347,7 +348,7 @@
     <div class="modal-header">
       <h2>新建作品</h2>
       <button class="modal-close" id="closeBtn" aria-label="关闭">
-        ✕
+        <i data-lucide="x" size="16"></i>
         <span class="tooltip">Ctrl+click 跳过向导</span>
       </button>
     </div>
@@ -378,20 +379,20 @@
       <div class="template-divider">或选择初始模板</div>
       <div class="template-grid">
         <div class="template-card" data-template="blank" data-name="从零开始">
-          <span class="check-mark">✓</span>
-          <div class="icon">🌱</div>
+          <span class="check-mark"><i data-lucide="check" size="12"></i></span>
+          <div class="icon"><i data-lucide="sprout" size="16"></i></div>
           <div class="tname">从零开始</div>
           <div class="tdesc">一步步搭建你的世界，适合第一次使用</div>
         </div>
         <div class="template-card" data-template="quick" data-name="快速起稿">
-          <span class="check-mark">✓</span>
-          <div class="icon">✏</div>
+          <span class="check-mark"><i data-lucide="check" size="12"></i></span>
+          <div class="icon"><i data-lucide="pencil" size="16"></i></div>
           <div class="tname">快速起稿</div>
           <div class="tdesc">预设分类和标签框架，内容你自己填</div>
         </div>
         <div class="template-card" data-template="empty" data-name="空白画布">
-          <span class="check-mark">✓</span>
-          <div class="icon">⬜</div>
+          <span class="check-mark"><i data-lucide="check" size="12"></i></span>
+          <div class="icon"><i data-lucide="square" size="16"></i></div>
           <div class="tname">空白画布</div>
           <div class="tdesc">没有任何预设，完全自由创作</div>
         </div>
@@ -409,7 +410,7 @@
     </div>
   </div>
 </div>
-<div class="toast" id="toast">🎉 项目已创建！</div>
+<div class="toast" id="toast"><i data-lucide="party-popper" size="16"></i> 项目已创建！</div>
 <script>
 (function() {
   'use strict';
@@ -550,5 +551,6 @@
   });
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

@@ -122,6 +122,7 @@ input{font-family:inherit;font-size:0.8125rem}
 .save-label{transition:color .3s}
 .save-label.unsaved{color:var(--accent)}
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div id="app">
@@ -175,7 +176,7 @@ input{font-family:inherit;font-size:0.8125rem}
         </svg>
         <div class="node-card canon-core" data-node="zhangsan" style="left:160px;top:220px;" onclick="selectNode(this)">
           <div class="node-card-header">
-            <div class="node-card-icon core">👤</div>
+            <div class="node-card-icon core"><i data-lucide="user" size="16"></i></div>
             <span class="node-card-name">张三</span>
             <span class="canon-badge core">元设定</span>
           </div>
@@ -188,7 +189,7 @@ input{font-family:inherit;font-size:0.8125rem}
         </div>
         <div class="node-card canon-project" data-node="lisi" style="left:420px;top:200px;" onclick="selectNode(this)">
           <div class="node-card-header">
-            <div class="node-card-icon project">👤</div>
+            <div class="node-card-icon project"><i data-lucide="user" size="16"></i></div>
             <span class="node-card-name">李四</span>
             <span class="canon-badge project">设定</span>
           </div>
@@ -201,7 +202,7 @@ input{font-family:inherit;font-size:0.8125rem}
         </div>
         <div class="node-card canon-core" data-node="paradise" style="left:270px;top:70px;" onclick="selectNode(this)">
           <div class="node-card-header">
-            <div class="node-card-icon core">⚙️</div>
+            <div class="node-card-icon core"><i data-lucide="settings" size="16"></i>️</div>
             <span class="node-card-name">乐园机制</span>
             <span class="canon-badge core">元设定</span>
           </div>
@@ -212,7 +213,7 @@ input{font-family:inherit;font-size:0.8125rem}
         </div>
         <div class="node-card canon-draft" data-node="database" style="left:120px;top:440px;" onclick="selectNode(this)">
           <div class="node-card-header">
-            <div class="node-card-icon draft">📍</div>
+            <div class="node-card-icon draft"><i data-lucide="map-pin" size="16"></i></div>
             <span class="node-card-name">中央数据库</span>
             <span class="canon-badge draft">草稿</span>
           </div>
@@ -223,7 +224,7 @@ input{font-family:inherit;font-size:0.8125rem}
         </div>
         <div class="node-card canon-project" data-node="org" style="left:450px;top:420px;" onclick="selectNode(this)">
           <div class="node-card-header">
-            <div class="node-card-icon project">🏛️</div>
+            <div class="node-card-icon project"><i data-lucide="building" size="16"></i>️</div>
             <span class="node-card-name">人造人组织</span>
             <span class="canon-badge project">设定</span>
           </div>
@@ -234,7 +235,7 @@ input{font-family:inherit;font-size:0.8125rem}
         </div>
         <div class="node-card canon-project" data-node="zhaowu" style="left:680px;top:280px;" onclick="selectNode(this)">
           <div class="node-card-header">
-            <div class="node-card-icon project">👤</div>
+            <div class="node-card-icon project"><i data-lucide="user" size="16"></i></div>
             <span class="node-card-name">赵五</span>
             <span class="canon-badge project">设定</span>
           </div>
@@ -674,5 +675,6 @@ input{font-family:inherit;font-size:0.8125rem}
   updateStatusBar();
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

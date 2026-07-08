@@ -125,6 +125,7 @@ input,select{font-family:var(--font-sans);outline:none}
 .encryption-badge{display:flex;align-items:center;gap:4px;color:var(--accent);font-size:.6875rem}
 .encryption-badge svg{width:12px;height:12px}
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="prototype-banner"><span>⚡ 原型演示 v1.3 — API Key 管理设置页</span></div>
@@ -137,7 +138,7 @@ input,select{font-family:var(--font-sans);outline:none}
     <div class="nav-project">设置</div>
     <div class="nav-spacer"></div>
     <div class="nav-actions">
-      <button class="nav-icon-btn" title="保存设置" id="saveSettingsBtn">💾</button>
+      <button class="nav-icon-btn" title="保存设置" id="saveSettingsBtn"><i data-lucide="save" size="16"></i></button>
     </div>
   </nav>
   <div class="settings-layout">
@@ -145,22 +146,22 @@ input,select{font-family:var(--font-sans);outline:none}
       <div class="settings-sidebar-title">设置</div>
       <div class="settings-nav">
         <div class="settings-nav-item active">
-          <span class="nav-icon">🔑</span> API Keys
+          <span class="nav-icon"><i data-lucide="key" size="16"></i></span> API Keys
         </div>
         <div class="settings-nav-item">
-          <span class="nav-icon">📊</span> 用量监控
+          <span class="nav-icon"><i data-lucide="bar-chart-3" size="16"></i></span> 用量监控
         </div>
         <div class="settings-nav-item">
-          <span class="nav-icon">🎨</span> 外观
+          <span class="nav-icon"><i data-lucide="palette" size="16"></i></span> 外观
         </div>
         <div class="settings-nav-item">
-          <span class="nav-icon">💾</span> 存储
+          <span class="nav-icon"><i data-lucide="save" size="16"></i></span> 存储
         </div>
         <div class="settings-nav-item">
-          <span class="nav-icon">🔔</span> 通知
+          <span class="nav-icon"><i data-lucide="bell" size="16"></i></span> 通知
         </div>
         <div class="settings-nav-item">
-          <span class="nav-icon">ℹ️</span> 关于
+          <span class="nav-icon"><i data-lucide="info" size="16"></i></span> 关于
         </div>
       </div>
     </aside>
@@ -169,7 +170,7 @@ input,select{font-family:var(--font-sans);outline:none}
         <div class="settings-title">API Key 管理</div>
         <div class="settings-desc">配置各 AI 提供商的密钥和端点。所有密钥在本地加密存储，不会发送到任何第三方服务器。</div>
         <div class="security-badge" style="margin-top:10px">
-          <span class="lock-icon">🔒</span> AES-256-GCM 加密存储 · 密钥仅存于本地
+          <span class="lock-icon"><i data-lucide="lock" size="16"></i></span> AES-256-GCM 加密存储 · 密钥仅存于本地
         </div>
       </div>
 
@@ -184,7 +185,7 @@ input,select{font-family:var(--font-sans);outline:none}
               <div class="provider-model">GPT-4o · GPT-4 · GPT-3.5</div>
             </div>
             <span class="provider-status connected"><span class="status-dot"></span>已连接</span>
-            <span class="provider-chevron">▾</span>
+            <span class="provider-chevron"><i data-lucide="chevron-down" size="12"></i></span>
           </div>
           <div class="provider-card-body">
             <div class="provider-card-inner">
@@ -209,7 +210,7 @@ input,select{font-family:var(--font-sans);outline:none}
                 <button class="btn btn-danger btn-sm" style="margin-left:auto">移除</button>
               </div>
               <div class="test-result success" id="testOpenAI" style="display:none">
-                ✓ 连接成功 — 响应时间 342ms · 模型列表已获取 (12 个)
+                <i data-lucide="check" size="12"></i> 连接成功 — 响应时间 342ms · 模型列表已获取 (12 个)
               </div>
             </div>
           </div>
@@ -224,7 +225,7 @@ input,select{font-family:var(--font-sans);outline:none}
               <div class="provider-model">Claude 3.5 Sonnet · Claude 3 Haiku</div>
             </div>
             <span class="provider-status connected"><span class="status-dot"></span>已连接</span>
-            <span class="provider-chevron">▾</span>
+            <span class="provider-chevron"><i data-lucide="chevron-down" size="12"></i></span>
           </div>
           <div class="provider-card-body">
             <div class="provider-card-inner">
@@ -249,7 +250,7 @@ input,select{font-family:var(--font-sans);outline:none}
                 <button class="btn btn-danger btn-sm" style="margin-left:auto">移除</button>
               </div>
               <div class="test-result success" id="testAnthropic" style="display:none">
-                ✓ 连接成功 — 响应时间 523ms · 模型列表已获取 (4 个)
+                <i data-lucide="check" size="12"></i> 连接成功 — 响应时间 523ms · 模型列表已获取 (4 个)
               </div>
             </div>
           </div>
@@ -264,7 +265,7 @@ input,select{font-family:var(--font-sans);outline:none}
               <div class="provider-model">Llama 3 · Mistral · 自定义</div>
             </div>
             <span class="provider-status disconnected"><span class="status-dot"></span>未配置</span>
-            <span class="provider-chevron">▾</span>
+            <span class="provider-chevron"><i data-lucide="chevron-down" size="12"></i></span>
           </div>
           <div class="provider-card-body">
             <div class="provider-card-inner">
@@ -292,7 +293,7 @@ input,select{font-family:var(--font-sans);outline:none}
                 <button class="btn btn-outline btn-sm">保存</button>
               </div>
               <div class="test-result fail" id="testLocal" style="display:none">
-                ✗ 连接失败 — 无法连接到 localhost:11434 · 请确认服务是否运行
+                <i data-lucide="x" size="12"></i> 连接失败 — 无法连接到 localhost:11434 · 请确认服务是否运行
               </div>
             </div>
           </div>
@@ -314,7 +315,7 @@ input,select{font-family:var(--font-sans);outline:none}
   </div>
   <div class="status-bar">
     <div class="status-bar-left">
-      <span class="encryption-badge">🔒 本地加密存储 (AES-256-GCM)</span>
+      <span class="encryption-badge"><i data-lucide="lock" size="16"></i> 本地加密存储 (AES-256-GCM)</span>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
       <span>已配置: <span class="stat-value" style="color:var(--text-secondary)">2 / 6 个提供商</span></span>
@@ -352,7 +353,7 @@ input,select{font-family:var(--font-sans);outline:none}
         self.textContent = '⟳ 测试连接';
         if(provider === 'local') {
           testEl.className = 'test-result fail';
-          testEl.textContent = '✗ 连接失败 — 无法连接到 localhost:11434 · 请确认服务是否运行';
+          testEl.textContent = '<i data-lucide="x" size="12"></i> 连接失败 — 无法连接到 localhost:11434 · 请确认服务是否运行';
           // Update status badge
           var statusBadge = self.closest('.provider-card').querySelector('.provider-status');
           if(statusBadge) {
@@ -362,10 +363,10 @@ input,select{font-family:var(--font-sans);outline:none}
         } else {
           testEl.className = 'test-result success';
           var msgs = {
-            openai: '✓ 连接成功 — 响应时间 342ms · 模型列表已获取 (12 个)',
-            anthropic: '✓ 连接成功 — 响应时间 523ms · 模型列表已获取 (4 个)'
+            openai: '<i data-lucide="check" size="12"></i> 连接成功 — 响应时间 342ms · 模型列表已获取 (12 个)',
+            anthropic: '<i data-lucide="check" size="12"></i> 连接成功 — 响应时间 523ms · 模型列表已获取 (4 个)'
           };
-          testEl.textContent = msgs[provider] || '✓ 连接成功';
+          testEl.textContent = msgs[provider] || '<i data-lucide="check" size="12"></i> 连接成功';
         }
       }, 1500 + Math.random() * 1000);
     });
@@ -374,7 +375,7 @@ input,select{font-family:var(--font-sans);outline:none}
   // Add provider buttons
   document.querySelectorAll('.add-provider-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      this.textContent = '✓ 已添加';
+      this.textContent = '<i data-lucide="check" size="12"></i> 已添加';
       this.className = 'btn btn-sm';
       this.style.cssText = 'color:var(--success);border-color:rgba(76,175,80,.3);background:rgba(76,175,80,.06);cursor:default';
       this.disabled = true;
@@ -392,12 +393,13 @@ input,select{font-family:var(--font-sans);outline:none}
   });
 
   document.getElementById('saveSettingsBtn').addEventListener('click', function() {
-    this.textContent = '✓';
+    this.textContent = '<i data-lucide="check" size="12"></i>';
     setTimeout(function() {
-      document.getElementById('saveSettingsBtn').textContent = '💾';
+      document.getElementById('saveSettingsBtn').textContent = '<i data-lucide="save" size="16"></i>';
     }, 1500);
   });
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

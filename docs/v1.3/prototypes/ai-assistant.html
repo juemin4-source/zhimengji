@@ -221,6 +221,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
 /* ===== Scroll anchor ===== */
 .scroll-anchor{height:1px;flex-shrink:0}
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="prototype-banner"><span>&#9888; 原型演示 v1.3 — AI 助手全页对话 · 文档嵌入式生成</span></div>
@@ -255,7 +256,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
       <div class="sidebar-content" id="sidebarContent">
         <!-- Project tree -->
         <div class="sidebar-section">
-          <div class="sidebar-section-title">📖 项目</div>
+          <div class="sidebar-section-title"><i data-lucide="book-open" size="16"></i> 项目</div>
           <div class="sidebar-tree">
             <div class="sidebar-folder">
               <div class="sidebar-folder-label">世界观</div>
@@ -278,7 +279,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
 
         <!-- Chapters -->
         <div class="sidebar-section">
-          <div class="sidebar-section-title">📄 章节</div>
+          <div class="sidebar-section-title"><i data-lucide="file-text" size="16"></i> 章节</div>
           <div class="sidebar-tree">
             <div class="sidebar-item" data-focus="" data-label="第一章 — 静默时刻"><span class="canon-dot canon-gray"></span>第一章 — 静默时刻</div>
             <div class="sidebar-item" data-focus="" data-label="第二章 — 破晓行动"><span class="canon-dot canon-gray"></span>第二章 — 破晓行动</div>
@@ -287,7 +288,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
 
         <!-- Settings collection -->
         <div class="sidebar-section">
-          <div class="sidebar-section-title">🏷 设定集</div>
+          <div class="sidebar-section-title"><i data-lucide="tag" size="16"></i> 设定集</div>
           <div class="sidebar-tree">
             <div class="sidebar-item" data-focus="" data-label="核心正典"><span class="canon-dot canon-core"></span>核心正典</div>
             <div class="sidebar-item" data-focus="" data-label="草案"><span class="canon-dot canon-draft"></span>草案</div>
@@ -300,13 +301,13 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
         <div class="sidebar-model-select" id="sidebarModelSelect">
           <span class="model-dot"></span>
           <span class="sidebar-model-name">Claude 3.5 Sonnet</span>
-          <span class="sidebar-model-chevron">⌵</span>
+          <span class="sidebar-model-chevron"><i data-lucide="chevron-down" size="12"></i></span>
         </div>
       </div>
     </div>
 
     <!-- Sidebar reveal button (visible when collapsed) -->
-    <button class="sidebar-reveal" id="sidebarReveal" title="展开大纲">☰</button>
+    <button class="sidebar-reveal" id="sidebarReveal" title="展开大纲"><i data-lucide="menu" size="16"></i></button>
     <!-- Main Content (chat area) -->
     <div class="main-content">
       <!-- Chat Layout -->
@@ -317,7 +318,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
           <span class="chat-header-model"><span class="model-dot"></span> Claude 3.5 Sonnet</span>
           <div class="chat-header-focus" id="focusIndicator">
             <span>聚焦: <span id="focusLabel"></span></span>
-            <button class="chat-header-focus-close" id="focusClear" title="清除聚焦">✕</button>
+            <button class="chat-header-focus-close" id="focusClear" title="清除聚焦"><i data-lucide="x" size="16"></i></button>
           </div>
           <div class="chat-header-spacer"></div>
           <div class="chat-header-actions">
@@ -480,9 +481,9 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
       '<div class="doc-card-body">' + opts.bodyHTML + '</div>' +
       (opts.sections ? sectionsHTML : '') +
       '<div class="doc-card-actions">' +
-        '<button class="doc-card-btn primary" onclick="alert(\'编辑模式 — 此处将打开内联编辑\')">✏️ 编辑</button>' +
-        '<button class="doc-card-btn" onclick="alert(\'已收录为设定\')">📌 收录为设定</button>' +
-        '<button class="doc-card-btn" onclick="alert(\'展开更多内容\')">➕ 继续展开</button>' +
+        '<button class="doc-card-btn primary" onclick="alert(\'编辑模式 — 此处将打开内联编辑\')"><i data-lucide="pencil" size="16"></i>️ 编辑</button>' +
+        '<button class="doc-card-btn" onclick="alert(\'已收录为设定\')"><i data-lucide="pin" size="16"></i> 收录为设定</button>' +
+        '<button class="doc-card-btn" onclick="alert(\'展开更多内容\')"><i data-lucide="plus" size="16"></i> 继续展开</button>' +
       '</div>' +
     '</div>';
   }
@@ -516,7 +517,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
           status: '草稿',
           bodyHTML: '<p><strong>名称：</strong>破晓（Dawnbreak）</p><p><strong>宗旨：</strong>摧毁天眼系统的中央处理器，恢复人类的思想自由。</p><p><strong>规模：</strong>约 300 名核心成员，分布在 12 个地下据点。</p><p><strong>标志性行动：</strong>每两周一次 "沉默时刻"——全城同步断电 30 秒，在天眼的监控盲区传递物理情报。</p>',
           sections: [
-            { title: '组织架构', content: '领袖（"回声"）→ 三名指挥官（信息/行动/后勤）→ 小队制（每队 5 人，互不知晓身份）' },
+            { title: '组织架构', content: '领袖（"回声"）<i data-lucide="arrow-right" size="12"></i> 三名指挥官（信息/行动/后勤）<i data-lucide="arrow-right" size="12"></i> 小队制（每队 5 人，互不知晓身份）' },
             { title: '技术资产', content: '信号干扰器（自制）、地下隧道网络、加密的纸质通信（天眼无法 OCR 手写变异体）' }
           ]
         }
@@ -556,7 +557,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
       var el = document.createElement('div');
       el.className = 'msg ' + msg.role;
 
-      var avatarHTML = '<div class="msg-avatar">' + (msg.role === 'user' ? '👤' : '🤖') + '</div>';
+      var avatarHTML = '<div class="msg-avatar">' + (msg.role === 'user' ? '<i data-lucide="user" size="16"></i>' : '<i data-lucide="bot" size="16"></i>') + '</div>';
 
       var bodyHTML = '<div class="msg-body">';
       bodyHTML += '<div class="msg-bubble">' + msg.content;
@@ -588,7 +589,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
     el.className = 'msg user';
     var time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
     el.innerHTML =
-      '<div class="msg-avatar">👤</div>' +
+      '<div class="msg-avatar"><i data-lucide="user" size="16"></i></div>' +
       '<div class="msg-body">' +
         '<div class="msg-bubble">' + escHtml(text) + '</div>' +
         '<div class="msg-time">' + time + '</div>' +
@@ -603,7 +604,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
     typingEl = document.createElement('div');
     typingEl.className = 'msg assistant';
     typingEl.innerHTML =
-      '<div class="msg-avatar">🤖</div>' +
+      '<div class="msg-avatar"><i data-lucide="bot" size="16"></i></div>' +
       '<div class="msg-body">' +
         '<div class="typing-indicator" style="display:flex">' +
           '<span class="typing-dot"></span>' +
@@ -632,7 +633,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
     }
 
     el.innerHTML =
-      '<div class="msg-avatar">🤖</div>' +
+      '<div class="msg-avatar"><i data-lucide="bot" size="16"></i></div>' +
       '<div class="msg-body">' +
         '<div class="msg-bubble">' + bubbleInner + '</div>' +
         '<div class="msg-time">' + time + '</div>' +
@@ -676,7 +677,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
         type: 'world',
         title: '天眼系统 — 技术细节',
         status: '草稿',
-        bodyHTML: '<p><strong>卫星参数：</strong>72 颗卫星分为 6 个轨道层，每层 12 颗。最低轨道高度 180 km（侦察层），最高 1200 km（数据分析层）。</p><p><strong>AI 决策流程：</strong>传感器捕获 → 特征提取 → 威胁评分（0-100）→ 评分 ≥ 78 自动触发逮捕令 → 执法机器人 90 秒内到达现场。</p><p><strong>已知漏洞：</strong>地下 30 米以上深度可屏蔽脑波扫描；法拉第笼可阻断信号传输，但无法大规模建造。</p>',
+        bodyHTML: '<p><strong>卫星参数：</strong>72 颗卫星分为 6 个轨道层，每层 12 颗。最低轨道高度 180 km（侦察层），最高 1200 km（数据分析层）。</p><p><strong>AI 决策流程：</strong>传感器捕获 <i data-lucide="arrow-right" size="12"></i> 特征提取 <i data-lucide="arrow-right" size="12"></i> 威胁评分（0-100）<i data-lucide="arrow-right" size="12"></i> 评分 ≥ 78 自动触发逮捕令 <i data-lucide="arrow-right" size="12"></i> 执法机器人 90 秒内到达现场。</p><p><strong>已知漏洞：</strong>地下 30 米以上深度可屏蔽脑波扫描；法拉第笼可阻断信号传输，但无法大规模建造。</p>',
         sections: [
           { title: '反制技术', content: '"破晓"组织开发的"迷雾"装置可生成局部电磁紊乱场，制造 3-5 秒的监控盲区。' },
           { title: '代价', content: '每次使用"迷雾"都会暴露一个地下据点位置。破晓已因此损失了 4 个基地。' }
@@ -742,7 +743,7 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
       var el = document.createElement('div');
       el.className = 'msg assistant';
       el.innerHTML =
-        '<div class="msg-avatar">🤖</div>' +
+        '<div class="msg-avatar"><i data-lucide="bot" size="16"></i></div>' +
         '<div class="msg-body">' +
           '<div class="msg-bubble">你好！我是织梦机的 AI 助手。我可以帮你创建世界观、设计角色、展开设定——所有生成的内容都会以文档卡片的形式直接嵌入对话中，你可以随时编辑和收录。</div>' +
           '<div class="msg-time">' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}) + '</div>' +
@@ -763,5 +764,6 @@ button,input,textarea{font-family:var(--font-sans);outline:none}
   renderConvo();
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

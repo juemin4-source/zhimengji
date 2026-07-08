@@ -102,6 +102,7 @@ body{
   .topbar{flex-direction:column;align-items:flex-start}
 }
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="app">
@@ -110,10 +111,10 @@ body{
     <div class="topbar-left">
       <h1 class="topbar-title">织梦机 v1.3</h1>
       <span class="version-badge">BYOK 完善</span>
-      <span class="season-badge">🌱 春生</span>
+      <span class="season-badge"><i data-lucide="sprout" size="16"></i> 春生</span>
     </div>
     <div style="display:flex;gap:6px">
-      <span class="version-badge">v1.2 → v1.3</span>
+      <span class="version-badge">v1.2 <i data-lucide="arrow-right" size="12"></i> v1.3</span>
     </div>
   </div>
 
@@ -144,7 +145,7 @@ body{
     <!-- Card 1: AI Assistant -->
     <a class="card" href="ai-assistant.html">
       <span class="card-number">01</span>
-      <div class="card-icon feature">💡</div>
+      <div class="card-icon feature"><i data-lucide="lightbulb" size="16"></i></div>
       <div class="card-title">AI 助手浮窗</div>
       <div class="card-desc">左侧栏底部可折叠的 AI 助手面板。支持多模型切换（GPT-4o / Claude / 本地模型），实时对话，用量进度条。点击灯泡图标展开/收起，在侧栏内联交互。</div>
       <div class="card-features">
@@ -153,13 +154,13 @@ body{
         <span class="card-feature">@提及对象</span>
         <span class="card-feature">用量条</span>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="card-arrow"><i data-lucide="arrow-right" size="12"></i></span>
     </a>
 
     <!-- Card 2: Settings API Keys -->
     <a class="card" href="settings-keys.html">
       <span class="card-number">02</span>
-      <div class="card-icon settings">🔑</div>
+      <div class="card-icon settings"><i data-lucide="key" size="16"></i></div>
       <div class="card-title">API Key 管理设置页</div>
       <div class="card-desc">多提供商密钥管理：OpenAI、Anthropic、本地模型，每提供商独立输入。支持加密存储（AES-256-GCM）、连接测试、端点自定义配置。</div>
       <div class="card-features">
@@ -168,28 +169,28 @@ body{
         <span class="card-feature">多提供商</span>
         <span class="card-feature">自定义端点</span>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="card-arrow"><i data-lucide="arrow-right" size="12"></i></span>
     </a>
 
     <!-- Card 3: Model Selector + Usage -->
     <a class="card" href="model-selector.html">
       <span class="card-number">03</span>
-      <div class="card-icon usage">📊</div>
+      <div class="card-icon usage"><i data-lucide="bar-chart-3" size="16"></i></div>
       <div class="card-title">模型选择与用量监控</div>
-      <div class="card-desc">模型选择面板（单选，带定价标签）、每日 token 用量进度条（绿→黄→红阈值）、各模型使用量分解、近 7 天趋势图、月费用估算与预算上限。</div>
+      <div class="card-desc">模型选择面板（单选，带定价标签）、每日 token 用量进度条（绿<i data-lucide="arrow-right" size="12"></i>黄<i data-lucide="arrow-right" size="12"></i>红阈值）、各模型使用量分解、近 7 天趋势图、月费用估算与预算上限。</div>
       <div class="card-features">
         <span class="card-feature">每日用量</span>
         <span class="card-feature">阈值预警</span>
         <span class="card-feature">费用估算</span>
         <span class="card-feature">趋势图</span>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="card-arrow"><i data-lucide="arrow-right" size="12"></i></span>
     </a>
 
     <!-- Card 4: Status Bar (integrated inline) -->
     <a class="card" href="ai-assistant.html" style="grid-column:span 1">
       <span class="card-number">04</span>
-      <div class="card-icon overview">📋</div>
+      <div class="card-icon overview"><i data-lucide="clipboard" size="16"></i></div>
       <div class="card-title">统一底部状态栏</div>
       <div class="card-desc">底部状态栏合并 AI 连接状态指示 + 字数统计 + 正典状态 + token 用量。绿色/红色连接点可点击切换，实时反映 AI 服务连通性。</div>
       <div class="card-features">
@@ -198,13 +199,13 @@ body{
         <span class="card-feature">正典状态</span>
         <span class="card-feature">P2-04 合并</span>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="card-arrow"><i data-lucide="arrow-right" size="12"></i></span>
     </a>
   </div>
 
   <!-- Merged P2 -->
   <div class="p2-section">
-    <div class="p2-title">📌 已合并 deferred P2 项目</div>
+    <div class="p2-title"><i data-lucide="pin" size="16"></i> 已合并 deferred P2 项目</div>
     <div class="p2-desc">
       <strong>P2-04</strong> — 底部状态栏：字数统计 / 项目总字数 / 正典状态 已从 deferred 合并进 v1.3 的统一状态栏。<br>
       在 <code>ai-assistant.html</code> 底部可见：字数 (1,234) | 项目 (43,217) | 核心正典 | tokens (0) 的完整状态栏布局。
@@ -242,5 +243,6 @@ body{
     <a class="footer-link" href="../v1.2/prototypes/canvas.html" target="_blank">v1.2 画布原型</a>
   </div>
 </div>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

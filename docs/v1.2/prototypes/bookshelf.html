@@ -177,7 +177,7 @@
     box-shadow: 0 0 0 2px var(--accent-soft);
   }
   .select-wrap::after {
-    content: '▼';
+    content: '<i data-lucide="chevron-down" size="12"></i>';
     position: absolute;
     right: 0.6rem;
     top: 50%;
@@ -651,6 +651,7 @@
     .card-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="app" id="app">
@@ -670,7 +671,7 @@
           <option value="updated">最近更新</option>
           <option value="created">创建时间</option>
           <option value="name">作品名 A-Z</option>
-          <option value="words">字数多→少</option>
+          <option value="words">字数多<i data-lucide="arrow-right" size="12"></i>少</option>
         </select>
       </div>
     </div>
@@ -679,7 +680,7 @@
   <!-- ===== Filter Bar ===== -->
   <div class="filterbar">
     <div class="search-wrap">
-      <span class="search-icon">&#x1F50D;</span>
+      <span class="search-icon"><i data-lucide="search" size="16"></i></span>
       <input type="text" id="searchInput" placeholder="搜索作品..." autocomplete="off">
     </div>
     <div class="select-wrap">
@@ -719,13 +720,13 @@
     <!-- Card 1: 觉醒纪元 — 科幻 / 草稿中 -->
     <div class="card" data-title="觉醒纪元" data-genre="科幻" data-status="草稿中" data-words="12430" data-created="2025-12-01" data-updated="2026-06-28">
       <div class="card-gradient grad-sci-fi"></div>
-      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色">&#x270F;</button>
-      <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
+      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色"><i data-lucide="pencil" size="16"></i></button>
+      <button class="menu-toggle" aria-label="更多操作"><i data-lucide="more-vertical" size="16"></i></button>
       <div class="card-menu">
-        <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
-        <button class="card-menu-item" data-action="genre">&#x2702; 更改体裁</button>
-        <button class="card-menu-item danger" data-action="delete">&#x2716; 删除作品</button>
-        <button class="card-menu-item" data-action="export">&#x2913; 导出</button>
+        <button class="card-menu-item" data-action="rename"><i data-lucide="pen" size="16"></i> 编辑作品名</button>
+        <button class="card-menu-item" data-action="genre"><i data-lucide="scissors" size="16"></i> 更改体裁</button>
+        <button class="card-menu-item danger" data-action="delete"><i data-lucide="trash-2" size="16"></i> 删除作品</button>
+        <button class="card-menu-item" data-action="export"><i data-lucide="download" size="16"></i> 导出</button>
       </div>
       <div class="canon-dots">
         <span class="canon-dot core" title="正典核心"></span>
@@ -749,13 +750,13 @@
     <!-- Card 2: 星空彼岸 — 奇幻 / 构思中 -->
     <div class="card" data-title="星空彼岸" data-genre="奇幻" data-status="构思中" data-words="3800" data-created="2026-02-14" data-updated="2026-05-10">
       <div class="card-gradient grad-fantasy"></div>
-      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色">&#x270F;</button>
-      <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
+      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色"><i data-lucide="pencil" size="16"></i></button>
+      <button class="menu-toggle" aria-label="更多操作"><i data-lucide="more-vertical" size="16"></i></button>
       <div class="card-menu">
-        <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
-        <button class="card-menu-item" data-action="genre">&#x2702; 更改体裁</button>
-        <button class="card-menu-item danger" data-action="delete">&#x2716; 删除作品</button>
-        <button class="card-menu-item" data-action="export">&#x2913; 导出</button>
+        <button class="card-menu-item" data-action="rename"><i data-lucide="pen" size="16"></i> 编辑作品名</button>
+        <button class="card-menu-item" data-action="genre"><i data-lucide="scissors" size="16"></i> 更改体裁</button>
+        <button class="card-menu-item danger" data-action="delete"><i data-lucide="trash-2" size="16"></i> 删除作品</button>
+        <button class="card-menu-item" data-action="export"><i data-lucide="download" size="16"></i> 导出</button>
       </div>
       <div class="canon-dots">
         <span class="canon-dot project" title="正典项目"></span>
@@ -777,13 +778,13 @@
     <!-- Card 3: 江湖行 — 武侠 / 修改中 -->
     <div class="card" data-title="江湖行" data-genre="武侠" data-status="修改中" data-words="28987" data-created="2025-08-20" data-updated="2026-07-05">
       <div class="card-gradient grad-wuxia"></div>
-      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色">&#x270F;</button>
-      <button class="menu-toggle" aria-label="更多操作">&#x22EE;</button>
+      <button class="cover-edit-btn" aria-label="换封面色" title="换封面色"><i data-lucide="pencil" size="16"></i></button>
+      <button class="menu-toggle" aria-label="更多操作"><i data-lucide="more-vertical" size="16"></i></button>
       <div class="card-menu">
-        <button class="card-menu-item" data-action="rename">&#x270E; 编辑作品名</button>
-        <button class="card-menu-item" data-action="genre">&#x2702; 更改体裁</button>
-        <button class="card-menu-item danger" data-action="delete">&#x2716; 删除作品</button>
-        <button class="card-menu-item" data-action="export">&#x2913; 导出</button>
+        <button class="card-menu-item" data-action="rename"><i data-lucide="pen" size="16"></i> 编辑作品名</button>
+        <button class="card-menu-item" data-action="genre"><i data-lucide="scissors" size="16"></i> 更改体裁</button>
+        <button class="card-menu-item danger" data-action="delete"><i data-lucide="trash-2" size="16"></i> 删除作品</button>
+        <button class="card-menu-item" data-action="export"><i data-lucide="download" size="16"></i> 导出</button>
       </div>
       <div class="canon-dots">
         <span class="canon-dot core" title="正典核心"></span>
@@ -1014,6 +1015,7 @@
 
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>
 

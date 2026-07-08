@@ -65,7 +65,7 @@ button{font-family:var(--font-sans);cursor:pointer}
 .model-item.active{background:var(--accent-soft);border-color:rgba(183,255,0,.2)}
 .model-item .model-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .model-item.active .model-check{border-color:var(--accent);background:var(--accent)}
-.model-item.active .model-check::after{content:"✓";color:#0a0a0a;font-size:.6rem;font-weight:700}
+.model-item.active .model-check::after{content:"<i data-lucide="check" size="12"></i>";color:#0a0a0a;font-size:.6rem;font-weight:700}
 .model-item .model-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0}
 .model-item .model-icon.gpt{background:rgba(66,165,245,.12)}
 .model-item .model-icon.claude{background:rgba(255,152,0,.12)}
@@ -127,6 +127,7 @@ button{font-family:var(--font-sans);cursor:pointer}
 .settings-link:hover{opacity:.7}
 .settings-link svg{width:14px;height:14px}
 </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 <div class="prototype-banner"><span>⚡ 原型演示 v1.3 — 模型选择与用量监控</span></div>
@@ -144,7 +145,7 @@ button{font-family:var(--font-sans);cursor:pointer}
   <div class="card">
     <div class="card-header">
       <span class="card-header-title">选择 AI 模型</span>
-      <a class="settings-link" href="settings-keys.html">⚙️ 管理 API Keys</a>
+      <a class="settings-link" href="settings-keys.html"><i data-lucide="settings" size="16"></i>️ 管理 API Keys</a>
     </div>
     <div class="card-body">
       <div class="model-list">
@@ -210,7 +211,7 @@ button{font-family:var(--font-sans);cursor:pointer}
           <span>10,000</span>
         </div>
         <div class="usage-warning-badge caution" id="usageBadge">
-          ⚠ 已使用 62.4% · 接近黄色阈值
+          <i data-lucide="alert-triangle" size="16"></i> 已使用 62.4% · 接近黄色阈值
         </div>
       </div>
 
@@ -348,7 +349,7 @@ button{font-family:var(--font-sans);cursor:pointer}
   document.getElementById('resetUsage').addEventListener('click', function() {
     totalTokens = Math.floor(Math.random() * 3000 + 500);
     updateUsage();
-    this.textContent = '✓ 已重置';
+    this.textContent = '<i data-lucide="check" size="12"></i> 已重置';
     var self = this;
     setTimeout(function() { self.textContent = '重置演示数据'; }, 1500);
   });
@@ -361,10 +362,10 @@ button{font-family:var(--font-sans);cursor:pointer}
     var badge = document.getElementById('usageBadge');
     if(pct >= 95) {
       badge.className = 'usage-warning-badge critical';
-      badge.innerHTML = '🔴 严重超额 — 已使用 ' + pct.toFixed(1) + '% · 建议减少 AI 调用';
+      badge.innerHTML = '<i data-lucide="circle" size="16"></i> 严重超额 — 已使用 ' + pct.toFixed(1) + '% · 建议减少 AI 调用';
     } else if(pct >= 80) {
       badge.className = 'usage-warning-badge caution';
-      badge.innerHTML = '⚠ 接近限额 — 已使用 ' + pct.toFixed(1) + '% · 黄色预警';
+      badge.innerHTML = '<i data-lucide="alert-triangle" size="16"></i> 接近限额 — 已使用 ' + pct.toFixed(1) + '% · 黄色预警';
     } else {
       badge.className = 'usage-warning-badge normal';
       badge.innerHTML = '✅ 用量正常 — 已使用 ' + pct.toFixed(1) + '% · 绿色状态';
@@ -396,5 +397,6 @@ button{font-family:var(--font-sans);cursor:pointer}
   }
 })();
 </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

@@ -58,7 +58,7 @@ impl Database {
               project_id TEXT NOT NULL,
               source_id TEXT NOT NULL,
               target_id TEXT NOT NULL,
-              type TEXT NOT NULL DEFAULT '鐩稿叧',
+              type TEXT NOT NULL DEFAULT 'related',
               label TEXT NOT NULL DEFAULT '',
               FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
               FOREIGN KEY (source_id) REFERENCES world_objects(id) ON DELETE CASCADE,
@@ -104,9 +104,9 @@ impl Database {
         Ok(())
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  Project CRUD
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     pub fn list_projects(&self) -> SqlResult<Vec<Project>> {
         let conn = self.conn.lock().unwrap();
@@ -201,9 +201,9 @@ impl Database {
         Ok(())
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  WorldObject CRUD
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     pub fn list_world_objects(&self, project_id: &str) -> SqlResult<Vec<WorldObject>> {
         // Collect all rows first, then release the lock before fetching judgment records
@@ -366,9 +366,9 @@ impl Database {
         Ok(())
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  JudgmentRecord
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     pub fn get_judgment_records_for_object(&self, object_id: &str) -> SqlResult<Vec<JudgmentRecord>> {
         let conn = self.conn.lock().unwrap();
@@ -451,9 +451,9 @@ impl Database {
         })
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  Connection CRUD
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     pub fn list_connections(&self, project_id: &str) -> SqlResult<Vec<ObjConnection>> {
         let conn = self.conn.lock().unwrap();
@@ -501,9 +501,9 @@ impl Database {
         Ok(())
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  CanvasTabState CRUD
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     pub fn list_canvas_tab_states(&self, project_id: &str) -> SqlResult<Vec<CanvasTabState>> {
         let conn = self.conn.lock().unwrap();
@@ -605,9 +605,9 @@ mod tests {
         }
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  Project CRUD
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     #[test]
     fn test_project_crud() {
@@ -652,9 +652,9 @@ mod tests {
         assert!(db.get_project(&p2.id).unwrap().is_none());
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  WorldObject CRUD (with judgment_history)
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //
     // NOTE: list_world_objects() and get_world_object() have a known
     // deadlock: they hold the Mutex lock while calling
@@ -679,19 +679,19 @@ mod tests {
 
         // Create with judgment_history
         let obj_id = uuid::Uuid::new_v4().to_string();
-        let j1 = make_judgment(&obj_id, "鎻愬崌姝ｅ吀", "鏈敹褰?, "鑽夋姝ｅ吀");
-        let j2 = make_judgment(&obj_id, "閿佸畾", "鑽夋姝ｅ吀", "閿佸畾");
+        let j1 = make_judgment(&obj_id, "promote_canon", "uncollected", "draft_canon");
+        let j2 = make_judgment(&obj_id, "lock", "draft_canon", "locked");
 
         let obj = WorldObject {
             id: obj_id.clone(),
             project_id: pid.clone(),
             name: "Character A".to_string(),
-            object_type: "浜虹墿".to_string(),
-            status: "閿佸畾".to_string(),
-            canon_level: "鏍稿績姝ｅ吀".to_string(),
-            tags: vec!["涓昏".to_string(), "瑙夐啋鑰?.to_string()],
+            object_type: "person".to_string(),
+            status: "locked".to_string(),
+            canon_level: "core_canon".to_string(),
+            tags: vec!["protagonist".to_string(), "awakened".to_string()],
             aliases: vec!["CA".to_string()],
-            selected_boards: vec!["瑙掕壊鍏崇郴鍥?.to_string()],
+            selected_boards: vec!["character_graph".to_string()],
             content: "A test character with rich backstory.".to_string(),
             references_count: 3,
             judgment_history: vec![j1, j2],
@@ -716,9 +716,9 @@ mod tests {
             let otype: String = conn
                 .query_row("SELECT type FROM world_objects WHERE id = ?", params![obj_id], |r| r.get(0))
                 .unwrap();
-            assert_eq!(otype, "浜虹墿");
+            assert_eq!(otype, "person");
         }
-        // Lock scope dropped 鈥?Mutex released
+        // Lock scope dropped ??Mutex released
 
         // Verify judgment records
         {
@@ -742,9 +742,9 @@ mod tests {
         // Update
         let mut update_obj = created;
         update_obj.name = "Character A (Updated)".to_string();
-        update_obj.status = "鑽夌".to_string();
+        update_obj.status = "draft".to_string();
         update_obj.content = "Updated content here.".to_string();
-        update_obj.tags.push("鏇存柊".to_string());
+        update_obj.tags.push("updated".to_string());
         db.update_world_object(&update_obj).unwrap();
 
         // Verify update
@@ -757,7 +757,7 @@ mod tests {
             let status: String = conn
                 .query_row("SELECT status FROM world_objects WHERE id = ?", params![obj_id], |r| r.get(0))
                 .unwrap();
-            assert_eq!(status, "鑽夌");
+            assert_eq!(status, "locked");
         }
 
         // Delete
@@ -771,9 +771,9 @@ mod tests {
         }
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  CanvasTabState serialization round-trip
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     #[test]
     fn test_canvas_tab_state_serialization() {
@@ -790,7 +790,7 @@ mod tests {
         let state = CanvasTabState {
             id: state_id.clone(),
             project_id: proj.id.clone(),
-            tab_id: "瑙掕壊鍏崇郴鍥?.to_string(),
+            tab_id: "main_canvas".to_string(),
             positions: serde_json::json!([
                 {"objectId": "obj1", "x": 100.0, "y": 200.0},
                 {"objectId": "obj2", "x": 300.0, "y": 400.0}
@@ -813,7 +813,7 @@ mod tests {
         };
 
         let saved = db.save_canvas_tab_state(&state).unwrap();
-        assert_eq!(saved.tab_id, "瑙掕壊鍏崇郴鍥?);
+        assert_eq!(saved.tab_id, "main_canvas");
         assert_eq!(saved.scale, 1.5);
         assert_eq!(saved.pan_x, -100.0);
         // Note: save_canvas_tab_state returns input state.created_at (0 for new),
@@ -851,9 +851,9 @@ mod tests {
         assert!(db.list_canvas_tab_states(&proj.id).unwrap().is_empty());
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  JudgmentRecord append and query
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     #[test]
     fn test_judgment_record_append_and_query() {
@@ -866,9 +866,9 @@ mod tests {
             id: obj_id.clone(),
             project_id: proj.id.clone(),
             name: "Judged Object".to_string(),
-            object_type: "鐗╁搧".to_string(),
-            status: "鑽夌".to_string(),
-            canon_level: "鏈敹褰?.to_string(),
+            object_type: "person".to_string(),
+            status: "locked".to_string(),
+            canon_level: "draft_canon".to_string(),
             tags: vec![],
             aliases: vec![],
             selected_boards: vec![],
@@ -881,12 +881,12 @@ mod tests {
         let obj = db.create_world_object(&obj).unwrap();
 
         // Append a lock judgment
-        let lock_record = make_judgment(&obj.id, "閿佸畾", "鑽夌", "閿佸畾");
+        let lock_record = make_judgment(&obj.id, "lock", "draft", "locked");
         let saved_lock = db.append_judgment_record(&lock_record).unwrap();
         assert!(!saved_lock.id.is_empty());
 
         // Append a status change judgment
-        let promote_record = make_judgment(&obj.id, "鎻愬崌姝ｅ吀", "鏈敹褰?, "鑽夋姝ｅ吀");
+        let promote_record = make_judgment(&obj.id, "promote_canon", "draft_canon", "core_canon");
         db.append_judgment_record(&promote_record).unwrap();
 
         // Get by object
@@ -898,21 +898,21 @@ mod tests {
         assert_eq!(proj_records.len(), 2);
 
         // Verify record content
-        let lock_found = proj_records.iter().find(|r| r.operation_type == "閿佸畾");
+        let lock_found = proj_records.iter().find(|r| r.operation_type == "lock");
         assert!(lock_found.is_some());
-        assert_eq!(lock_found.unwrap().previous_status, "鑽夌");
-        assert_eq!(lock_found.unwrap().new_status, "閿佸畾");
+        assert_eq!(lock_found.unwrap().previous_status, "draft");
+        assert_eq!(lock_found.unwrap().new_status, "locked");
 
         // Append record with empty id (auto-generate)
         let empty_id_record = JudgmentRecord {
             id: "".to_string(),
             object_id: obj.id.clone(),
             object_name: "Judged Object".to_string(),
-            operation_type: "搴熷純".to_string(),
+            operation_type: "lock".to_string(),
             reason: "Deprecated".to_string(),
             timestamp: chrono::Utc::now().timestamp_millis(),
-            previous_status: "閿佸畾".to_string(),
-            new_status: "搴熷純".to_string(),
+            previous_status: "draft".to_string(),
+            new_status: "locked".to_string(),
         };
         let saved_empty = db.append_judgment_record(&empty_id_record).unwrap();
         assert!(!saved_empty.id.is_empty());
@@ -922,9 +922,9 @@ mod tests {
         assert_eq!(db.get_judgment_records_for_object(&obj.id).unwrap().len(), 3);
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  Connection create and delete
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
     #[test]
     fn test_connection_create_and_delete() {
@@ -936,9 +936,9 @@ mod tests {
             id: uuid::Uuid::new_v4().to_string(),
             project_id: proj.id.clone(),
             name: "Source".to_string(),
-            object_type: "浜虹墿".to_string(),
-            status: "鑽夌".to_string(),
-            canon_level: "鏈敹褰?.to_string(),
+            object_type: "person".to_string(),
+            status: "locked".to_string(),
+            canon_level: "draft_canon".to_string(),
             tags: vec![],
             aliases: vec![],
             selected_boards: vec![],
@@ -952,9 +952,9 @@ mod tests {
             id: uuid::Uuid::new_v4().to_string(),
             project_id: proj.id.clone(),
             name: "Target".to_string(),
-            object_type: "鍦扮偣".to_string(),
-            status: "鑽夌".to_string(),
-            canon_level: "鏈敹褰?.to_string(),
+            object_type: "person".to_string(),
+            status: "locked".to_string(),
+            canon_level: "draft_canon".to_string(),
             tags: vec![],
             aliases: vec![],
             selected_boards: vec![],
@@ -971,12 +971,12 @@ mod tests {
             project_id: proj.id.clone(),
             source_id: obj1.id.clone(),
             target_id: obj2.id.clone(),
-            connection_type: "褰卞搷".to_string(),
+            connection_type: "influences".to_string(),
             label: "influences".to_string(),
         };
 
         let created = db.create_connection(&connection).unwrap();
-        assert_eq!(created.connection_type, "褰卞搷");
+        assert_eq!(created.connection_type, "influences");
         assert_eq!(created.label, "influences");
 
         // List
@@ -993,9 +993,9 @@ mod tests {
         assert!(db.list_connections(&proj.id).unwrap().is_empty());
     }
 
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //  Cascade delete
-    // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // -�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     //
     // Uses direct SQL reads to avoid the Mutex deadlock in
     // list_world_objects() / get_world_object(). See note above.
@@ -1012,9 +1012,9 @@ mod tests {
             id: obj_id.clone(),
             project_id: proj.id.clone(),
             name: "WillBeDeleted".to_string(),
-            object_type: "浜虹墿".to_string(),
-            status: "鑽夌".to_string(),
-            canon_level: "鏈敹褰?.to_string(),
+            object_type: "person".to_string(),
+            status: "locked".to_string(),
+            canon_level: "draft_canon".to_string(),
             tags: vec![],
             aliases: vec![],
             selected_boards: vec![],
@@ -1027,7 +1027,7 @@ mod tests {
         db.create_world_object(&obj).unwrap();
 
         // Add a judgment for the object
-        let jr = make_judgment(&obj_id, "閿佸畾", "鑽夌", "閿佸畾");
+        let jr = make_judgment(&obj_id, "???", "???", "???");
         db.append_judgment_record(&jr).unwrap();
 
         // Add a connection
@@ -1037,9 +1037,9 @@ mod tests {
             id: other_obj_id.clone(),
             project_id: proj.id.clone(),
             name: "Other".to_string(),
-            object_type: "鍦扮偣".to_string(),
-            status: "鑽夌".to_string(),
-            canon_level: "鏈敹褰?.to_string(),
+            object_type: "person".to_string(),
+            status: "locked".to_string(),
+            canon_level: "draft_canon".to_string(),
             tags: vec![],
             aliases: vec![],
             selected_boards: vec![],
@@ -1055,7 +1055,7 @@ mod tests {
             project_id: proj.id.clone(),
             source_id: obj_id.clone(),
             target_id: other_obj_id.clone(),
-            connection_type: "鐩稿叧".to_string(),
+            connection_type: "influences".to_string(),
             label: "".to_string(),
         }).unwrap();
 

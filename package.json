@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "tauri": "tauri",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:tauri": "powershell -ExecutionPolicy Bypass -File ./scripts/e2e-tauri.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

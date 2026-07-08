@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+﻿import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
@@ -220,6 +220,7 @@ const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allO
 
   const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
     if (toolMode !== 'select') return;
+    if (e.target !== canvasRef.current) return;
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = e.clientX - rect.left + panOffset.x;

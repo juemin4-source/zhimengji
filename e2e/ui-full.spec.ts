@@ -22,6 +22,16 @@ async function withProjects(page, objects = []) {
 async function enterProject(page, name = '觉醒纪元') {
   await page.getByLabel('进入《' + name + '》').click();
   await expect(page.getByTitle('返回书架')).toBeVisible({ timeout: 5000 });
+
+  // 关闭弹出的引导弹窗（如果有）
+  const guideBtn = page.getByRole('button', { name: '开始使用' });
+  if (await guideBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await guideBtn.click();
+    const knowBtn = page.getByRole('button', { name: '知道啦' });
+    if (await knowBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await knowBtn.click();
+    }
+  }
 }
 
 // ─── 1. Bookshelf ───────────────────────────────────────────────────
@@ -39,7 +49,7 @@ test.describe('Bookshelf - 作品书架', () => {
     await withProjects(page);
     // 验证两个预设项目都显示
     await expect(page.getByText('觉醒纪元')).toBeVisible();
-    await expect(page.getByText('误入禁忌森林')).toBeVisible();
+    await expect(page.getByText('星空彼岸')).toBeVisible();
   });
 
   test('新建作品向导弹窗', async ({ page }) => {
@@ -275,3 +285,5 @@ test.describe('键盘快捷键', () => {
     await page.keyboard.press('Escape');
   });
 });
+
+

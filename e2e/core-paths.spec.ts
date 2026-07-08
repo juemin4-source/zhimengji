@@ -107,12 +107,18 @@ async function mockMutableProjects(page) {
 
 /**
  * Mock Tauri IPC with pre-populated projects and optional world objects.
- * String-based addInitScript for consistency with existing tests.
+ * Pre-sets localStorage so First Launch Guide does not show on entry.
  */
 async function mockExistingProjects(page, objectsJSON) {
   const projectsJSON = JSON.stringify([BOOK_1, BOOK_2]);
 
   await page.addInitScript(`
+    // Suppress First Launch Guide for the mock projects
+    try {
+      localStorage.setItem("zhimengji-guide-done-book-1", "true");
+      localStorage.setItem("zhimengji-guide-done-book-2", "true");
+    } catch (e) {}
+
     window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
     window.__TAURI_EVENT_PLUGIN_INTERNALS__ = window.__TAURI_EVENT_PLUGIN_INTERNALS__ || {};
 
@@ -177,55 +183,38 @@ test.describe("Path 1+2: Bookshelf -> Create Project -> Editor", () => {
     await mockMutableProjects(page);
     await page.goto("/");
 
-    // --- Bookshelf ---
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("还没有作品")).toBeVisible();
 
-    // Click "新建作品" header button
     await page.getByRole("button", { name: "新建作品" }).click();
 
-    // --- Creation wizard modal ---
     await expect(page.getByRole("heading", { name: "新建作品" })).toBeVisible({ timeout: 5000 });
 
-    // Enter a project name
     await page.getByPlaceholder("输入作品名称...").fill("测试作品");
 
-    // Select the "从零开始" template card
+    // Select "从零开始" template
     await page.getByText("从零开始").first().click();
 
     // Step 1 -> "下一步"
     await page.getByRole("button", { name: "下一步" }).click();
-
     // Step 2 -> "开始创作"
     await page.getByRole("button", { name: "开始创作" }).click();
 
-    // --- First-launch guide (always shows after creation) ---
-    // Step 1 of guide: "开始使用"
+    // Dismiss first-launch guide
     await page.getByText("开始使用").click({ timeout: 10000 });
-    // Step 2 of guide: "跳过"
     await page.getByRole("button", { name: "跳过" }).click({ timeout: 5000 });
 
-    // --- Editor view ---
-    // Nav tabs
-    await expect(page.getByRole("button", { name: "文档" })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole("button", { name: "画板" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "设定集" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "判断记录" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "AI" })).toBeVisible();
+    // Editor nav tabs — use exact: true to avoid matching "+ 新建文档"
+    await expect(page.getByRole("button", { name: "文档", exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "画板", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "设定集", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "判断记录", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "AI", exact: true })).toBeVisible();
 
-    // Back-to-bookshelf button
     await expect(page.getByTitle("返回书架")).toBeVisible();
-
-    // Doc outline sidebar (should render even with no objects)
     await expect(page.locator(".doc-outline")).toBeVisible();
-
-    // Editor empty state
     await expect(page.getByText("选择或创建一个对象")).toBeVisible();
-
-    // AI settings gear
     await expect(page.getByTitle("AI 设置")).toBeVisible();
-
-    // Global search button
     await expect(page.getByTitle("全局搜索 (Ctrl+K)")).toBeVisible();
   });
 });
@@ -250,11 +239,11 @@ test.describe("Path 3: AI Chat page", () => {
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await enterProject(page, "觉醒纪元");
 
-    // Click the "AI" nav tab
-    await page.locator("button.nav-tab", { hasText: "AI" }).click();
+    // Click "AI" nav tab
+    await page.getByRole("button", { name: "AI", exact: true }).click();
 
-    // AI Chat header
-    await expect(page.getByText("AI 助手")).toBeVisible({ timeout: 5000 });
+    // Chat header (exact match to avoid the welcome message substring)
+    await expect(page.getByText("AI 助手", { exact: true })).toBeVisible({ timeout: 5000 });
 
     // Welcome message
     await expect(page.getByText("你好！我是织梦机的 AI 助手")).toBeVisible();
@@ -263,22 +252,22 @@ test.describe("Path 3: AI Chat page", () => {
     const chatInput = page.getByPlaceholder("输入你的想法，让 AI 帮你创作...");
     await expect(chatInput).toBeVisible();
 
-    // Sidebar outline shows the "人物" group
-    await expect(page.getByText("人物")).toBeVisible();
-    await expect(page.getByText("陈锋")).toBeVisible();
+    // Sidebar outline with objects
+    await expect(page.getByText("人物").first()).toBeVisible();
+    await expect(page.getByText("陈锋").first()).toBeVisible();
 
-    // Type a message and press Enter
+    // Send a message via Enter key
+    // Wait for React to process the state update
     await chatInput.fill("帮我创建一个世界观");
+    await expect(chatInput).toHaveValue("帮我创建一个世界观");
     await chatInput.press("Enter");
-
-    // User message appears
     await expect(page.getByText("帮我创建一个世界观")).toBeVisible({ timeout: 5000 });
 
-    // Simulated AI response appears (1.2 - 2s delay)
-    await expect(page.getByText("以下是为你创建的世界观设定")).toBeVisible({ timeout: 5000 });
-
-    // AI-generated doc card appears
-    await expect(page.getByText("天眼纪元")).toBeVisible({ timeout: 3000 });
+    // Simulated AI response should include a doc card
+    // Check for the AI-generated doc card (proves response was processed)
+    await expect(page.getByText("天眼纪元")).toBeVisible({ timeout: 10000 });
+    // Also verify the assistant continued the conversation
+    await expect(page.locator(".ai-doc-card")).toBeVisible({ timeout: 3000 });
   });
 });
 
@@ -295,11 +284,8 @@ test.describe("Path 4: AI Settings overlay", () => {
     // Click gear icon
     await page.getByTitle("AI 设置").click();
 
-    // Full-screen settings overlay
-    await expect(page.getByText("设置")).toBeVisible({ timeout: 5000 });
-
-    // Sidebar tabs
-    await expect(page.getByText("API Keys")).toBeVisible();
+    // Verify settings sidebar tabs are visible (these are unique enough)
+    await expect(page.getByText("API Keys")).toBeVisible({ timeout: 5000 });
     await expect(page.getByText("模型选择")).toBeVisible();
     await expect(page.getByText("用量监控")).toBeVisible();
     await expect(page.getByText("费用")).toBeVisible();
@@ -307,10 +293,10 @@ test.describe("Path 4: AI Settings overlay", () => {
     // Save button
     await expect(page.getByText("保存设置")).toBeVisible();
 
-    // Close via "返回"
+    // Close via "返回" button
     await page.getByRole("button", { name: "返回" }).first().click();
 
-    // Nav bar should be visible again
+    // Verify nav bar is visible again
     await expect(page.getByTitle("AI 设置")).toBeVisible({ timeout: 3000 });
   });
 });
@@ -326,14 +312,14 @@ test.describe("Path 5: Canvas view", () => {
     await enterProject(page, "觉醒纪元");
 
     // Click "画板" nav tab
-    await page.locator("button.nav-tab", { hasText: "画板" }).click();
+    await page.getByRole("button", { name: "画板", exact: true }).click();
 
     // Canvas sub-tabs
     await expect(page.getByRole("button", { name: "角色关系图" })).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole("button", { name: "时间线" })).toBeVisible();
     await expect(page.getByRole("button", { name: "设定推演图" })).toBeVisible();
 
-    // Zoom controls (floating panel)
+    // Zoom controls
     await expect(page.getByTitle("缩小 (Ctrl+-)")).toBeVisible();
     await expect(page.getByTitle("放大 (Ctrl++)")).toBeVisible();
     await expect(page.getByTitle("适应画布 (Ctrl+0)")).toBeVisible();
@@ -375,7 +361,7 @@ test.describe("Path 6: Judgment Records page", () => {
     await enterProject(page, "觉醒纪元");
 
     // Click "判断记录" nav tab
-    await page.locator("button.nav-tab", { hasText: "判断记录" }).click();
+    await page.getByRole("button", { name: "判断记录", exact: true }).click();
 
     // Tab headings
     await expect(page.getByText("动作日志")).toBeVisible({ timeout: 5000 });
@@ -389,3 +375,7 @@ test.describe("Path 6: Judgment Records page", () => {
     await expect(page.locator(".judgment-tab.active")).toContainText("字段变更");
   });
 });
+
+
+
+

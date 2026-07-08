@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Changelog — In-memory undo/redo stack for 织梦机 v1.2 (P0-03).
  * Records operations for object create/delete, canvas position changes,
  * connection create/delete. Not persisted across restarts.
@@ -62,5 +62,9 @@ export class Changelog {
 
   peekUndo(): ChangelogEntry | null {
     return this.undoStack[this.undoStack.length - 1] || null;
+  }
+
+  getAllEntries(): ChangelogEntry[] {
+    return [...this.undoStack];
   }
 }

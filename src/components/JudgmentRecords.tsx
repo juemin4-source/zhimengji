@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { WorldObject, JudgmentRecord, JudgmentOperation } from '../types/world';
+import type { WorldObject, JudgmentOperation, ChangelogEntry } from '../types/world';
 
 interface JudgmentRecordsProps {
   allObjects: WorldObject[];
   onNavigate: (name: string) => void;
+  changelogEntries?: ChangelogEntry[];
 }
 
 type TabKey = 'actionLog' | 'fieldChanges';
@@ -15,19 +16,76 @@ const TAB_OPTIONS: { key: TabKey; label: string }[] = [
   { key: 'fieldChanges', label: '字段变更' },
 ];
 
-export default function JudgmentRecords({ allObjects, onNavigate }: JudgmentRecordsProps) {
+const ACTION_LABELS: Record<string, string> = {
+  create_object: '创建对象',
+  delete_object: '删除对象',
+  update_object: '更新对象',
+  move_canvas_node: '移动节点',
+  create_connection: '创建连线',
+  delete_connection: '删除连线',
+  update_canvas_state: '更新画板',
+};
+
+interface DisplayRecord {
+  id: string;
+  objectId: string;
+  objectName: string;
+  operationType: string;
+  reason: string;
+  timestamp: number;
+  previousStatus: string;
+  newStatus: string;
+  objectType: string;
+  isChangelog?: boolean;
+}
+
+export default function JudgmentRecords({ allObjects, onNavigate, changelogEntries = [] }: JudgmentRecordsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('actionLog');
   const [filterObject, setFilterObject] = useState<string>('全部');
   const [filterType, setFilterType] = useState<string>('全部');
 
   const allRecords = useMemo(() => {
-    const records: Array<JudgmentRecord & { object: WorldObject }> = [];
+    const records: DisplayRecord[] = [];
+
+    // Add judgment records from allObjects
     allObjects.forEach(obj => {
-      obj.judgmentHistory.forEach(j => records.push({ ...j, object: obj }));
+      obj.judgmentHistory.forEach(j => {
+        records.push({
+          id: j.id,
+          objectId: j.objectId,
+          objectName: j.objectName,
+          operationType: j.operationType,
+          reason: j.reason || '无说明',
+          timestamp: j.timestamp,
+          previousStatus: j.previousStatus,
+          newStatus: j.newStatus,
+          objectType: obj.type,
+          isChangelog: false,
+        });
+      });
     });
+
+    // Add changelog entries
+    changelogEntries.forEach(entry => {
+      const obj = allObjects.find(o => o.id === entry.objectId);
+      const actionLabel = ACTION_LABELS[entry.action] || entry.action;
+      records.push({
+        id: 'cl-' + entry.timestamp + '-' + entry.objectId + '-' + entry.action,
+        objectId: entry.objectId,
+        objectName: (entry.snapshot?.name as string) || entry.objectId,
+        operationType: actionLabel,
+        reason: actionLabel,
+        timestamp: entry.timestamp,
+        previousStatus: '',
+        newStatus: '',
+        objectType: (entry.snapshot?.type as string) || (obj ? obj.type : '编辑操作'),
+        isChangelog: true,
+      });
+    });
+
     records.sort((a, b) => b.timestamp - a.timestamp);
     return records;
-  }, [allObjects]);
+  }, [allObjects, changelogEntries]);
 
   const filteredRecords = useMemo(() => {
     return allRecords.filter(r => {
@@ -37,7 +95,10 @@ export default function JudgmentRecords({ allObjects, onNavigate }: JudgmentReco
     });
   }, [allRecords, filterObject, filterType]);
 
-  const fieldChanges = useMemo(() => allRecords.filter(r => r.previousStatus !== r.newStatus), [allRecords]);
+  const fieldChanges = useMemo(
+    () => allRecords.filter(r => !r.isChangelog && r.previousStatus !== r.newStatus),
+    [allRecords]
+  );
 
   const objectNames = useMemo(() => {
     const names = new Set<string>();
@@ -45,8 +106,15 @@ export default function JudgmentRecords({ allObjects, onNavigate }: JudgmentReco
     return Array.from(names).sort();
   }, [allRecords]);
 
-  const getBadgeClass = (op: JudgmentOperation): string => {
-    switch (op) { case '锁定': return 'lock'; case '废弃': return 'discard'; case '待验证': return 'pending'; case '提升正典': return 'promote'; case '收录': return 'admit'; default: return ''; }
+  const getBadgeClass = (op: string): string => {
+    switch (op) {
+      case '锁定': return 'lock';
+      case '废弃': return 'discard';
+      case '待验证': return 'pending';
+      case '提升正典': return 'promote';
+      case '收录': return 'admit';
+      default: return 'changelog';
+    }
   };
 
   const handleObjectClick = useCallback((name: string) => onNavigate(name), [onNavigate]);
@@ -57,7 +125,7 @@ export default function JudgmentRecords({ allObjects, onNavigate }: JudgmentReco
     <div className="judgment-view">
       <div className="judgment-tabs">
         {TAB_OPTIONS.map(tab => (
-          <div key={tab.key} className={`judgment-tab${activeTab === tab.key ? ' active' : ''}`} onClick={() => setActiveTab(tab.key)}>{tab.label}</div>
+          <div key={tab.key} className={'judgment-tab' + (activeTab === tab.key ? ' active' : '')} onClick={() => setActiveTab(tab.key)}>{tab.label}</div>
         ))}
       </div>
 
@@ -81,15 +149,15 @@ export default function JudgmentRecords({ allObjects, onNavigate }: JudgmentReco
               <div className="judgment-empty"><p style={{ fontSize: 16, marginBottom: 8 }}>暂无判断记录</p><p>锁定、废弃或标记待验证操作会自动生成判断记录</p></div>
             ) : (
               filteredRecords.map(r => (
-                <div key={r.id} className="judgment-card">
-                  <div className={`op-badge ${getBadgeClass(r.operationType)}`}>{r.operationType}</div>
+                <div key={r.id} className={'judgment-card' + (r.isChangelog ? ' changelog-card' : '')}>
+                  <div className={'op-badge ' + getBadgeClass(r.operationType)}>{r.operationType}</div>
                   <div className="card-main">
                     <div className="card-header-line">
-                      <span className="obj-link" onClick={() => handleObjectClick(r.objectName)} title={`跳转到「${r.objectName}」的文档`}>{r.objectName}<span className="obj-link-arrow">→</span></span>
-                      <span className="obj-type-badge">{r.object.type}</span>
+                      <span className="obj-link" onClick={() => handleObjectClick(r.objectName)} title={'跳转到「' + r.objectName + '」的文档'}>{r.objectName}<span className="obj-link-arrow">→</span></span>
+                      <span className="obj-type-badge">{r.objectType}</span>
                     </div>
-                    <div className="reason">{r.reason || '无说明'}</div>
-                    <div className="time">{formatTime(r.timestamp)}{r.previousStatus !== r.newStatus && (<span style={{ marginLeft: 8, color: '#666' }}>{r.previousStatus} → {r.newStatus}</span>)}</div>
+                    {!r.isChangelog && <div className="reason">{r.reason || '无说明'}</div>}
+                    <div className="time">{formatTime(r.timestamp)}{!r.isChangelog && r.previousStatus !== r.newStatus && (<span style={{ marginLeft: 8, color: '#666' }}>{r.previousStatus} → {r.newStatus}</span>)}</div>
                   </div>
                 </div>
               ))
@@ -108,8 +176,8 @@ export default function JudgmentRecords({ allObjects, onNavigate }: JudgmentReco
                 <div className="op-badge field-badge">字段变更</div>
                 <div className="card-main">
                   <div className="card-header-line">
-                    <span className="obj-link" onClick={() => handleObjectClick(r.objectName)} title={`跳转到「${r.objectName}」的文档`}>{r.objectName}<span className="obj-link-arrow">→</span></span>
-                    <span className="obj-type-badge">{r.object.type}</span>
+                    <span className="obj-link" onClick={() => handleObjectClick(r.objectName)} title={'跳转到「' + r.objectName + '」的文档'}>{r.objectName}<span className="obj-link-arrow">→</span></span>
+                    <span className="obj-type-badge">{r.objectType}</span>
                   </div>
                   <div className="field-change-detail">
                     <span className="field-name">状态</span>

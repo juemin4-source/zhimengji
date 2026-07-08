@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DocumentView — Markdown-first editor for 织梦机 v1.2 (P1-03, P1-04, P1-05).
  *
  * Default mode: source (beautified Markdown with syntax hints)
@@ -17,6 +17,7 @@ import { OBJECT_TYPES, OBJECT_STATUSES, CANON_LEVELS, STATUS_DISPLAY, CANON_COLO
 import { TEMPLATES } from '../data/seed';
 import { markdownToHtml, ensureEditorContent, htmlToMarkdown, isHtmlContent, countWords } from '../utils/markdown';
 import DocOutline from './DocOutline';
+import { Check, RefreshCw, X, Eye } from 'lucide-react';
 
 type EditMode = 'source' | 'wysiwyg' | 'preview';
 
@@ -280,7 +281,7 @@ export default function DocumentView({
           {/* Save status indicator */}
           {saveStatus && (
             <span style={{ marginLeft: 12, fontSize: 11, color: saveStatus === 'saved' ? '#4CAF50' : saveStatus === 'saving' ? '#FF9800' : saveStatus === 'failed' ? '#f44336' : saveStatus === 'offline' ? '#888' : '#FF9800' }}>
-              {saveStatus === 'saved' ? '✓ 已保存' : saveStatus === 'saving' ? '⟳ 保存中' : saveStatus === 'failed' ? '✗ 保存失败' : saveStatus === 'offline' ? '● 离线' : '● 未保存'}
+              {saveStatus === 'saved' ? <><Check size={11} /> 已保存</> : saveStatus === 'saving' ? <><RefreshCw size={11} /> 保存中</> : saveStatus === 'failed' ? <><X size={11} /> 保存失败</> : saveStatus === 'offline' ? '● 离线' : '● 未保存'}
             </span>
           )}
         </div>
@@ -315,7 +316,7 @@ export default function DocumentView({
             title="预览模式"
             style={{ fontSize: 12 }}
           >
-            👁 预览
+            <Eye size={14} /> 预览
           </button>
         </div>
       </div>
@@ -479,5 +480,3 @@ export default function DocumentView({
     </div>
   );
 }
-
-

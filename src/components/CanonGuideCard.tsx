@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { CANON_LEVELS, CANON_COLORS } from '../types/world';
+import { Globe } from 'lucide-react';
 
 interface CanonGuideCardProps {
   onDismiss: (dontShowAgain: boolean) => void;
@@ -29,7 +30,7 @@ export default function CanonGuideCard({ onDismiss }: CanonGuideCardProps) {
         onClick={e => e.stopPropagation()}
       >
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: 32 }}>🌐</span>
+          <Globe size={32} />
           <h4 style={{ fontSize: 17, marginTop: 8, color: '#f0f0f0' }}>正典等级 — 管理设定的可信度</h4>
           <p style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
             织梦机用「正典」来管理你世界设定的稳定性。每个对象有四个等级：

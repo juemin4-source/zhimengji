@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+﻿import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { WorldObject, ObjectType, ObjectStatus } from '../types/world';
 import { OBJECT_TYPES, OBJECT_STATUSES, CANON_LEVELS, STATUS_DISPLAY } from '../types/world';
 import { TEMPLATES } from '../data/seed';
+import { ArrowUp, ArrowDown, Check } from 'lucide-react';
 
 interface SettingCollectionProps {
   allObjects: WorldObject[];
@@ -139,9 +140,9 @@ export default function SettingCollection({
                 <span>更新: {new Date(selectedObject.updatedAt).toLocaleDateString('zh-CN')}</span>
                 <span>引用: {selectedObject.referencesCount} 次</span>
               </div>
-              {canPromote && (<button className="canon-promote" onClick={handlePromote}>⬆ 提升至 {CANON_LEVELS[CANON_LEVELS.indexOf(selectedObject.canonLevel) + 1]}</button>)}
-              {canDemote && (<button className="canon-demote" onClick={handleDemote}>⬇ 降级至 {CANON_LEVELS[CANON_LEVELS.indexOf(selectedObject.canonLevel) - 1]}</button>)}
-              {selectedObject.canonLevel === '核心正典' && (<div style={{ marginTop: 12, fontSize: 12, color: '#FFB74D', fontStyle: 'italic' }}>✓ 已达最高正典等级</div>)}
+              {canPromote && (<button className="canon-promote" onClick={handlePromote}><ArrowUp size={14} /> 提升至 {CANON_LEVELS[CANON_LEVELS.indexOf(selectedObject.canonLevel) + 1]}</button>)}
+              {canDemote && (<button className="canon-demote" onClick={handleDemote}><ArrowDown size={14} /> 降级至 {CANON_LEVELS[CANON_LEVELS.indexOf(selectedObject.canonLevel) - 1]}</button>)}
+              {selectedObject.canonLevel === '核心正典' && (<div style={{ marginTop: 12, fontSize: 12, color: '#FFB74D', fontStyle: 'italic' }}><Check size={14} /> 已达最高正典等级</div>)}
             </div>
           ) : (
             <div className="empty"><p>选择一个设定查看详情</p><p style={{ fontSize: 12, marginTop: 8 }}>设定集仅显示正典等级 &gt; 未收录 的对象</p></div>

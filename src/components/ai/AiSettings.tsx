@@ -1,4 +1,5 @@
-﻿import { useState, useCallback } from 'react';
+﻿import { Key, Brain, BarChart3, DollarSign, Check, X, RefreshCw, TriangleAlert, CheckCircle } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
 import type { ProviderConfig, AiModel, UsageStats, SettingsTab } from '../../types/ai';
 import { PRESET_PROVIDERS, DEFAULT_MODELS } from '../../types/ai';
 
@@ -12,9 +13,9 @@ interface AiSettingsProps {
   onSaveBudget?: (budget: number) => void;
 }
 
-const ICONS = { api: '\u{1F511}', models: '\u{1F9E0}', usage: '\u{1F4CA}', cost: '\u{1F4B0}' };
+const ICONS = { api: <Key size={16} />, models: <Brain size={16} />, usage: <BarChart3 size={16} />, cost: <DollarSign size={16} /> };
 
-const TABS: Array<{ id: SettingsTab; label: string; icon: string }> = [
+const TABS: Array<{ id: SettingsTab; label: string; icon: React.ReactNode }> = [
   { id: 'api-keys', label: 'API Keys', icon: ICONS.api },
   { id: 'models', label: '模型选择', icon: ICONS.models },
   { id: 'usage', label: '用量监控', icon: ICONS.usage },
@@ -156,7 +157,7 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
                     color: testResults[p.id].status === 'success' ? 'var(--success, #4CAF50)' : testResults[p.id].status === 'fail' ? 'var(--danger, #f44336)' : 'var(--warning, #FFC107)',
                     border: '1px solid ' + (testResults[p.id].status === 'success' ? 'rgba(76,175,80,0.15)' : testResults[p.id].status === 'fail' ? 'rgba(244,67,54,0.15)' : 'rgba(255,193,7,0.12)'),
                   }}>
-                    {testResults[p.id].status === 'success' ? '✓' : testResults[p.id].status === 'fail' ? '✕' : '⟳'} {testResults[p.id].message}
+                    {testResults[p.id].status === 'success' ? <Check size={14} /> : testResults[p.id].status === 'fail' ? <X size={14} /> : <RefreshCw size={14} />} {testResults[p.id].message}
                   </div>
                 )}
               </div>
@@ -188,7 +189,7 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 'var(--radius-sm, 6px)', cursor: 'pointer', border: '1px solid ' + (selectedModel === model.id ? 'rgba(183,255,0,0.2)' : 'transparent'), background: selectedModel === model.id ? 'var(--accent-soft, rgba(183,255,0,0.1))' : 'transparent' }}
             onClick={() => setSelectedModel(model.id)}>
             <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid ' + (selectedModel === model.id ? 'var(--accent, #B7FF00)' : 'var(--border-light, #333)'), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: selectedModel === model.id ? 'var(--accent, #B7FF00)' : 'transparent' }}>
-              {selectedModel === model.id && <span style={{ color: '#0a0a0a', fontSize: '0.6rem', fontWeight: 700 }}>✓</span>}
+              {selectedModel === model.id && <Check size={10} color="#0a0a0a" />}
             </div>
             <div style={{ width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', flexShrink: 0, background: model.providerId === 'openai' ? 'rgba(66,165,245,0.12)' : model.providerId === 'anthropic' ? 'rgba(255,152,0,0.12)' : 'rgba(183,255,0,0.08)' }}>{model.icon}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -232,7 +233,7 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
                 <span>{usageStats.maxTokens.toLocaleString()}</span>
               </div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, fontSize: '0.75rem', marginTop: 8, ...badgeStyle }}>
-                {pct >= 95 ? '⚠️ 严重超额' : pct >= 80 ? '⚠️ 接近限额' : '✅ 用量正常'} — 已使用 {pct.toFixed(1)}%
+                {pct >= 95 ? <><TriangleAlert size={14} /> 严重超额</> : pct >= 80 ? <><TriangleAlert size={14} /> 接近限额</> : <><CheckCircle size={14} /> 用量正常</>} — 已使用 {pct.toFixed(1)}%
               </div>
             </div>
             <div style={{ marginBottom: 16 }}>

@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import type { WorldObject } from '../types/world';
+import { Info, Check } from 'lucide-react';
 import { STATUS_DISPLAY, CANON_LEVELS, CANON_COLORS } from '../types/world';
 
 interface InspectorProps {
@@ -94,7 +95,7 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
           <button className="ia-btn" disabled={!isUncollected} onClick={() => onAction('收录为设定', object.id)}
             title={isUncollected ? '将对象收录为设定（正典等级提升为草案正典）' : '已收录为设定'}>收录为设定</button>
           <span style={{ fontSize: 13, cursor: 'help', color: '#888' }}
-            title="正典等级：未收录(灰色) → 草案正典(紫色) → 项目正典(蓝色) → 核心正典(金色)">ⓘ</span>
+            title="正典等级：未收录(灰色) → 草案正典(紫色) → 项目正典(蓝色) → 核心正典(金色)"><Info size={14} /></span>
         </div>
         <div className="ia-btn-wrapper" ref={boardRef}>
           <button className="ia-btn" disabled={allBoardsCovered || allBoardTabs.length === 0} onClick={() => setShowBoardMenu(v => !v)} title="放入画板">放入画板</button>
@@ -103,7 +104,7 @@ export default function Inspector({ object, allObjects, allBoardTabs, onNavigate
               {allBoardTabs.map(board => (
                 <div key={board} className={`ia-board-item${object.selectedBoards.includes(board) ? ' checked' : ''}`}
                   onClick={() => { onAction('放入画板', object.id, board); setShowBoardMenu(false); }}>
-                  {object.selectedBoards.includes(board) ? '✓ ' : ''}{board}
+                  {object.selectedBoards.includes(board) ? <><Check size={12} />{' '}</> : ''}{board}
                 </div>
               ))}
             </div>

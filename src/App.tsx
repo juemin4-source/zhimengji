@@ -1,6 +1,6 @@
 ﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { User, MapPin, Building2, Settings, Calendar, Package, BookOpen, FileText, Search } from 'lucide-react';
-import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus } from './types/world';
+import type { WorldObject, Connection, NavTab, CanvasTab, CanvasTabState, ObjectType, ObjectStatus, CanonLevel, JudgmentOperation, SaveStatus, ChangelogEntry } from './types/world';
 import { CANVAS_TABS, CANON_LEVELS, CANON_COLORS, PROJECT_TEMPLATES } from './types/world';
 import type { Project } from './types/world';
 import { TEMPLATES } from './data/seed';
@@ -115,6 +115,8 @@ function AppInner() {
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [aiProviders, setAiProviders] = useState<ProviderConfig[]>([]);
   const [aiActiveModelId, setAiActiveModelId] = useState('gpt-4o');
+  const [changelogEntries, setChangelogEntries] = useState<ChangelogEntry[]>([]);
+
   const [aiUsageStats, setAiUsageStats] = useState<UsageStats>({
     todayTokens: 6240, maxTokens: 10000,
     dailyHistory: [],
@@ -246,6 +248,11 @@ function AppInner() {
     }
   }, [objects, selectedObjectId, showToast]);
 
+  const pushChangelog = useCallback((entry: ChangelogEntry) => {
+    changelog.push(entry);
+    setChangelogEntries(prev => [...prev, entry]);
+  }, []);
+
   // Load projects on mount
   useEffect(() => {
     api.listProjects()
@@ -318,6 +325,7 @@ function AppInner() {
       setCanvasStates(cs as Record<CanvasTab, CanvasTabState>);
       setSelectedObjectId(migratedObjs.length > 0 ? migratedObjs[0].id : null);
       changelog.clear();
+      setChangelogEntries([]);
     } catch (e) {
       console.error('Failed to load project data', e);
       showToast('加载项目数据失败', 'error');
@@ -354,6 +362,7 @@ function AppInner() {
     setObjects([]);
     setConnections([]);
     changelog.clear();
+    setChangelogEntries([]);
   }, []);
 
   // ── Creation Wizard ──
@@ -497,7 +506,7 @@ function AppInner() {
       createdAt: now, updatedAt: now,
     };
     // Record for undo
-    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
+    pushChangelog({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
@@ -520,7 +529,7 @@ function AppInner() {
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
-    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
+    pushChangelog({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     // Place the new object on the canvas at the double-clicked position
@@ -557,7 +566,7 @@ function AppInner() {
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
-    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
+    pushChangelog({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     setActiveNavTab('文档');
@@ -572,7 +581,7 @@ function AppInner() {
   const onDeleteObject = useCallback(async (id: string) => {
     const obj = objects.find(o => o.id === id);
     if (obj) {
-      changelog.push({ timestamp: Date.now(), action: 'delete_object', objectId: id, snapshot: { ...obj } });
+      pushChangelog({ timestamp: Date.now(), action: 'delete_object', objectId: id, snapshot: { ...obj } });
     }
     setObjects(prev => prev.filter(o => o.id !== id));
     if (selectedObjectId === id) setSelectedObjectId(null);
@@ -656,7 +665,7 @@ function AppInner() {
     // Record for undo if positions changed
     if (state.positions) {
       const current = canvasStatesRef.current[tabId];
-      changelog.push({
+      pushChangelog({
         timestamp: Date.now(),
         action: 'update_canvas_state',
         objectId: tabId,
@@ -705,7 +714,7 @@ function AppInner() {
       content: template?.defaultContent ?? '', referencesCount: 0, judgmentHistory: [],
       createdAt: now, updatedAt: now,
     };
-    changelog.push({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
+    pushChangelog({ timestamp: now, action: 'create_object', objectId: newObj.id, snapshot: newObj });
     setObjects(prev => [...prev, newObj]);
     setSelectedObjectId(newObj.id);
     if (activeBookId) {
@@ -724,10 +733,19 @@ function AppInner() {
     });
   }, [activeBookId, showToast]);
 
-  const TYPE_ICONS: Record<string, string> = {
-    '人物': '👤', '地点': '📍', '组织': '🏛', '规则/机制': '⚙️',
-    '事件': '📅', '物品': '📦', '术语': '📖', '章节': '📄',
-  };
+  function renderTypeIcon(type: string, size: number = 14) {
+    switch (type) {
+      case '人物': return <User size={size} />;
+      case '地点': return <MapPin size={size} />;
+      case '组织': return <Building2 size={size} />;
+      case '规则/机制': return <Settings size={size} />;
+      case '事件': return <Calendar size={size} />;
+      case '物品': return <Package size={size} />;
+      case '术语': return <BookOpen size={size} />;
+      case '章节': return <FileText size={size} />;
+      default: return <FileText size={size} />;
+    }
+  }
 
   const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录', 'AI'];
   // Compute total word count for status bar
@@ -810,16 +828,12 @@ function AppInner() {
             <div className="offline-banner">离线 ● 当前处于离线状态，编辑内容将在恢复连接后自动同步。</div>
           )}
           <nav className="nav-bar">
-            <button onClick={handleBackToBookshelf} className="nav-back-btn" title="返回书架">
+            <button onClick={handleBackToBookshelf} className="nav-back-btn" title="返回书架" style={{ background: "transparent", color: "var(--text-secondary)" }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
               书架
             </button>
             <div className="nav-divider" />
-            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span> data-mode='source'>源码</button>
-                <button className={`nav-mode-btn ${editorMode === 'preview' ? 'active' : ''}`} onClick={() => setEditorMode('preview')} data-mode='preview'>预览</button>
-                <button className={`nav-mode-btn ${editorMode === 'wysiwyg' ? 'active' : ''}`} onClick={() => setEditorMode('wysiwyg')} data-mode='wysiwyg'>WYSIWYG</button>
-              </div>
-            )}
+            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span>
             {NAV_TABS.map(tab => (
               <button key={tab} className={`nav-tab ${activeNavTab === tab ? 'active' : ''}`} onClick={() => setActiveNavTab(tab)}>{tab}</button>
             ))}
@@ -890,9 +904,23 @@ function AppInner() {
         onClose={() => setShowGlobalSearch(false)}
         onNavigate={onNavigate}
       />
+      
+      {/* AI Settings (v1.3) */}
+      {showAiSettings && <AiSettings
+        providers={aiProviders}
+        activeModelId={aiActiveModelId}
+        usageStats={aiUsageStats}
+        onClose={() => setShowAiSettings(false)}
+        onSaveProviders={(providers) => setAiProviders(providers)}
+        onChangeModel={(modelId) => setAiActiveModelId(modelId)}
+        onSaveBudget={(budget) => setAiUsageStats(prev => ({ ...prev, budgetLimit: budget }))}
+      />}
     </div>
   );
 }
+
+
+
 
 
 

@@ -6,9 +6,10 @@
  * Click navigates to object document.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { WorldObject } from '../types/world';
 import { useGlobalSearch } from '../hooks/useGlobalSearch';
+import { Search, FileText, User, MapPin, Building2, Settings, Calendar, Package, BookOpen } from 'lucide-react';
 
 interface GlobalSearchProps {
   objects: WorldObject[];
@@ -17,9 +18,9 @@ interface GlobalSearchProps {
   onNavigate: (name: string) => void;
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  '人物': '👤', '地点': '📍', '组织': '🏛', '规则/机制': '⚙️',
-  '事件': '📅', '物品': '📦', '术语': '📖', '章节': '📄',
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  '人物': <User size={14} />, '地点': <MapPin size={14} />, '组织': <Building2 size={14} />, '规则/机制': <Settings size={14} />,
+  '事件': <Calendar size={14} />, '物品': <Package size={14} />, '术语': <BookOpen size={14} />, '章节': <FileText size={14} />,
 };
 
 export default function GlobalSearch({ objects, isOpen, onClose, onNavigate }: GlobalSearchProps) {
@@ -96,7 +97,7 @@ export default function GlobalSearch({ objects, isOpen, onClose, onNavigate }: G
       >
         {/* Search Input */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16, color: '#666' }}>🔍</span>
+          <Search size={16} style={{ color: '#666' }} />
           <input
             ref={inputRef}
             type="text"
@@ -123,7 +124,7 @@ export default function GlobalSearch({ objects, isOpen, onClose, onNavigate }: G
 
           {hasSearched && results.length === 0 && (
             <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.5 }}>🔍</div>
+              <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.5 }}><Search size={28} style={{ opacity: 0.5 }} /></div>
               <div style={{ color: '#888', fontSize: 14 }}>无匹配结果</div>
               <div style={{ color: '#666', fontSize: 12, marginTop: 4 }}>
                 尝试使用不同的关键词，或搜索对象的别名/标签
@@ -138,7 +139,7 @@ export default function GlobalSearch({ objects, isOpen, onClose, onNavigate }: G
                 padding: '4px 8px', fontSize: 11, color: '#888',
                 textTransform: 'uppercase', letterSpacing: 0.5,
               }}>
-                <span>{TYPE_ICONS[group.type] || '📄'}</span>
+                <span>{TYPE_ICONS[group.type] || <FileText size={14} />}</span>
                 <span>{group.type}</span>
                 <span style={{ fontSize: 10, color: '#555' }}>({group.results.length})</span>
               </div>
@@ -154,7 +155,7 @@ export default function GlobalSearch({ objects, isOpen, onClose, onNavigate }: G
                   onClick={() => { onNavigate(item.object.name); onClose(); }}
                   onMouseEnter={() => setSelectedIndex(results.flatMap(g => g.results).indexOf(item))}
                 >
-                  <span style={{ fontSize: 14 }}>{TYPE_ICONS[item.object.type] || '📄'}</span>
+                  <span style={{ fontSize: 14 }}>{TYPE_ICONS[item.object.type] || <FileText size={14} />}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: '#ccc', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.object.name}

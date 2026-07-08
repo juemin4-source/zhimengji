@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+﻿import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import type { ToastConfig } from '../types/toast';
 import { DEFAULT_TOAST_CONFIG } from '../types/toast';
+import { Check, X, RefreshCw, Info } from 'lucide-react';
 
 // ===== Types =====
 type ToastType = 'info' | 'success' | 'error' | 'loading';
@@ -61,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map(t => (
           <div key={t.id} className={`toast-item toast-${t.type}`} onClick={() => dismissToast(t.id)}>
             <span className="toast-icon">
-              {t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : t.type === 'loading' ? '⟳' : 'ℹ'}
+              {t.type === 'success' ? <Check size={14} /> : t.type === 'error' ? <X size={14} /> : t.type === 'loading' ? <RefreshCw size={14} /> : <Info size={14} />}
             </span>
             <span className="toast-message">{t.message}</span>
           </div>

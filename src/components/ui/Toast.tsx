@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from "react";
+import { Check, X, Info } from 'lucide-react';
 
 type ToastType = "success" | "error" | "info";
 
@@ -20,10 +21,10 @@ const typeColors: Record<ToastType, string> = {
   info: "var(--accent, #B7FF00)",
 };
 
-const typeIcons: Record<ToastType, string> = {
-  success: "✓",
-  error: "✕",
-  info: "ℹ",
+const typeIcons = {
+  success: <Check size={14} />,
+  error: <X size={14} />,
+  info: <Info size={14} />,
 };
 
 export default function Toast({ toasts, onDismiss, duration = 3000 }: ToastProps) {

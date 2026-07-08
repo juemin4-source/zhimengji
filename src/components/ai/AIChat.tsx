@@ -1,4 +1,5 @@
-﻿import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+﻿import { useState, useRef, useCallback, useMemo, useEffect, type ReactNode } from 'react';
+import { User, Bot, X, Globe, Landmark, MapPin, FileText, Package } from 'lucide-react';
 import type { WorldObject } from '../../types/world';
 import type { Message, DocCardData, AiModel } from '../../types/ai';
 import { DEFAULT_MODELS } from '../../types/ai';
@@ -42,13 +43,13 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const outlineGroups = useMemo(() => {
-    const groups: Array<{ label: string; icon: string; items: WorldObject[] }> = [
-      { label: '世界观', icon: '\u{1F30D}', items: allObjects.filter(o => o.type === '规则/机制' && o.status !== '废弃' && o.status !== '草稿') },
-      { label: '组织', icon: '\u{1F3DB}️', items: allObjects.filter(o => o.type === '组织' && o.status !== '废弃') },
-      { label: '地点', icon: '\u{1F4CD}', items: allObjects.filter(o => o.type === '地点' && o.status !== '废弃') },
-      { label: '人物', icon: '\u{1F464}', items: allObjects.filter(o => o.type === '人物' && o.status !== '废弃') },
-      { label: '章节', icon: '\u{1F4C4}', items: allObjects.filter(o => o.type === '章节') },
-      { label: '其他', icon: '\u{1F4E6}', items: allObjects.filter(o => ['事件', '物品', '术语'].includes(o.type) && o.status !== '废弃') },
+    const groups: Array<{ label: string; icon: ReactNode; items: WorldObject[] }> = [
+      { label: '世界观', icon: <Globe size={14} />, items: allObjects.filter(o => o.type === '规则/机制' && o.status !== '废弃' && o.status !== '草稿') },
+      { label: '组织', icon: <Landmark size={14} />, items: allObjects.filter(o => o.type === '组织' && o.status !== '废弃') },
+      { label: '地点', icon: <MapPin size={14} />, items: allObjects.filter(o => o.type === '地点' && o.status !== '废弃') },
+      { label: '人物', icon: <User size={14} />, items: allObjects.filter(o => o.type === '人物' && o.status !== '废弃') },
+      { label: '章节', icon: <FileText size={14} />, items: allObjects.filter(o => o.type === '章节') },
+      { label: '其他', icon: <Package size={14} />, items: allObjects.filter(o => ['事件', '物品', '术语'].includes(o.type) && o.status !== '废弃') },
     ].filter(g => g.items.length > 0);
     return groups;
   }, [allObjects]);
@@ -204,7 +205,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
               borderRadius: 'var(--radius-sm, 6px)', fontSize: '0.6875rem', color: 'var(--accent, #B7FF00)', flexShrink: 0,
             }}>
               <span>聚焦: {focusObjectId ? (allObjects.find(o => o.id === focusObjectId)?.name || '') : ''}</span>
-              <button onClick={clearFocus} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, border: 'none', background: 'transparent', color: 'var(--accent, #B7FF00)', cursor: 'pointer', borderRadius: '50%', fontSize: '0.6rem', opacity: 0.6, padding: 0 }}>✕</button>
+              <button onClick={clearFocus} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, border: 'none', background: 'transparent', color: 'var(--accent, #B7FF00)', cursor: 'pointer', borderRadius: '50%', fontSize: '0.6rem', opacity: 0.6, padding: 0 }}><X size={12} /></button>
             </div>
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -220,7 +221,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
                   <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem',
                     background: msg.role === 'user' ? 'rgba(66,165,245,0.12)' : 'rgba(183,255,0,0.1)',
                     border: msg.role === 'user' ? '1px solid rgba(66,165,245,0.18)' : '1px solid rgba(183,255,0,0.15)' }}>
-                    {msg.role === 'user' ? '👤' : '🤖'}
+                    {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
                   <div style={{ maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-lg, 12px)', fontSize: '0.875rem', lineHeight: 1.6,
@@ -247,7 +248,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
               {/* Typing indicator */}
               {isLoading && (
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(183,255,0,0.1)', border: '1px solid rgba(183,255,0,0.15)' }}>🤖</div>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(183,255,0,0.1)', border: '1px solid rgba(183,255,0,0.15)' }}><Bot size={16} /></div>
                   <div className="ai-typing"><span className="ai-typing-dot" /><span className="ai-typing-dot" /><span className="ai-typing-dot" /></div>
                 </div>
               )}

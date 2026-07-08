@@ -13,6 +13,7 @@
  */
 
 import { useState } from 'react';
+import { Globe, Link, Palette, Lightbulb, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface FirstLaunchGuideProps {
   projectId: string;
@@ -30,21 +31,21 @@ const STEPS = [
   {
     title: '世界构建入门',
     description: '织梦机用「正典」来管理你的设定稳定性。每个设定有四个等级：',
-    icon: '🌐',
+    icon: <Globe size={36} />,
     showLevels: true,
   },
   {
     title: '在文档中写入 [[对象名]]',
     description:
       'WikiLink 是织梦机的核心——用 [[对象名]] 创建双向链接。双击已存在的链接可以跳转，双击不存在的链接可以快速创建新对象。',
-    icon: '🔗',
+    icon: <Link size={36} />,
     highlight: '在编辑器中输入 [[张三]] 试试',
   },
   {
     title: '画板可以可视化你的世界结构',
     description:
       '角色关系图、时间线、设定推演图——三种画板帮你从不同角度审视你的世界。拖拽节点、创建连线、缩放查看。',
-    icon: '🎨',
+    icon: <Palette size={36} />,
     highlight: '切换到「画板」标签页查看角色关系图',
   },
 ];
@@ -231,7 +232,7 @@ export default function FirstLaunchGuide({ projectId, onDismiss }: FirstLaunchGu
               textAlign: 'center',
             }}
           >
-            {'💡'} {currentStep.highlight}
+            <Lightbulb size={14} /> {currentStep.highlight}
           </div>
         )}
 
@@ -308,7 +309,7 @@ export default function FirstLaunchGuide({ projectId, onDismiss }: FirstLaunchGu
                 color: dontShowAgain ? '#000' : 'transparent',
               }}
             >
-              {'✓'}
+              <Check size={16} />
             </span>
             不再显示
           </button>
@@ -338,7 +339,7 @@ export default function FirstLaunchGuide({ projectId, onDismiss }: FirstLaunchGu
               }}
               onClick={handleNext}
             >
-              开始使用 {'→'}
+              开始使用 <ArrowRight size={14} />
             </button>
           )}
 
@@ -367,7 +368,7 @@ export default function FirstLaunchGuide({ projectId, onDismiss }: FirstLaunchGu
                 }}
                 onClick={() => setStep(step - 1)}
               >
-                {'←'} 上一步
+                <ArrowLeft size={14} /> 上一步
               </button>
               <button
                 style={{

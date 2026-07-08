@@ -1,4 +1,5 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useState, useMemo, type ReactNode } from 'react';
+import { Trash2, FileText, User, Lock, Search, Plus, ChevronRight, ChevronLeft, ChevronDown, Square, Globe } from 'lucide-react';
 import type { WorldObject, ObjectType } from '../types/world';
 
 interface DocOutlineProps {
@@ -11,16 +12,16 @@ interface DocOutlineProps {
 interface GroupConfig {
   key: string;
   label: string;
-  icon: string;
+  icon: ReactNode;
   predicate: (obj: WorldObject) => boolean;
 }
 
 const GROUPS: GroupConfig[] = [
-  { key: 'discarded', label: '废弃', icon: '\u{1F5D1}️', predicate: (o) => o.status === '废弃' },
-  { key: 'draft', label: '草稿', icon: '\u{1F4DD}', predicate: (o) => o.status === '草稿' },
-  { key: 'chapter', label: '正文', icon: '\u{1F4C4}', predicate: (o) => o.type === '章节' && o.status !== '废弃' && o.status !== '草稿' },
-  { key: 'character', label: '人物', icon: '\u{1F464}', predicate: (o) => o.type === '人物' && o.status !== '废弃' && o.status !== '草稿' },
-  { key: 'setting', label: '设定', icon: '鈿欙笍', predicate: (o) => ['地点', '组织', '规则/机制', '事件', '物品', '术语'].includes(o.type) && o.status !== '废弃' && o.status !== '草稿' },
+  { key: 'discarded', label: '废弃', icon: <Trash2 size={14} />, predicate: (o) => o.status === '废弃' },
+  { key: 'draft', label: '草稿', icon: <FileText size={14} />, predicate: (o) => o.status === '草稿' },
+  { key: 'chapter', label: '正文', icon: <FileText size={14} />, predicate: (o) => o.type === '章节' && o.status !== '废弃' && o.status !== '草稿' },
+  { key: 'character', label: '人物', icon: <User size={14} />, predicate: (o) => o.type === '人物' && o.status !== '废弃' && o.status !== '草稿' },
+  { key: 'setting', label: '设定', icon: <Globe size={14} />, predicate: (o) => ['地点', '组织', '规则/机制', '事件', '物品', '术语'].includes(o.type) && o.status !== '废弃' && o.status !== '草稿' },
 ];
 
 /** Map group key to the most appropriate ObjectType to create */
@@ -35,15 +36,15 @@ function createTypeForGroup(groupKey: string): ObjectType {
   }
 }
 
-function statusIcon(status: string): string {
+function statusIcon(status: string): ReactNode {
   switch (status) {
-    case '锁定': return '\u{1F512}';
-    case '草稿': return '\u{1F4DD}';
-    case '待验证': return '\u{1F50D}';
-    case '待定': return '\u{1F50D}';
-    case '废弃': return '\u{1F5D1}️';
-    case '占位': return '\u{2B1C}';
-    default: return '\u{1F4C4}';
+    case '锁定': return <Lock size={12} />;
+    case '草稿': return <FileText size={12} />;
+    case '待验证': return <Search size={12} />;
+    case '待定': return <Search size={12} />;
+    case '废弃': return <Trash2 size={12} />;
+    case '占位': return <Square size={12} />;
+    default: return <FileText size={12} />;
   }
 }
 
@@ -69,7 +70,7 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate, on
       <div className="doc-outline-header">
         {!panelCollapsed && <span className="doc-outline-title">大纲</span>}
         <button className="doc-outline-toggle-btn" onClick={() => setPanelCollapsed(!panelCollapsed)} title={panelCollapsed ? '展开大纲' : '收起大纲'}>
-          {panelCollapsed ? '▶' : '◀'}
+          {panelCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
         </button>
       </div>
       {!panelCollapsed && (
@@ -77,7 +78,7 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate, on
           {groups.map(group => (
             <div key={group.key} className="outline-group">
               <div className="outline-group-header" onClick={() => toggleGroup(group.key)}>
-                <span className="outline-toggle">{collapsedGroups[group.key] ? '▶' : '▼'}</span>
+                <span className="outline-toggle">{collapsedGroups[group.key] ? <ChevronRight size={12} /> : <ChevronDown size={12} />}</span>
                 <span className="outline-group-icon">{group.icon}</span>
                 <span className="outline-group-label">{group.label}</span>
                 <span className="outline-count">{group.items.length}</span>
@@ -86,7 +87,7 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate, on
                     className="outline-add-btn"
                     title={`新建${createTypeForGroup(group.key)}`}
                     onClick={(e) => { e.stopPropagation(); onCreateObject(createTypeForGroup(group.key)); }}
-                  >+</button>
+                  ><Plus size={14} /></button>
                 )}
               </div>
               {!collapsedGroups[group.key] && (
@@ -116,3 +117,4 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate, on
     </div>
   );
 }
+

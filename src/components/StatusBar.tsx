@@ -1,4 +1,4 @@
-/**
+﻿/**
  * StatusBar — Bottom status bar with save indicator and metadata (P1-05, P2-04).
  *
  * Left: save status (5-state: saved/saving/unsaved/offline/failed) + sync queue count
@@ -8,6 +8,8 @@
  */
 
 import type { SaveStatus } from '../types/world';
+import type { ReactNode } from 'react';
+import { Check, RefreshCw, TriangleAlert } from 'lucide-react';
 
 interface StatusBarProps {
   saveStatus: SaveStatus;
@@ -19,12 +21,12 @@ interface StatusBarProps {
   lastUpdateText?: string;
 }
 
-const STATUS_CONFIG: Record<SaveStatus, { text: string; color: string; cls: string }> = {
-  saved:   { text: '已保存 ✓',        color: '#4CAF50', cls: 'saved' },
-  saving:  { text: '保存中... ⟳', color: '#FFC107', cls: 'saving' },
+const STATUS_CONFIG: Record<SaveStatus, { text: ReactNode; color: string; cls: string }> = {
+  saved:   { text: <><Check size={11} /> 已保存</>,        color: '#4CAF50', cls: 'saved' },
+  saving:  { text: <><RefreshCw size={11} /> 保存中...</>, color: '#FFC107', cls: 'saving' },
   unsaved: { text: '未保存 ●',    color: '#FF9800', cls: 'unsaved' },
   offline: { text: '离线 ●',      color: '#888',    cls: 'offline' },
-  failed:  { text: '保存失败 ⚠ 点击重试', color: '#f44336', cls: 'failed' },
+  failed:  { text: <><TriangleAlert size={11} /> 保存失败 点击重试</>, color: '#f44336', cls: 'failed' },
 };
 
 /** Derived sync queue count per status (0 = hidden) */

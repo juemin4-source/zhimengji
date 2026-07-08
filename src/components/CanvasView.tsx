@@ -1,13 +1,14 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+﻿import { useState, useMemo, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { WorldObject, Connection, CanvasTab, CanvasTabState, CanvasToolMode, StickyNote, CanvasNodePosition, ObjectType, ConnectionType } from '../types/world';
 import { STATUS_DISPLAY, CONNECTION_TYPES, CANVAS_TABS } from '../types/world';
 import { TEMPLATES } from '../data/seed';
 import ZoomControls from './ZoomControls';
+import { ArrowRight, FileText, Calendar, Puzzle, Link } from 'lucide-react';
 
 interface TextAnnotation { id: string; text: string; x: number; y: number; }
 interface PartitionZone { id: string; label: string; x: number; y: number; width: number; height: number; }
 
-interface ToolDef { mode: CanvasToolMode; icon: string; label: string; shortcut?: string; }
+interface ToolDef { mode: CanvasToolMode; icon: ReactNode; label: string; shortcut?: string; }
 
 const SIDEBAR_TOOLS: ToolDef[] = [
   { mode: 'select', icon: '↖', label: '选择', shortcut: 'V' },
@@ -15,7 +16,7 @@ const SIDEBAR_TOOLS: ToolDef[] = [
   { mode: 'addObject', icon: '▦', label: '对象卡' },
   { mode: 'text', icon: 'T', label: '文本' },
   { mode: 'addSticky', icon: '📝', label: '便签' },
-  { mode: 'addConnection', icon: '→', label: '连线' },
+  { mode: 'addConnection', icon: <ArrowRight size={14} />, label: '连线' },
   { mode: 'partition', icon: '⊞', label: '分区' },
   { mode: 'template', icon: '◫', label: '模板' },
 ];
@@ -515,10 +516,10 @@ const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allO
           <div className="canvas-overlay-panel" onClick={e => e.stopPropagation()}>
             <h4>选择画板模板</h4>
             <div className="template-grid">
-              <div className="template-card" onClick={() => setShowTemplatePicker(false)}><div className="template-icon">📄</div><div className="template-name">空白画板</div><div className="template-desc">从空白开始</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('角色关系图'); }}><div className="template-icon">🔗</div><div className="template-name">角色关系图</div><div className="template-desc">角色关系布局、连线</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('时间线'); }}><div className="template-icon">📅</div><div className="template-name">时间线</div><div className="template-desc">横向时间轴布局</div></div>
-              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('设定推演图'); }}><div className="template-icon">🧩</div><div className="template-name">设定推演图</div><div className="template-desc">问题→方案→锁定 五区布局</div></div>
+              <div className="template-card" onClick={() => setShowTemplatePicker(false)}><div className="template-icon"><FileText size={20} /></div><div className="template-name">空白画板</div><div className="template-desc">从空白开始</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('角色关系图'); }}><div className="template-icon"><Link size={20} /></div><div className="template-name">角色关系图</div><div className="template-desc">角色关系布局、连线</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('时间线'); }}><div className="template-icon"><Calendar size={20} /></div><div className="template-name">时间线</div><div className="template-desc">横向时间轴布局</div></div>
+              <div className="template-card" onClick={() => { setShowTemplatePicker(false); setActiveTab('设定推演图'); }}><div className="template-icon"><Puzzle size={20} /></div><div className="template-name">设定推演图</div><div className="template-desc">问题→方案→锁定 五区布局</div></div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="tb-btn" onClick={() => setShowTemplatePicker(false)}>取消</button></div>
           </div>
@@ -533,3 +534,4 @@ const nameToObj = useMemo(() => { const m = new Map<string, WorldObject>(); allO
     </div>
   );
 }
+

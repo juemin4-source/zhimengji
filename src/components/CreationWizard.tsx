@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Sprout, Pencil, X, ArrowRight, Check } from 'lucide-react';
 
 interface CreationWizardProps {
   onConfirm: (title: string, genre: string, templateId: string | null) => void;
@@ -33,16 +34,16 @@ const GENRES = [
   '历史', '都市', '末世', '恐怖', '其他',
 ];
 
-const templatePresets: Record<string, { name: string; items: string[]; desc: string; icon: string }> = {
+const templatePresets: Record<string, { name: string; items: string[]; desc: string; icon: React.ReactNode }> = {
   blank: {
     name: '从零开始',
-    icon: '🌱',
+    icon: <Sprout size={16} />,
     desc: '一步步搭建你的世界，适合第一次使用',
     items: ['世界观核心', '主角', '关键地点'],
   },
   quick: {
     name: '快速起稿',
-    icon: '✏️',
+    icon: <Pencil size={16} />,
     desc: '预设分类和标签框架，内容你自己填',
     items: ['默认分类体系', '标签集', '正典等级'],
   },
@@ -462,7 +463,7 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
             onMouseLeave={() => setShowTooltip(false)}
             aria-label={'关闭'}
           >
-            {'✕'}
+            <X size={16} />
             {showTooltip && (
               <span style={s.tooltip}>{'Ctrl+click 跳过向导'}</span>
             )}
@@ -525,7 +526,7 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
                   }}
                   onClick={() => setSelectedTemplate(id)}
                 >
-                  {isSelected && <span style={s.checkMark}>{'✓'}</span>}
+                  {isSelected && <span style={s.checkMark}><Check size={12} /></span>}
                   <div style={s.icon}>{preset.icon}</div>
                   <div style={s.tname}>{preset.name}</div>
                   <div style={s.tdesc}>{preset.desc}</div>
@@ -586,7 +587,7 @@ export default function CreationWizard({ onConfirm, onCancel, lastGenre }: Creat
                 disabled={!isValid}
                 onClick={handleNext}
               >
-                {'下一步 →'}
+                {<>下一步 <ArrowRight size={16} /></>}
               </button></>
             ) : (
               <><button style={s.btnSecondary} onClick={handleSkip}>{'跳过'}</button>

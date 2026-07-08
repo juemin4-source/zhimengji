@@ -5,7 +5,7 @@ import type { WorldObject, ObjectType } from '../types/world';
 interface DocOutlineProps {
   allObjects: WorldObject[];
   currentObjectId: string | null;
-  onNavigate: (name: string) => void;
+  onNavigate: (name: string, id?: string) => void;
   onCreateObject?: (templateType: ObjectType) => void;
 }
 
@@ -93,7 +93,7 @@ export default function DocOutline({ allObjects, currentObjectId, onNavigate, on
               {!collapsedGroups[group.key] && (
                 <div className="outline-items">
                   {group.items.map(item => (
-                    <div key={item.id} className={`outline-item ${currentObjectId === item.id ? 'active' : ''}`} onClick={() => onNavigate(item.name)} title={item.name}>
+                    <div key={item.id} className={`outline-item ${currentObjectId === item.id ? 'active' : ''}`} onClick={() => onNavigate(item.name, item.id)} title={item.name}>
                       <span className="outline-item-status">{statusIcon(item.status)}</span>
                       <span className="outline-item-name">{item.name}</span>
                     </div>

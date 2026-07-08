@@ -34,8 +34,11 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [focusObjectId, setFocusObjectId] = useState<string | null>(null);
-  const [activeModel] = useState<AiModel>(DEFAULT_MODELS[0]);
+  const [activeModel, setActiveModel] = useState<AiModel>(DEFAULT_MODELS[0]);
   const [tokenCount, setTokenCount] = useState(0);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+
+  // Models loaded from DEFAULT_MODELS
   const [inputText, setInputText] = useState('');
   const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
 
@@ -175,7 +178,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
           </div>
           {/* Sidebar model selector */}
           <div style={{ borderTop: '1px solid var(--border-default, #2a2a2a)', padding: '8px 12px', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderRadius: 'var(--radius-sm, 6px)', background: 'var(--bg-raised, #1e1e1e)', border: '1px solid var(--border-default, #2a2a2a)', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary, #a0a0a0)', overflow: 'hidden' }}>
+            <div onClick={() => setShowModelPicker(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderRadius: 'var(--radius-sm, 6px)', background: 'var(--bg-raised, #1e1e1e)', border: '1px solid var(--border-default, #2a2a2a)', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary, #a0a0a0)', overflow: 'hidden' }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success, #4CAF50)', flexShrink: 0 }} />
               <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeModel.name}</span>
               <span style={{ flexShrink: 0, fontSize: '0.6875rem', color: 'var(--text-muted, #666)', marginLeft: 'auto' }}>▼</span>
@@ -210,7 +213,7 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
               <button onClick={handleNewChat} style={{ fontSize: '0.6875rem', padding: '3px 10px', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid var(--border-default, #2a2a2a)', background: 'var(--bg-raised, #1e1e1e)', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>+ 新对话</button>
-              <button style={{ fontSize: '0.6875rem', padding: '3px 10px', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid var(--border-default, #2a2a2a)', background: 'var(--bg-raised, #1e1e1e)', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>切换模型</button>
+              <button onClick={() => setShowModelPicker(true)} style={{ fontSize: '0.6875rem', padding: '3px 10px', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid var(--border-default, #2a2a2a)', background: 'var(--bg-raised, #1e1e1e)', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>切换模型</button>
             </div>
           </div>
           {/* Conversation Scroll */}
@@ -311,6 +314,29 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
           </div>
         </div>
       )}
+      
+      {/* Model Picker Modal */}
+      {showModelPicker && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowModelPicker(false)}>
+          <div style={{ background: 'var(--bg-surface, #141414)', border: '1px solid var(--border-default, #2a2a2a)', borderRadius: 'var(--radius-lg, 14px)', maxWidth: 400, width: '90%', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 16 }}>选择模型</h3>
+            {AVAILABLE_MODELS.map(m => (
+              <div key={m.name} onClick={() => { setActiveModel(m); setShowModelPicker(false); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 'var(--radius-sm, 6px)', cursor: 'pointer', marginBottom: 4,
+                  background: activeModel.name === m.name ? 'var(--accent-soft, rgba(183,255,0,0.1))' : 'transparent',
+                  border: activeModel.name === m.name ? '1px solid rgba(183,255,0,0.2)' : '1px solid transparent' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent, #B7FF00)', opacity: activeModel.name === m.name ? 1 : 0.2 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.label}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.provider} · {m.contextLength.toLocaleString()} ctx</div>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.costPer1KTokens === 0 ? '免费' : `$${m.costPer1KTokens}/1K`}</div>
+              </div>
+            ))}
+            <button onClick={() => setShowModelPicker(false)} style={{ marginTop: 16, width: '100%', padding: '8px', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid var(--border-default, #2a2a2a)', background: 'transparent', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', fontSize: '0.8125rem' }}>取消</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -341,4 +367,9 @@ function simulateAiDocs(text: string): DocCardData[] | undefined {
   }
   return undefined;
 }
+
+
+
+
+
 

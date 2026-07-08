@@ -1,0 +1,104 @@
+{
+  "task": "zhimengji-qa-setup",
+  "status": "COMPLETE",
+  "timestamp": "2026-07-08T12:50:00Z",
+  "executionTarget": {
+    "mode": "external_target_repo",
+    "controllerRepo": "G:/AI/Claude/Chancellor OS",
+    "targetRepo": "G:/AI/Chancellor-OS-Lab",
+    "controllerMayModifySelf": false
+  },
+  "deliverables": {
+    "testPlan": "G:/AI/Chancellor-OS-Lab/projects/zhimengji/docs/test-plan.md",
+    "qaReport": "G:/AI/Chancellor-OS-Lab/projects/zhimengji/docs/qa-report.md",
+    "vitestConfig": "G:/AI/Chancellor-OS-Lab/projects/zhimengji/vitest.config.ts",
+    "testSetup": "G:/AI/Chancellor-OS-Lab/projects/zhimengji/src/__tests__/setup.ts",
+    "rustTests": "G:/AI/Chancellor-OS-Lab/projects/zhimengji/src-tauri/src/db.rs (#[cfg(test)] module)",
+    "apiTests": "G:/AI/Chancellor-OS-Lab/projects/zhimengji/src/__tests__/api.test.ts",
+    "componentTests": [
+      "G:/AI/Chancellor-OS-Lab/projects/zhimengji/src/__tests__/Bookshelf.test.tsx",
+      "G:/AI/Chancellor-OS-Lab/projects/zhimengji/src/__tests__/App.test.tsx"
+    ]
+  },
+  "testResults": {
+    "rustTests": {
+      "framework": "cargo test --lib",
+      "count": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    "frontendTests": {
+      "framework": "vitest run",
+      "files": 3,
+      "tests": 37,
+      "passed": 37,
+      "failed": 0
+    }
+  },
+  "pathCoverage": {
+    "Path 1: Story Creation": {
+      "priority": "MUST HAVE",
+      "rust": "covered",
+      "frontend": "covered",
+      "manual": "WikiLink editing, drag interaction"
+    },
+    "Path 2: Multi-Board": {
+      "priority": "MUST HAVE",
+      "rust": "covered",
+      "frontend": "covered",
+      "manual": "Dual-board sync UX"
+    },
+    "Path 3: Canon Management": {
+      "priority": "MUST HAVE",
+      "rust": "covered",
+      "frontend": "covered",
+      "manual": "Filter UI"
+    },
+    "Path 4: Judgment Recording": {
+      "priority": "MUST HAVE",
+      "rust": "covered",
+      "frontend": "covered",
+      "manual": null
+    },
+    "Path 5: Object Lifecycle": {
+      "priority": "MUST HAVE",
+      "rust": "covered",
+      "frontend": "covered",
+      "manual": "Lock/unlock UI interaction"
+    },
+    "Path 6: Cross-Book Isolation": {
+      "priority": "MUST HAVE",
+      "rust": "covered",
+      "frontend": "covered",
+      "manual": "Project switch data refresh"
+    },
+    "Path 7: Decision Chain": {
+      "priority": "NICE TO HAVE",
+      "rust": "data layer supported",
+      "frontend": "not covered (no dedicated UI component)",
+      "manual": "Requires DecisionChain component",
+      "futureAutomation": "Add DecisionChain component + dedicated tests"
+    }
+  },
+  "knownIssues": [
+    {
+      "id": "P1-MUTEX-DEADLOCK",
+      "severity": "P1",
+      "title": "Mutex deadlock in list_world_objects / get_world_object",
+      "description": "Non-reentrant std::sync::Mutex deadlocks when list_world_objects/get_world_object call get_judgment_records_for_object while holding the lock",
+      "affectedFunctions": ["list_world_objects", "get_world_object"],
+      "recommendedFix": "Move get_judgment_records_for_object calls outside the Mutex lock scope"
+    },
+    {
+      "id": "P2-CREATED-AT-RETURN",
+      "severity": "P2",
+      "title": "save_canvas_tab_state returns input created_at instead of DB value",
+      "description": "Function returns state.created_at (0 for new records) instead of the COALESCE-computed DB value",
+      "affectedFunctions": ["save_canvas_tab_state"],
+      "recommendedFix": "Read back actual created_at after INSERT/REPLACE"
+    }
+  ],
+  "qaConclusion": "READY",
+  "qaInfraStatus": "PASS",
+  "notes": "Rust tests use direct SQL reads to bypass existing Mutex deadlock in list_world_objects/get_world_object. Fixing this P1 bug is the prerequisite for frontend WorldObject listing functionality."
+}

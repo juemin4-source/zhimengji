@@ -39,48 +39,15 @@ const BOOK_2 = {
   updatedAt: 1500,
 };
 
-const SAMPLE_OBJECTS = [
-  {
-    id: "obj-1",
-    projectId: "book-1",
-    name: "陈锋",
-    type: "人物",
-    status: "锁定",
-    canonLevel: "核心正典",
-    tags: ["主角"],
-    aliases: [],
-    selectedBoards: ["角色关系图"],
-    content: "# 陈锋\n\n觉醒者联盟的核心人物。",
-    referencesCount: 1,
-    judgmentHistory: [],
-    createdAt: Date.now() - 86400000,
-    updatedAt: Date.now() - 86400000,
-  },
-  {
-    id: "obj-2",
-    projectId: "book-1",
-    name: "灰塔实验室",
-    type: "地点",
-    status: "草稿",
-    canonLevel: "草案正典",
-    tags: ["地点", "实验室"],
-    aliases: [],
-    selectedBoards: [],
-    content: "# 灰塔实验室\n\n地下研究设施。",
-    referencesCount: 0,
-    judgmentHistory: [],
-    createdAt: Date.now() - 86400000,
-    updatedAt: Date.now() - 86400000,
-  },
-];
-
 // ─── Helpers ────────────────────────────────────────────────────
 
+/**
+ * Mock Tauri IPC for the creation flow: empty bookshelf, mutable projects.
+ */
 async function mockMutableProjects(page) {
-  await page.addInitScript(() => {
+  await page.addInitScript(`
     window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
-    window.__TAURI_EVENT_PLUGIN_INTERNALS__ =
-      window.__TAURI_EVENT_PLUGIN_INTERNALS__ || {};
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = window.__TAURI_EVENT_PLUGIN_INTERNALS__ || {};
 
     const callbacks = new Map();
     window.__TAURI_INTERNALS__.transformCallback = (callback, once) => {
@@ -91,8 +58,7 @@ async function mockMutableProjects(page) {
       });
       return id;
     };
-    window.__TAURI_INTERNALS__.unregisterCallback = (id) =>
-      callbacks.delete(id);
+    window.__TAURI_INTERNALS__.unregisterCallback = (id) => callbacks.delete(id);
 
     const projects = [];
 
@@ -100,11 +66,11 @@ async function mockMutableProjects(page) {
       switch (cmd) {
         case "list_projects":
           return projects;
-        case "create_project":
+        case "create_project": {
           const p = {
             id: "test-book-" + Date.now(),
-            name: args?.name || "新作品",
-            genre: args?.genre || "未分类",
+            name: args.name,
+            genre: args.genre || "未分类",
             status: "conceiving",
             wordCount: 0,
             gradient: '["#6366f1","#8b5cf6"]',
@@ -113,6 +79,7 @@ async function mockMutableProjects(page) {
           };
           projects.push(p);
           return p;
+        }
         case "list_world_objects":
           return [];
         case "list_connections":
@@ -120,81 +87,84 @@ async function mockMutableProjects(page) {
         case "list_canvas_tab_states":
           return [];
         case "create_world_object":
-          return args?.object || {};
+          return args.object || {};
         case "update_world_object":
           return undefined;
         case "delete_world_object":
           return undefined;
         case "append_judgment_record":
-          return { ...(args?.record || {}), id: "mock-judg" };
+          return { ...(args.record || {}), id: "mock-judg" };
         case "save_canvas_tab_state":
-          return { ...(args?.state || {}) };
+          return { ...(args.state || {}) };
         case "create_connection":
-          return { ...(args?.connection || {}) };
+          return { ...(args.connection || {}) };
         default:
           return undefined;
       }
     };
-  });
+  `);
 }
 
-async function mockExistingProjects(page, objects = []) {
-  const projects = [BOOK_1, BOOK_2];
+/**
+ * Mock Tauri IPC with pre-populated projects and optional world objects.
+ * String-based addInitScript for consistency with existing tests.
+ */
+async function mockExistingProjects(page, objectsJSON) {
+  const projectsJSON = JSON.stringify([BOOK_1, BOOK_2]);
 
-  await page.addInitScript(
-    (args) => {
-      window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
-      window.__TAURI_EVENT_PLUGIN_INTERNALS__ =
-        window.__TAURI_EVENT_PLUGIN_INTERNALS__ || {};
+  await page.addInitScript(`
+    window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = window.__TAURI_EVENT_PLUGIN_INTERNALS__ || {};
 
-      const callbacks = new Map();
-      window.__TAURI_INTERNALS__.transformCallback = (callback, once) => {
-        const id = crypto.getRandomValues(new Uint32Array(1))[0];
-        callbacks.set(id, (d) => {
-          if (once) callbacks.delete(id);
-          return typeof callback === "function" ? callback(d) : undefined;
-        });
-        return id;
-      };
-      window.__TAURI_INTERNALS__.unregisterCallback = (id) =>
-        callbacks.delete(id);
+    const callbacks = new Map();
+    window.__TAURI_INTERNALS__.transformCallback = (callback, once) => {
+      const id = crypto.getRandomValues(new Uint32Array(1))[0];
+      callbacks.set(id, (d) => {
+        if (once) callbacks.delete(id);
+        return typeof callback === "function" ? callback(d) : undefined;
+      });
+      return id;
+    };
+    window.__TAURI_INTERNALS__.unregisterCallback = (id) => callbacks.delete(id);
 
-      const projects = args.projects;
-      const objects = args.objects;
+    const projects = ${projectsJSON};
+    const objects = ${objectsJSON || "[]"};
 
-      window.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
-        switch (cmd) {
-          case "list_projects":
-            return projects;
-          case "list_world_objects":
-            return objects;
-          case "get_world_object":
-            return objects.find((o) => o.id === args?.id) || null;
-          case "list_connections":
-            return [];
-          case "list_canvas_tab_states":
-            return [];
-          case "create_world_object":
-            return args?.object || {};
-          case "update_world_object":
-            return undefined;
-          case "delete_world_object":
-            return undefined;
-          case "append_judgment_record":
-            return { ...(args?.record || {}), id: "mock-judg" };
-          case "save_canvas_tab_state":
-            return { ...(args?.state || {}) };
-          case "create_connection":
-            return { ...(args?.connection || {}) };
-          default:
-            return undefined;
-        }
-      };
-    },
-    { projects, objects },
-  );
+    window.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      switch (cmd) {
+        case "list_projects":
+          return projects;
+        case "list_world_objects":
+          return objects;
+        case "get_world_object":
+          return objects.find((o) => o.id === (args.id || args)) || null;
+        case "list_connections":
+          return [];
+        case "list_canvas_tab_states":
+          return [];
+        case "create_world_object":
+          return args.object || {};
+        case "update_world_object":
+          return undefined;
+        case "delete_world_object":
+          return undefined;
+        case "append_judgment_record":
+          return { ...(args.record || {}), id: "mock-judg" };
+        case "save_canvas_tab_state":
+          return { ...(args.state || {}) };
+        case "create_connection":
+          return { ...(args.connection || {}) };
+        default:
+          return undefined;
+      }
+    };
+  `);
 }
 
+/**
+ * Enter a project from the bookshelf by clicking its card.
+ * The aria-label on the card is shaped like "进入《觉醒纪元》".
+ */
 async function enterProject(page, projectName) {
   await page.getByLabel("进入《" + projectName + "》").click();
   await expect(page.getByTitle("返回书架")).toBeVisible({ timeout: 5000 });
@@ -207,35 +177,55 @@ test.describe("Path 1+2: Bookshelf -> Create Project -> Editor", () => {
     await mockMutableProjects(page);
     await page.goto("/");
 
+    // --- Bookshelf ---
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("还没有作品")).toBeVisible();
 
+    // Click "新建作品" header button
     await page.getByRole("button", { name: "新建作品" }).click();
 
-    await expect(page.getByRole("button", { name: "新建作品" })).toBeVisible({ timeout: 5000 });
+    // --- Creation wizard modal ---
+    await expect(page.getByRole("heading", { name: "新建作品" })).toBeVisible({ timeout: 5000 });
 
+    // Enter a project name
     await page.getByPlaceholder("输入作品名称...").fill("测试作品");
 
+    // Select the "从零开始" template card
     await page.getByText("从零开始").first().click();
 
+    // Step 1 -> "下一步"
     await page.getByRole("button", { name: "下一步" }).click();
+
+    // Step 2 -> "开始创作"
     await page.getByRole("button", { name: "开始创作" }).click();
 
-    // Dismiss first-launch guide
+    // --- First-launch guide (always shows after creation) ---
+    // Step 1 of guide: "开始使用"
     await page.getByText("开始使用").click({ timeout: 10000 });
+    // Step 2 of guide: "跳过"
     await page.getByRole("button", { name: "跳过" }).click({ timeout: 5000 });
 
     // --- Editor view ---
+    // Nav tabs
     await expect(page.getByRole("button", { name: "文档" })).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole("button", { name: "画板" })).toBeVisible();
     await expect(page.getByRole("button", { name: "设定集" })).toBeVisible();
     await expect(page.getByRole("button", { name: "判断记录" })).toBeVisible();
     await expect(page.getByRole("button", { name: "AI" })).toBeVisible();
 
+    // Back-to-bookshelf button
     await expect(page.getByTitle("返回书架")).toBeVisible();
+
+    // Doc outline sidebar (should render even with no objects)
     await expect(page.locator(".doc-outline")).toBeVisible();
+
+    // Editor empty state
     await expect(page.getByText("选择或创建一个对象")).toBeVisible();
+
+    // AI settings gear
     await expect(page.getByTitle("AI 设置")).toBeVisible();
+
+    // Global search button
     await expect(page.getByTitle("全局搜索 (Ctrl+K)")).toBeVisible();
   });
 });
@@ -244,28 +234,50 @@ test.describe("Path 1+2: Bookshelf -> Create Project -> Editor", () => {
 
 test.describe("Path 3: AI Chat page", () => {
   test("AI chat loads, shows input, and sends a message", async ({ page }) => {
-    await mockExistingProjects(page, SAMPLE_OBJECTS);
+    const objects = [
+      {
+        id: "obj-1", projectId: "book-1", name: "陈锋", type: "人物",
+        status: "锁定", canonLevel: "核心正典", tags: ["主角"], aliases: [],
+        selectedBoards: ["角色关系图"],
+        content: "# 陈锋\n\n觉醒者联盟的核心人物。",
+        referencesCount: 1, judgmentHistory: [],
+        createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000,
+      },
+    ];
+    await mockExistingProjects(page, JSON.stringify(objects));
     await page.goto("/");
 
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await enterProject(page, "觉醒纪元");
 
+    // Click the "AI" nav tab
     await page.locator("button.nav-tab", { hasText: "AI" }).click();
 
+    // AI Chat header
     await expect(page.getByText("AI 助手")).toBeVisible({ timeout: 5000 });
+
+    // Welcome message
     await expect(page.getByText("你好！我是织梦机的 AI 助手")).toBeVisible();
 
+    // Chat input
     const chatInput = page.getByPlaceholder("输入你的想法，让 AI 帮你创作...");
     await expect(chatInput).toBeVisible();
 
+    // Sidebar outline shows the "人物" group
     await expect(page.getByText("人物")).toBeVisible();
     await expect(page.getByText("陈锋")).toBeVisible();
 
+    // Type a message and press Enter
     await chatInput.fill("帮我创建一个世界观");
     await chatInput.press("Enter");
 
+    // User message appears
     await expect(page.getByText("帮我创建一个世界观")).toBeVisible({ timeout: 5000 });
+
+    // Simulated AI response appears (1.2 - 2s delay)
     await expect(page.getByText("以下是为你创建的世界观设定")).toBeVisible({ timeout: 5000 });
+
+    // AI-generated doc card appears
     await expect(page.getByText("天眼纪元")).toBeVisible({ timeout: 3000 });
   });
 });
@@ -280,16 +292,25 @@ test.describe("Path 4: AI Settings overlay", () => {
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await enterProject(page, "觉醒纪元");
 
+    // Click gear icon
     await page.getByTitle("AI 设置").click();
 
+    // Full-screen settings overlay
     await expect(page.getByText("设置")).toBeVisible({ timeout: 5000 });
+
+    // Sidebar tabs
     await expect(page.getByText("API Keys")).toBeVisible();
     await expect(page.getByText("模型选择")).toBeVisible();
     await expect(page.getByText("用量监控")).toBeVisible();
     await expect(page.getByText("费用")).toBeVisible();
+
+    // Save button
     await expect(page.getByText("保存设置")).toBeVisible();
 
+    // Close via "返回"
     await page.getByRole("button", { name: "返回" }).first().click();
+
+    // Nav bar should be visible again
     await expect(page.getByTitle("AI 设置")).toBeVisible({ timeout: 3000 });
   });
 });
@@ -304,17 +325,21 @@ test.describe("Path 5: Canvas view", () => {
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await enterProject(page, "觉醒纪元");
 
+    // Click "画板" nav tab
     await page.locator("button.nav-tab", { hasText: "画板" }).click();
 
+    // Canvas sub-tabs
     await expect(page.getByRole("button", { name: "角色关系图" })).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole("button", { name: "时间线" })).toBeVisible();
     await expect(page.getByRole("button", { name: "设定推演图" })).toBeVisible();
 
+    // Zoom controls (floating panel)
     await expect(page.getByTitle("缩小 (Ctrl+-)")).toBeVisible();
     await expect(page.getByTitle("放大 (Ctrl++)")).toBeVisible();
     await expect(page.getByTitle("适应画布 (Ctrl+0)")).toBeVisible();
     await expect(page.getByText("100%")).toBeVisible();
 
+    // Canvas sidebar tools
     await expect(page.getByTitle("选择")).toBeVisible();
     await expect(page.getByTitle("拖动画布")).toBeVisible();
     await expect(page.getByTitle("对象卡")).toBeVisible();
@@ -325,20 +350,42 @@ test.describe("Path 5: Canvas view", () => {
 
 test.describe("Path 6: Judgment Records page", () => {
   test("judgment records tab loads with tab navigation", async ({ page }) => {
-    await mockExistingProjects(page, SAMPLE_OBJECTS);
+    const objects = [
+      {
+        id: "obj-1", projectId: "book-1", name: "陈锋", type: "人物",
+        status: "锁定", canonLevel: "核心正典", tags: ["主角"], aliases: [],
+        selectedBoards: [],
+        content: "# 陈锋\n\n觉醒者联盟的核心人物。",
+        referencesCount: 0,
+        judgmentHistory: [
+          {
+            id: "judg-1", objectId: "obj-1", objectName: "陈锋",
+            operationType: "锁定", reason: "核心角色锁定",
+            timestamp: Date.now() - 86400000,
+            previousStatus: "草稿", newStatus: "锁定",
+          },
+        ],
+        createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000,
+      },
+    ];
+    await mockExistingProjects(page, JSON.stringify(objects));
     await page.goto("/");
 
     await expect(page.getByText("作品书架")).toBeVisible({ timeout: 10000 });
     await enterProject(page, "觉醒纪元");
 
+    // Click "判断记录" nav tab
     await page.locator("button.nav-tab", { hasText: "判断记录" }).click();
 
+    // Tab headings
     await expect(page.getByText("动作日志")).toBeVisible({ timeout: 5000 });
     await expect(page.getByText("字段变更")).toBeVisible();
+
+    // Filter controls
     await expect(page.locator(".judgment-filters")).toBeVisible();
 
+    // Switch to "字段变更" tab
     await page.getByText("字段变更").click();
     await expect(page.locator(".judgment-tab.active")).toContainText("字段变更");
   });
 });
-

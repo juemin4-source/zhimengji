@@ -6,21 +6,13 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false,
   workers: 1,
-  retries: 1,
+  retries: 0,
   outputDir: './test-results',
 
   use: {
     baseURL: 'http://localhost:1420',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    trace: 'retain-on-failure',
-  },
-
-  webServer: {
-    command: 'npx vite --port 1420',
-    port: 1420,
-    timeout: 30_000,
-    reuseExistingServer: true,
   },
 
   projects: [

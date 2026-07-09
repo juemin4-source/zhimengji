@@ -23,7 +23,8 @@
         "accept:feedback": "node scripts/acceptance/accept-feedback.mjs",
         "accept:demo": "node scripts/acceptance/accept-demo.mjs",
         "accept:ai": "node scripts/acceptance/ai-evaluation.mjs",
-"test:ai-evaluation-harness": "node scripts/acceptance/ai-evaluation.mjs"
+        "test:ai-evaluation-harness": "node scripts/acceptance/ai-evaluation.mjs",
+        "accept:ai-runtime": "node scripts/acceptance/accept-ai-runtime.mjs"
     },
     "dependencies": {
         "@tauri-apps/api": "^2",

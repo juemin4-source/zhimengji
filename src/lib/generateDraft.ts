@@ -1,13 +1,14 @@
 /**
  * generateDraft — 前端 AI 正文生成器 (织梦机 v2)
  *
- * 从已确认的 ChapterPacket 构造写作 prompt，调用 llm-client 生成正文 draft。
+ * 从已确认的 ChapterPacket 构造写作 prompt，调用 Router 生成正文 draft。
+ *
+ * [v2.1.1-AI] Rewired to use Router instead of direct callLlm.
  *
  * 硬规则：
  * - 不 mock AI
  * - 不自动覆盖正文（由调用方控制 preview + confirm）
  */
-import { callLlm } from './llm-client';
 import type { ChapterPacket } from '../contracts/chapter-packet.contract';
 import type { AiModel } from '../types/ai';
 import type { AiOutputType } from './ai-output';
@@ -152,9 +153,20 @@ export function buildDraftPrompt(packet: ChapterPacket): string {
  */
 export async function generateDraftFromChapterPacket(options: GenerateDraftOptions): Promise<string> {
   const prompt = buildDraftPrompt(options.packet);
-  const response = await callLlm([{ role: 'user', content: prompt }], {
-    model: options.model,
-    timeout: 120000,
+
+  // [v2.1.1-AI] Use Router instead of direct callLlm
+  const { route, executeLlmCall } = await import('./ai/command-router');
+  const routeOutput = await route({
+    message: `写正文: ${options.packet.title}`,
+    canvasId: 'text',
+    projectId: options.packet.projectId,
+    outputType: options.outputType || 'write_preview',
+    providerId: options.model.providerId,
+    modelId: options.model.id,
   });
-  return response.content;
+  const llmResult = await executeLlmCall(routeOutput, [
+    { role: 'user', content: prompt },
+  ]);
+
+  return llmResult.content;
 }

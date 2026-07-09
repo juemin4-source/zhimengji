@@ -4,7 +4,7 @@ import type { WorldObject } from '../../types/world';
 import type { Message, DocCardData, AiModel } from '../../types/ai';
 import { DEFAULT_MODELS } from '../../types/ai';
 import DocCard from './DocCard';
-import { callLlmStream } from '../../lib/llm-client';
+// [v2.1.1-AI] Router handles all AI calls including streaming
 import * as api from '../../tauri-api';
 
 const CANON_DOT_COLORS: Record<string, string> = {
@@ -353,12 +353,20 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
       const placeholderId = uid();
       setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', content: '', timestamp: Date.now() }]);
 
-      const response = await callLlmStream(
+      // [v2.1.1-AI] Use Router for all AI calls including streaming
+      const { route: routerRoute, executeLlmCall } = await import('../../lib/ai/command-router');
+      const routeOutput = await routerRoute({
+        message: userInput,
+        canvasId: 'chat',
+        projectId: 'ai-settings',
+        outputType: 'discuss',
+        providerId: activeModel.providerId,
+        modelId: activeModel.id,
+      });
+      const llmResult = await executeLlmCall(
+        routeOutput,
         apiMessages,
         {
-          model: activeModel,
-          apiKey: '',
-          timeout: 60000,
           onToken: (token) => {
             setMessages(prev => {
               const last = prev[prev.length - 1];
@@ -370,11 +378,11 @@ export default function AIChat({ allObjects, activeBookId, onNavigate, onUpdateO
               return prev;
             });
           },
-        }
+        },
       );
 
       // After streaming completes, extract DocCards from the full response
-      const docs = extractDocCards(response.content);
+      const docs = extractDocCards(llmResult.content);
       if (docs.length > 0) {
         setMessages(prev => {
           const updated = [...prev];

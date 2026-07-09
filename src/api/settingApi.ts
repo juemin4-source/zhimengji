@@ -166,7 +166,51 @@ export async function saveTianDiRenLayer(input: SaveTianDiRenLayerInput): Promis
 }
 
 export async function generateTianDiRenAi(input: GenerateTianDiRenAiInput): Promise<GenerateTianDiRenAiOutput> {
-  return invoke<GenerateTianDiRenAiOutput>('generate_tiandiren_ai', { input });
+  // [v2.1.1-AI] Use Router instead of Rust placeholder stub
+  try {
+    const { route, executeLlmCall } = await import('../lib/ai/command-router');
+    const fieldName = input.field === 'tian' ? '天（宏观力量）' :
+      input.field === 'di' ? '地（环境社会）' : '人（角色视角）';
+
+    const prompt = `你是一个世界观构建助手。请为项目生成「${fieldName}」视角的设定内容。` +
+      `\n\n请以 JSON 格式返回，包含以下字段：\n` +
+      `- content: 详细设定内容（800-1500字）\n` +
+      `- keyPoints: 关键点数组\n` +
+      `- suggestions: 建议注意事项`;
+
+    const routeOutput = await route({
+      message: prompt.slice(0, 100),
+      canvasId: 'setting',
+      projectId: input.projectId,
+      outputType: 'suggest',
+    });
+    const llmResult = await executeLlmCall(routeOutput, [
+      { role: 'user', content: prompt },
+    ]);
+
+    // Try to parse structured output
+    try {
+      const parsed = JSON.parse(llmResult.content);
+      return {
+        projectId: input.projectId,
+        field: input.field,
+        suggestedContent: parsed.content || llmResult.content,
+      };
+    } catch {
+      return {
+        projectId: input.projectId,
+        field: input.field,
+        suggestedContent: llmResult.content,
+      };
+    }
+  } catch (err: any) {
+    // Fallback: try the Rust command (may still return placeholder in dev)
+    try {
+      return await invoke<GenerateTianDiRenAiOutput>('generate_tiandiren_ai', { input });
+    } catch {
+      throw err; // Re-throw the original error
+    }
+  }
 }
 
 /**

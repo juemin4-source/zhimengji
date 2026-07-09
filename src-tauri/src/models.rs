@@ -1322,3 +1322,61 @@ pub struct FeedbackInput {
 pub struct ListFeedbackInput {
     pub project_id: String,
 }
+
+// ===== CN-MET-04: ChapterPacket Detail Modes =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PacketDetailModeRecord {
+    pub project_id: String,
+    pub detail_mode: String,
+    pub config_json: String,
+    pub do_not_ask_again: bool,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PacketDetailConfig {
+    pub detail_mode: String,
+    pub do_not_ask_again: bool,
+    pub config: serde_json::Value,
+}
+
+// --- Input/Output types ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetDetailModeInput {
+    pub project_id: String,
+    pub detail_mode: String,
+    pub do_not_ask_again: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetPacketDetailInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PacketDetailResponse {
+    pub detail_mode: String,
+    pub do_not_ask_again: bool,
+    pub config: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AutoGenerateSketchInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveRefinedContentInput {
+    pub project_id: String,
+    pub layer4: String,
+    pub word_count: Option<i64>,
+}

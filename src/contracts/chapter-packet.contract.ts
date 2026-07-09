@@ -183,3 +183,55 @@ export interface ConfirmPacketInput {
 export interface DeletePacketInput {
   id: string;
 }
+
+// ─── CN-MET-04: Detail Mode Types (additive-only) ───
+
+export type DetailMode = 'sketch' | 'standard' | 'refined';
+
+export interface SketchConfig {
+  collapsedLayer: 'layer4';
+  showSummaryOnly: boolean;
+  maxNodesPerLevel?: number;
+  autoGenerate: boolean;
+}
+
+export interface RefinedConfig {
+  allLayersEditable: true;
+  showWordCount: boolean;
+  showTimestamps: boolean;
+  allowInlineComments: boolean;
+}
+
+export interface PacketDetailLevel {
+  mode: DetailMode;
+  sketchConfig?: SketchConfig;
+  refinedConfig?: RefinedConfig;
+}
+
+// ─── CN-MET-04: Detail Mode Input Types ───
+
+export interface SetDetailModeInput {
+  projectId: string;
+  detailMode: DetailMode;
+  doNotAskAgain?: boolean;
+}
+
+export interface GetPacketDetailInput {
+  projectId: string;
+}
+
+export interface PacketDetailResponse {
+  detailMode: DetailMode;
+  doNotAskAgain: boolean;
+  config: PacketDetailLevel;
+}
+
+export interface AutoGenerateSketchInput {
+  projectId: string;
+}
+
+export interface SaveRefinedContentInput {
+  projectId: string;
+  layer4: string;
+  wordCount?: number;
+}

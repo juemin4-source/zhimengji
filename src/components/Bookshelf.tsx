@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import type { Project } from '../types/world';
 import QuickDraftButton from '../features/quick-draft/QuickDraftButton';
-import { QuickDraftPanel } from '../features/quick-draft/QuickDraftPanel';
+import QuickDraftPanel from '../features/quick-draft/QuickDraftPanel';
 import { seedDemoProject, isDemoSeeded } from '../api/demoApi';
 import * as api from '../tauri-api';
 

@@ -23,6 +23,9 @@ use crate::models::{
     MarkStepUsableInput, MarkStepUsableOutput,
     SaveTianDiRenLayerInput, SaveTianDiRenLayerOutput,
     TianDiRenRecord, SparrowModuleResponse,
+    // CN-MET-04: Packet Detail Modes
+    SetDetailModeInput, SaveRefinedContentInput,
+    PacketDetailConfig, PacketDetailResponse, PacketDetailModeRecord,
 };
 
 pub struct Database {
@@ -134,6 +137,7 @@ impl Database {
         init_ai_tables(&conn)?;
         init_premise_steps_table(&conn)?;
         init_sparrow_tables(&conn)?;
+        init_packet_detail_modes_table(&conn)?;
         Ok(())
     }
 
@@ -2323,6 +2327,22 @@ pub fn init_sparrow_tables(conn: &Connection) -> SqlResult<()> {
     Ok(())
 }
 
+// ===== CN-MET-04: Canvas 4 Packet Detail Modes Table =====
+
+pub fn init_packet_detail_modes_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS canvas4_packet_detail_modes (
+          project_id TEXT PRIMARY KEY,
+          detail_mode TEXT NOT NULL DEFAULT 'standard',
+          config_json TEXT NOT NULL DEFAULT '{}',
+          do_not_ask_again INTEGER NOT NULL DEFAULT 0,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
 // ===== CN-MET-03: Sparrow Step CRUD =====
 
 impl Database {
@@ -2548,6 +2568,116 @@ impl Database {
             protagonist_steps,
             tian_di_ren,
         })
+    }
+}
+
+// ===== CN-MET-04: Packet Detail Mode CRUD =====
+
+impl Database {
+    pub fn set_detail_mode(&self, input: &SetDetailModeInput) -> SqlResult<PacketDetailConfig> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        let detail_mode = &input.detail_mode;
+        let do_not_ask = input.do_not_ask_again.unwrap_or(false);
+
+        // Build config JSON based on mode
+        let config = serde_json::json!({
+            "mode": detail_mode,
+            "sketchConfig": if detail_mode == "sketch" {
+                serde_json::json!({
+                    "collapsedLayer": "layer4",
+                    "showSummaryOnly": true,
+                    "autoGenerate": true
+                })
+            } else {
+                serde_json::Value::Null
+            },
+            "refinedConfig": if detail_mode == "refined" {
+                serde_json::json!({
+                    "allLayersEditable": true,
+                    "showWordCount": true,
+                    "showTimestamps": true,
+                    "allowInlineComments": true
+                })
+            } else {
+                serde_json::Value::Null
+            }
+        });
+        let config_json = config.to_string();
+
+        conn.execute(
+            "INSERT INTO canvas4_packet_detail_modes (project_id, detail_mode, config_json, do_not_ask_again, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(project_id) DO UPDATE SET
+               detail_mode = excluded.detail_mode,
+               config_json = excluded.config_json,
+               do_not_ask_again = excluded.do_not_ask_again,
+               updated_at = excluded.updated_at",
+            params![input.project_id, detail_mode, config_json, do_not_ask as i64, now],
+        )?;
+
+        Ok(PacketDetailConfig {
+            detail_mode: detail_mode.clone(),
+            do_not_ask_again: do_not_ask,
+            config,
+        })
+    }
+
+    pub fn get_packet_detail(&self, project_id: &str) -> SqlResult<PacketDetailResponse> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT project_id, detail_mode, config_json, do_not_ask_again, updated_at
+             FROM canvas4_packet_detail_modes WHERE project_id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![project_id], |row| {
+            Ok(PacketDetailModeRecord {
+                project_id: row.get(0)?,
+                detail_mode: row.get(1)?,
+                config_json: row.get(2)?,
+                do_not_ask_again: row.get::<_, i64>(3)? != 0,
+                updated_at: row.get(4)?,
+            })
+        })?;
+
+        match rows.next() {
+            Some(Ok(record)) => {
+                let config: serde_json::Value = serde_json::from_str(&record.config_json)
+                    .unwrap_or_else(|_| serde_json::json!({"mode": "standard"}));
+                Ok(PacketDetailResponse {
+                    detail_mode: record.detail_mode,
+                    do_not_ask_again: record.do_not_ask_again,
+                    config,
+                })
+            }
+            _ => {
+                // No record yet — default to standard
+                Ok(PacketDetailResponse {
+                    detail_mode: "standard".to_string(),
+                    do_not_ask_again: false,
+                    config: serde_json::json!({"mode": "standard"}),
+                })
+            }
+        }
+    }
+
+    pub fn auto_generate_sketch(&self, project_id: &str) -> SqlResult<PacketDetailResponse> {
+        // Set mode to sketch with auto-generate config
+        let input = SetDetailModeInput {
+            project_id: project_id.to_string(),
+            detail_mode: "sketch".to_string(),
+            do_not_ask_again: None,
+        };
+        self.set_detail_mode(&input)
+    }
+
+    pub fn save_refined_content(&self, input: &SaveRefinedContentInput) -> SqlResult<PacketDetailResponse> {
+        // Ensure mode is 'refined' when saving refined content
+        let mode_input = SetDetailModeInput {
+            project_id: input.project_id.clone(),
+            detail_mode: "refined".to_string(),
+            do_not_ask_again: None,
+        };
+        self.set_detail_mode(&mode_input)
     }
 }
 

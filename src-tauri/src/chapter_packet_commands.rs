@@ -4,6 +4,9 @@ use crate::models::{
     ChapterPacket, CreateChapterPacketInput, UpdateChapterPacketLayersInput,
     ListChapterPacketsInput, GetChapterPacketInput, ConfirmChapterPacketInput,
     DeleteChapterPacketInput,
+    // CN-MET-04
+    SetDetailModeInput, GetPacketDetailInput, AutoGenerateSketchInput,
+    SaveRefinedContentInput, PacketDetailConfig, PacketDetailResponse,
 };
 
 #[tauri::command]

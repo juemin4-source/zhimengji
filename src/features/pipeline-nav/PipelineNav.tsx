@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { Settings } from 'lucide-react';
 import './pipeline-nav.css';
 
 export interface StageItem {
@@ -21,6 +22,7 @@ interface PipelineNavProps {
   onStageClick: (stage: string) => void;
   onBack: () => void;
   projectTitle: string;
+  onSettingsClick?: () => void;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -160,6 +162,15 @@ export default function PipelineNav({
           );
         })}
       </div>
+      {onSettingsClick && (
+        <button
+          onClick={onSettingsClick}
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm, 4px)', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+          title="AI 设置"
+        >
+          <Settings size={16} />
+        </button>
+      )}
     </nav>
   );
 }

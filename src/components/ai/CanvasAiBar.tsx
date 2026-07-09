@@ -6,8 +6,10 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Settings } from 'lucide-react';
 import { testConnection } from '../../lib/llm-client';
 import { Button } from '../ui';
+import AiSettings from './AiSettings';
 import './canvas-ai-bar.css';
 
 interface CanvasAiBarProps {

@@ -966,6 +966,7 @@ function AppInner() {
             onStageClick={handleStageChange}
             onBack={handleBackToBookshelf}
             projectTitle={activeBook?.title ?? '设定管理器'}
+            onSettingsClick={() => setShowAiSettings(true)}
           />
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>

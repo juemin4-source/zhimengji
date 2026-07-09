@@ -203,3 +203,14 @@ pub fn get_premise_step_state(
         }),
     }
 }
+
+// ===== v2.1.1 Timestamp API =====
+
+#[tauri::command]
+pub fn get_premise_updated_at(
+    db: State<'_, Database>,
+    input: crate::models::GetUpdatedAtInput,
+) -> Result<crate::models::UpdatedAtResponse, String> {
+    let updated_at = db.get_premise_updated_at(&input.project_id).map_err(|e| e.to_string())?;
+    Ok(crate::models::UpdatedAtResponse { updated_at })
+}

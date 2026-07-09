@@ -3408,6 +3408,54 @@ impl Database {
     }
 }
 
+// ===== v2.1.1 Timestamp API =====
+
+impl Database {
+    /// Get the latest updated_at from premise_cards for a project.
+    /// Returns 0 if no rows exist.
+    pub fn get_premise_updated_at(&self, project_id: &str) -> SqlResult<i64> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT COALESCE(MAX(updated_at), 0) FROM premise_cards WHERE project_id = ?",
+            params![project_id],
+            |row| row.get(0),
+        )
+    }
+
+    /// Get the latest updated_at from structure_nodes for a project.
+    /// Returns 0 if no rows exist.
+    pub fn get_structure_updated_at(&self, project_id: &str) -> SqlResult<i64> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT COALESCE(MAX(updated_at), 0) FROM structure_nodes WHERE project_id = ?",
+            params![project_id],
+            |row| row.get(0),
+        )
+    }
+
+    /// Get the latest updated_at from canvas3_sparrow_steps for a project.
+    /// Returns 0 if no rows exist.
+    pub fn get_sparrow_last_saved_at(&self, project_id: &str) -> SqlResult<i64> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT COALESCE(MAX(updated_at), 0) FROM canvas3_sparrow_steps WHERE project_id = ?",
+            params![project_id],
+            |row| row.get(0),
+        )
+    }
+
+    /// Get the latest updated_at from chapter_packets for a project.
+    /// Returns 0 if no rows exist.
+    pub fn get_packets_updated_at(&self, project_id: &str) -> SqlResult<i64> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT COALESCE(MAX(updated_at), 0) FROM chapter_packets WHERE project_id = ?",
+            params![project_id],
+            |row| row.get(0),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -90,3 +90,14 @@ pub fn save_refined_content(
 ) -> Result<PacketDetailResponse, String> {
     db.save_refined_content(&input).map_err(|e| e.to_string())
 }
+
+// ===== v2.1.1 Timestamp API =====
+
+#[tauri::command]
+pub fn get_packets_updated_at(
+    db: State<'_, Database>,
+    input: crate::models::GetUpdatedAtInput,
+) -> Result<crate::models::UpdatedAtResponse, String> {
+    let updated_at = db.get_packets_updated_at(&input.project_id).map_err(|e| e.to_string())?;
+    Ok(crate::models::UpdatedAtResponse { updated_at })
+}

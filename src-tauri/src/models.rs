@@ -1524,3 +1524,17 @@ pub struct SaveCanvas2NodeInput {
     pub expanded: bool,
     pub sort_order: i64,
 }
+
+// ===== v2.1.1 Timestamp API =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetUpdatedAtInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatedAtResponse {
+    pub updated_at: i64,
+}

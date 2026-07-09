@@ -135,6 +135,11 @@ pub fn run() {
             setting_commands::get_sparrow_module,
             // v2.1.1 CN-MET-03 Tian-Di-Ren AI generation
             setting_commands::generate_tiandiren_ai,
+            // v2.1.1 Timestamp API
+            premise_commands::get_premise_updated_at,
+            structure_commands::get_structure_updated_at,
+            setting_commands::get_sparrow_last_saved_at,
+            chapter_packet_commands::get_packets_updated_at,
             // v2 ChapterPacket commands
             chapter_packet_commands::create_chapter_packet,
             chapter_packet_commands::list_chapter_packets,

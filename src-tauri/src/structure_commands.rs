@@ -214,3 +214,14 @@ fn get_project_premise_title(db: &Database, project_id: &str) -> Result<String, 
         Err(_) => Ok("未命名作品".to_string()),
     }
 }
+
+// ===== v2.1.1 Timestamp API =====
+
+#[tauri::command]
+pub fn get_structure_updated_at(
+    db: State<'_, Database>,
+    input: crate::models::GetUpdatedAtInput,
+) -> Result<crate::models::UpdatedAtResponse, String> {
+    let updated_at = db.get_structure_updated_at(&input.project_id).map_err(|e| e.to_string())?;
+    Ok(crate::models::UpdatedAtResponse { updated_at })
+}

@@ -224,3 +224,14 @@ pub fn get_sparrow_module(
 ) -> Result<SparrowModuleResponse, String> {
     db.get_sparrow_module(&input.project_id).map_err(|e| e.to_string())
 }
+
+// ===== v2.1.1 Timestamp API =====
+
+#[tauri::command]
+pub fn get_sparrow_last_saved_at(
+    db: State<'_, Database>,
+    input: crate::models::GetUpdatedAtInput,
+) -> Result<crate::models::UpdatedAtResponse, String> {
+    let updated_at = db.get_sparrow_last_saved_at(&input.project_id).map_err(|e| e.to_string())?;
+    Ok(crate::models::UpdatedAtResponse { updated_at })
+}

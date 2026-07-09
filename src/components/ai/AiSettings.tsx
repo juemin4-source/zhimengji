@@ -28,7 +28,7 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { status: 'pending' | 'success' | 'fail'; message: string }>>({});
   const [selectedModel, setSelectedModel] = useState(activeModelId);
-  const [budgetInput, setBudgetInput] = useState(usageStats.budgetLimit.toString());
+  const [budgetInput, setBudgetInput] = useState(String(usageStats.budgetLimit ?? 0));
   const handleToggleProvider = useCallback((id: string) => {
     setExpandedProvider(prev => prev === id ? null : id);
   }, []);

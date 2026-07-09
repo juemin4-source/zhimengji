@@ -24,7 +24,7 @@ import GlobalSearch from './components/GlobalSearch';
 import { ToastProvider, useToast } from './components/Toast';
 import AIChat from './components/ai/AIChat';
 import AiSettings from './components/ai/AiSettings';
-import type { ProviderConfig, UsageStats } from './types/ai';
+import { type ProviderConfig, type UsageStats, PRESET_PROVIDERS } from './types/ai';
 import './styles/global.css';
 import './styles/variables.css';
 import './styles/ai.css';
@@ -187,6 +187,36 @@ function AppInner() {
       }
     };
     loadUsage();
+  }, []);
+
+  // ── Load saved AI providers from backend on mount ──
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const infos = await invoke('list_providers') as any[];
+        if (infos && infos.length > 0) {
+          const merged = infos.map(info => {
+            const preset = PRESET_PROVIDERS.find(p => p.id === info.provider);
+            if (!preset) return null;
+            return {
+              id: info.provider,
+              name: preset.name,
+              icon: preset.icon,
+              apiKey: '', // Don't expose keys to frontend
+              endpoint: preset.defaultEndpoint,
+              timeout: 30,
+              models: preset.defaultModels,
+              status: 'connected' as const,
+            } as ProviderConfig;
+          }).filter(Boolean) as ProviderConfig[];
+          setAiProviders(merged);
+        }
+      } catch {
+        // Backend not available, keep empty defaults
+      }
+    };
+    loadProviders();
   }, []);
 
   // ── Keyboard shortcuts ──

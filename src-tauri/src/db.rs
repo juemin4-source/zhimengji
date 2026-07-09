@@ -2667,7 +2667,12 @@ impl Database {
             detail_mode: "sketch".to_string(),
             do_not_ask_again: None,
         };
-        self.set_detail_mode(&input)
+        let config = self.set_detail_mode(&input)?;
+        Ok(PacketDetailResponse {
+            detail_mode: config.detail_mode,
+            do_not_ask_again: config.do_not_ask_again,
+            config: config.config,
+        })
     }
 
     pub fn save_refined_content(&self, input: &SaveRefinedContentInput) -> SqlResult<PacketDetailResponse> {
@@ -2677,7 +2682,12 @@ impl Database {
             detail_mode: "refined".to_string(),
             do_not_ask_again: None,
         };
-        self.set_detail_mode(&mode_input)
+        let config = self.set_detail_mode(&mode_input)?;
+        Ok(PacketDetailResponse {
+            detail_mode: config.detail_mode,
+            do_not_ask_again: config.do_not_ask_again,
+            config: config.config,
+        })
     }
 }
 

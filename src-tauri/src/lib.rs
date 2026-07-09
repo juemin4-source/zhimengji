@@ -133,6 +133,11 @@ pub fn run() {
             chapter_packet_commands::update_chapter_packet_layers,
             chapter_packet_commands::confirm_chapter_packet,
             chapter_packet_commands::delete_chapter_packet,
+            // v2.1.0 CN-MET-04 ChapterPacket detail mode commands
+            chapter_packet_commands::set_detail_mode,
+            chapter_packet_commands::get_packet_detail,
+            chapter_packet_commands::auto_generate_sketch,
+            chapter_packet_commands::save_refined_content,
             // v2 DecisionLog commands
             decision_log_commands::append_decision_log,
             decision_log_commands::list_decision_logs,

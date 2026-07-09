@@ -6,6 +6,7 @@
  * Architecture:
  * - Reads projectId from projectStore
  * - Loads existing ChapterPackets + upstream data (premise, structure, setting)
+ * - Three detail modes: sketch / standard / refined (CN-MET-04)
  * - Four-layer accordion editing (Layer③ default expanded)
  * - Manual create → edit → save → confirm pipeline
  * - Right sidebar with upstream summary
@@ -27,6 +28,7 @@ import type {
   NarrativeCompression,
   ExecutionLayer,
   PacketStatus,
+  DetailMode,
 } from '../../contracts/chapter-packet.contract';
 import type { PremiseCard } from '../../contracts/premise.contract';
 import type { StructureNode } from '../../contracts/structure.contract';
@@ -36,6 +38,9 @@ import { generateChapterPacketFromUpstream } from '../../lib/generateChapterPack
 import { testConnection } from '../../lib/llm-client';
 import { DEFAULT_MODELS } from '../../types/ai';
 import type { AiModel } from '../../types/ai';
+import PacketDetailModeSelector from './PacketDetailModeSelector';
+import PacketSketchView from './PacketSketchView';
+import PacketRefinedView from './PacketRefinedView';
 import './chapter-packet.css';
 
 // ══════════════════════════════════════════
@@ -331,6 +336,12 @@ export default function ChapterPacketCanvas() {
     layer4: false,
   });
 
+  // ── CN-MET-04: Detail mode state ──
+  const [detailMode, setDetailMode] = useState<DetailMode>('standard');
+  const [doNotAskAgain, setDoNotAskAgain] = useState(false);
+  const [detailModeLoading, setDetailModeLoading] = useState(false);
+  const [editingSince] = useState(() => Date.now()); // timestamp for refined mode
+
   // ── Data loading ──
 
   const loadData = useCallback(async () => {
@@ -341,13 +352,14 @@ export default function ChapterPacketCanvas() {
     setLoading(true);
     setError(null);
     try {
-      const [packetsData, premiseCards, structureNodes, chars, wr, facs] = await Promise.all([
+      const [packetsData, premiseCards, structureNodes, chars, wr, facs, detailResp] = await Promise.all([
         chapterPacketApi.listChapterPackets(projectId),
         premiseApi.listPremiseCards(projectId),
         structureApi.listStructureNodes(projectId),
         settingApi.listCharacterCards(projectId),
         settingApi.listWorldRules(projectId),
         settingApi.listFactionCards(projectId),
+        chapterPacketApi.getPacketDetail(projectId).catch(() => null),
       ]);
       const parsed = packetsData.map(p => parsePacket(p as unknown as Record<string, unknown>));
       setPackets(parsed);
@@ -359,6 +371,12 @@ export default function ChapterPacketCanvas() {
       setCharacters(chars);
       setWorldRules(wr);
       setFactions(facs);
+
+      // Apply saved detail mode
+      if (detailResp) {
+        setDetailMode(detailResp.detailMode as DetailMode);
+        setDoNotAskAgain(detailResp.doNotAskAgain);
+      }
     } catch (err: any) {
       console.error('[ChapterPacketCanvas] load error', err);
       setError(err?.message || '加载数据失败');
@@ -581,6 +599,40 @@ export default function ChapterPacketCanvas() {
       setAiGenerating(false);
     }
   };
+
+  // ── CN-MET-04: Detail Mode Change ──
+
+  const handleDetailModeChange = useCallback(async (newMode: DetailMode) => {
+    if (!projectId || newMode === detailMode) return;
+    setDetailModeLoading(true);
+    setDetailMode(newMode);
+    try {
+      await chapterPacketApi.setDetailMode({
+        projectId,
+        detailMode: newMode,
+        doNotAskAgain,
+      });
+      // When switching from sketch to standard, L4 auto-expands (data preserved)
+      if (detailMode === 'sketch' && (newMode === 'standard' || newMode === 'refined')) {
+        setExpandedLayers(prev => ({ ...prev, layer4: true }));
+      }
+      // When switching to refined, expand all layers
+      if (newMode === 'refined') {
+        setExpandedLayers(prev => ({ ...prev, layer1: true, layer2: true, layer3: true, layer4: true }));
+      }
+      showToast(`模式已切换: ${newMode === 'sketch' ? '快速草图' : newMode === 'standard' ? '标准大纲' : '精细润色'}`, 'success');
+    } catch (err: any) {
+      console.error('[ChapterPacketCanvas] mode change error', err);
+      showToast('模式切换失败: ' + (err?.message || '未知错误'), 'error');
+      setDetailMode(detailMode); // revert on error
+    } finally {
+      setDetailModeLoading(false);
+    }
+  }, [projectId, detailMode, doNotAskAgain, showToast]);
+
+  const handleDoNotAskAgainChange = useCallback((checked: boolean) => {
+    setDoNotAskAgain(checked);
+  }, []);
 
   // ══════════════════════════════════════════
   //  Render: Layer content
@@ -1159,237 +1211,276 @@ export default function ChapterPacketCanvas() {
           </div>
         </div>
 
-        {/* Mode toggle + Metadata fields */}
-        <div className="packet-metabar">
-          <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginRight: 12 }}>
-            <button
-              onClick={() => setReviewMode(true)}
-              className={`packet-mode-btn ${reviewMode ? 'packet-mode-btn-active' : ''}`}
-              type="button"
-              style={{
-                padding: '3px 10px', fontSize: '0.6875rem', borderRadius: 4,
-                border: reviewMode ? '1px solid var(--accent, #B7FF00)' : '1px solid var(--border-default, #2a2a2a)',
-                background: reviewMode ? 'rgba(183,255,0,0.1)' : 'transparent',
-                color: reviewMode ? 'var(--accent, #B7FF00)' : 'var(--text-muted, #666)',
-                cursor: 'pointer', fontWeight: reviewMode ? 500 : 400,
-              }}
-            >
-              审核模式
-            </button>
-            <button
-              onClick={() => { setReviewMode(false); setExpandedLayers(prev => ({ ...prev, layer1: true, layer2: true, layer4: true })); }}
-              className={`packet-mode-btn ${!reviewMode ? 'packet-mode-btn-active' : ''}`}
-              type="button"
-              style={{
-                padding: '3px 10px', fontSize: '0.6875rem', borderRadius: 4,
-                border: !reviewMode ? '1px solid var(--accent, #B7FF00)' : '1px solid var(--border-default, #2a2a2a)',
-                background: !reviewMode ? 'rgba(183,255,0,0.1)' : 'transparent',
-                color: !reviewMode ? 'var(--accent, #B7FF00)' : 'var(--text-muted, #666)',
-                cursor: 'pointer', fontWeight: !reviewMode ? 500 : 400,
-              }}
-            >
-              完整模式
-            </button>
-          </div>
-          <Select
-            value={chapterFunction}
-            onChange={e => setChapterFunction(e.target.value)}
-            options={CHAPTER_FUNCTION_OPTIONS}
-            style={{ width: reviewMode ? 140 : 140 }}
-          />
-          <Input
-            value={position}
-            onChange={e => setPosition(e.target.value)}
-            placeholder="时位 (如: 动 / 藏→生)"
-            style={{ width: 160 }}
+        {/* CN-MET-04: Detail Mode Selector */}
+        <div className="packet-detail-mode-bar">
+          <PacketDetailModeSelector
+            currentMode={detailMode}
+            onModeChange={handleDetailModeChange}
+            disabled={detailModeLoading}
+            doNotAskAgain={doNotAskAgain}
+            onDoNotAskAgainChange={handleDoNotAskAgainChange}
           />
         </div>
 
-        {/* Four-layer accordion editor (review mode / full mode) */}
+        {/* Metadata fields (visible in standard & refined mode) */}
+        {detailMode !== 'sketch' && (
+          <div className="packet-metabar">
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginRight: 12 }}>
+              <button
+                onClick={() => setReviewMode(true)}
+                className={`packet-mode-btn ${reviewMode ? 'packet-mode-btn-active' : ''}`}
+                type="button"
+                style={{
+                  padding: '3px 10px', fontSize: '0.6875rem', borderRadius: 4,
+                  border: reviewMode ? '1px solid var(--accent, #B7FF00)' : '1px solid var(--border-default, #2a2a2a)',
+                  background: reviewMode ? 'rgba(183,255,0,0.1)' : 'transparent',
+                  color: reviewMode ? 'var(--accent, #B7FF00)' : 'var(--text-muted, #666)',
+                  cursor: 'pointer', fontWeight: reviewMode ? 500 : 400,
+                }}
+              >
+                审核模式
+              </button>
+              <button
+                onClick={() => { setReviewMode(false); setExpandedLayers(prev => ({ ...prev, layer1: true, layer2: true, layer4: true })); }}
+                className={`packet-mode-btn ${!reviewMode ? 'packet-mode-btn-active' : ''}`}
+                type="button"
+                style={{
+                  padding: '3px 10px', fontSize: '0.6875rem', borderRadius: 4,
+                  border: !reviewMode ? '1px solid var(--accent, #B7FF00)' : '1px solid var(--border-default, #2a2a2a)',
+                  background: !reviewMode ? 'rgba(183,255,0,0.1)' : 'transparent',
+                  color: !reviewMode ? 'var(--accent, #B7FF00)' : 'var(--text-muted, #666)',
+                  cursor: 'pointer', fontWeight: !reviewMode ? 500 : 400,
+                }}
+              >
+                完整模式
+              </button>
+            </div>
+            <Select
+              value={chapterFunction}
+              onChange={e => setChapterFunction(e.target.value)}
+              options={CHAPTER_FUNCTION_OPTIONS}
+              style={{ width: reviewMode ? 140 : 140 }}
+            />
+            <Input
+              value={position}
+              onChange={e => setPosition(e.target.value)}
+              placeholder="时位 (如: 动 / 藏→生)"
+              style={{ width: 160 }}
+            />
+          </div>
+        )}
+
+        {/* Four-layer accordion editor (mode-aware) */}
         <div className="packet-layers">
-          {reviewMode ? (
-            /* ═══ 审核模式 — 只展示核心字段 + Layer③ 展开 ═══ */
-            <>
-              {/* Layer ③ 剧情压缩层 — 核心叙事字段 */}
-              <div className="packet-layer packet-layer-expanded">
-                <div className="packet-layer-header" style={{ cursor: 'default' }}>
-                  <span className="packet-layer-arrow">▾</span>
-                  <span className="packet-layer-title">剧情压缩 (核心叙事)</span>
-                </div>
-                <div className="packet-layer-body">
-                  <div className="packet-layer-fields">
-                    {/* 压缩叙事 */}
-                    <FieldRow label="压缩叙事" hint="80-250 字">
-                      <TextArea
-                        value={editLayer3.narrative}
-                        onChange={e => updateLayer3(p => ({ ...p, narrative: e.target.value }))}
-                        placeholder="用 80-250 字概括本章剧情..."
-                        className="packet-textarea"
-                        style={{ minHeight: 100, lineHeight: 1.7 }}
-                      />
-                      <div className="packet-char-count">{editLayer3.narrative.length} 字</div>
-                    </FieldRow>
+          {detailMode === 'sketch' ? (
+            /* ═══ 快速草图模式 — 紧凑摘要展示 ═══ */
+            <PacketSketchView
+              title={title}
+              chapterFunction={chapterFunction}
+              position={position}
+              layer1={editLayer1}
+              layer2={editLayer2}
+              layer3={editLayer3}
+            />
+          ) : detailMode === 'refined' ? (
+            /* ═══ 精细润色模式 — 全层可编辑 + 字数/时间/评论 ═══ */
+            <PacketRefinedView
+              layer1={editLayer1}
+              layer2={editLayer2}
+              layer3={editLayer3}
+              layer4={editLayer4}
+              onLayer1Change={(v) => { setEditLayer1(v); markChanged(); }}
+              onLayer2Change={(v) => { setEditLayer2(v); markChanged(); }}
+              onLayer3Change={(v) => { setEditLayer3(v); markChanged(); }}
+              onLayer4Change={(v) => { setEditLayer4(v); markChanged(); }}
+              editingSince={editingSince}
+            />
+          ) : (
+            /* ═══ 标准大纲模式 — 现有 accordion 行为 ═══ */
+            reviewMode ? (
+              /* ═══ 审核模式 — 只展示核心字段 + Layer③ 展开 ═══ */
+              <>
+                {/* Layer ③ 剧情压缩层 — 核心叙事字段 */}
+                <div className="packet-layer packet-layer-expanded">
+                  <div className="packet-layer-header" style={{ cursor: 'default' }}>
+                    <span className="packet-layer-arrow">▾</span>
+                    <span className="packet-layer-title">剧情压缩 (核心叙事)</span>
+                  </div>
+                  <div className="packet-layer-body">
+                    <div className="packet-layer-fields">
+                      {/* 压缩叙事 */}
+                      <FieldRow label="压缩叙事" hint="80-250 字">
+                        <TextArea
+                          value={editLayer3.narrative}
+                          onChange={e => updateLayer3(p => ({ ...p, narrative: e.target.value }))}
+                          placeholder="用 80-250 字概括本章剧情..."
+                          className="packet-textarea"
+                          style={{ minHeight: 100, lineHeight: 1.7 }}
+                        />
+                        <div className="packet-char-count">{editLayer3.narrative.length} 字</div>
+                      </FieldRow>
 
-                    {/* 释放信息 */}
-                    <FieldRow label="读者释放" hint="每行一条 — 本章释放给读者的信息">
-                      <TextArea
-                        value={editLayer3.releases.join('\n')}
-                        onChange={e => updateLayer3(p => ({ ...p, releases: e.target.value.split('\n').filter(Boolean) }))}
-                        placeholder="本章释放给读者的信息"
-                        className="packet-textarea"
-                        style={{ minHeight: 60 }}
-                      />
-                    </FieldRow>
+                      {/* 释放信息 */}
+                      <FieldRow label="读者释放" hint="每行一条 — 本章释放给读者的信息">
+                        <TextArea
+                          value={editLayer3.releases.join('\n')}
+                          onChange={e => updateLayer3(p => ({ ...p, releases: e.target.value.split('\n').filter(Boolean) }))}
+                          placeholder="本章释放给读者的信息"
+                          className="packet-textarea"
+                          style={{ minHeight: 60 }}
+                        />
+                      </FieldRow>
 
-                    {/* 建立/伏笔/压力 */}
-                    <FieldRow label="建立 · 伏笔 · 章尾压力" hint="JSON 格式">
-                      <TextArea
-                        value={JSON.stringify(editLayer3.establishes, null, 2)}
-                        onChange={e => {
-                          try {
-                            const parsed = JSON.parse(e.target.value);
-                            if (Array.isArray(parsed)) {
-                              updateLayer3(p => ({ ...p, establishes: parsed }));
-                            }
-                          } catch { /* ignore */ }
-                        }}
-                        placeholder='[{"type": "establish|foreshadow|pressure", "subject": "...", "change": "..."}]'
-                        className="packet-textarea packet-textarea-mono"
-                        style={{ minHeight: 80 }}
-                      />
-                    </FieldRow>
+                      {/* 建立/伏笔/压力 */}
+                      <FieldRow label="建立 · 伏笔 · 章尾压力" hint="JSON 格式">
+                        <TextArea
+                          value={JSON.stringify(editLayer3.establishes, null, 2)}
+                          onChange={e => {
+                            try {
+                              const parsed = JSON.parse(e.target.value);
+                              if (Array.isArray(parsed)) {
+                                updateLayer3(p => ({ ...p, establishes: parsed }));
+                              }
+                            } catch { /* ignore */ }
+                          }}
+                          placeholder='[{"type": "establish|foreshadow|pressure", "subject": "...", "change": "..."}]'
+                          className="packet-textarea packet-textarea-mono"
+                          style={{ minHeight: 80 }}
+                        />
+                      </FieldRow>
 
-                    {/* 关系变化 (from annotations) */}
-                    <FieldRow label="关系变化 / 注释" hint="每行一条">
-                      <TextArea
-                        value={editLayer3.annotations.join('\n')}
-                        onChange={e => updateLayer3(p => ({ ...p, annotations: e.target.value.split('\n').filter(Boolean) }))}
-                        placeholder="关系变化说明或创作注释"
-                        className="packet-textarea"
-                        style={{ minHeight: 50 }}
-                      />
-                    </FieldRow>
+                      {/* 关系变化 (from annotations) */}
+                      <FieldRow label="关系变化 / 注释" hint="每行一条">
+                        <TextArea
+                          value={editLayer3.annotations.join('\n')}
+                          onChange={e => updateLayer3(p => ({ ...p, annotations: e.target.value.split('\n').filter(Boolean) }))}
+                          placeholder="关系变化说明或创作注释"
+                          className="packet-textarea"
+                          style={{ minHeight: 50 }}
+                        />
+                      </FieldRow>
 
-                    {/* 线路标记 */}
-                    <FieldRow label="线路标记" hint="每行一条">
-                      <TextArea
-                        value={editLayer3.lines.join('\n')}
-                        onChange={e => updateLayer3(p => ({ ...p, lines: e.target.value.split('\n').filter(Boolean) }))}
-                        placeholder="每行一条线路标记"
-                        className="packet-textarea"
-                        style={{ minHeight: 40 }}
-                      />
-                    </FieldRow>
+                      {/* 线路标记 */}
+                      <FieldRow label="线路标记" hint="每行一条">
+                        <TextArea
+                          value={editLayer3.lines.join('\n')}
+                          onChange={e => updateLayer3(p => ({ ...p, lines: e.target.value.split('\n').filter(Boolean) }))}
+                          placeholder="每行一条线路标记"
+                          className="packet-textarea"
+                          style={{ minHeight: 40 }}
+                        />
+                      </FieldRow>
 
-                    {/* 临时假设 — 精简展示 */}
-                    {editLayer3.assumptions.length > 0 && (
-                      <div className="packet-assumptions-section">
-                        <div className="packet-field-label">临时假设 ({editLayer3.assumptions.length})</div>
-                        <div className="packet-assumptions-list">
-                          {editLayer3.assumptions.map((a, idx) => (
-                            <div key={a.id || idx} className="packet-assumption-item" style={{ borderLeftColor: RISK_COLORS[a.riskLevel] || '#666' }}>
-                              <div className="packet-assumption-header">
-                                <Badge style={{ background: RISK_COLORS[a.riskLevel] || '#666', color: '#000' }}>
-                                  {RISK_LABELS[a.riskLevel] || a.riskLevel}
-                                </Badge>
-                                <span className="packet-assumption-resolution">
-                                  {a.resolution === 'adopted' ? '已采纳' : a.resolution === 'rejected' ? '已驳回' : '待定'}
-                                </span>
+                      {/* 临时假设 — 精简展示 */}
+                      {editLayer3.assumptions.length > 0 && (
+                        <div className="packet-assumptions-section">
+                          <div className="packet-field-label">临时假设 ({editLayer3.assumptions.length})</div>
+                          <div className="packet-assumptions-list">
+                            {editLayer3.assumptions.map((a, idx) => (
+                              <div key={a.id || idx} className="packet-assumption-item" style={{ borderLeftColor: RISK_COLORS[a.riskLevel] || '#666' }}>
+                                <div className="packet-assumption-header">
+                                  <Badge style={{ background: RISK_COLORS[a.riskLevel] || '#666', color: '#000' }}>
+                                    {RISK_LABELS[a.riskLevel] || a.riskLevel}
+                                  </Badge>
+                                  <span className="packet-assumption-resolution">
+                                    {a.resolution === 'adopted' ? '已采纳' : a.resolution === 'rejected' ? '已驳回' : '待定'}
+                                  </span>
+                                </div>
+                                <div className="packet-assumption-content">{a.content}</div>
                               </div>
-                              <div className="packet-assumption-content">{a.content}</div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Layers ①②④ — 折叠摘要卡片 */}
-              <AccordionSection
-                id="layer1"
-                title="Layer ① 写作契约"
-                summary={`距离: ${DISTANCE_OPTIONS.find(o => o.value === editLayer1.narrativeDistance)?.label || editLayer1.narrativeDistance} · 禁忌: ${editLayer1.taboos.length}条`}
-                expanded={expandedLayers.layer1}
-                onToggle={() => toggleLayer('layer1')}
-              >
-                {renderLayer1Content()}
-              </AccordionSection>
+                {/* Layers ①②④ — 折叠摘要卡片 */}
+                <AccordionSection
+                  id="layer1"
+                  title="Layer ① 写作契约"
+                  summary={`距离: ${DISTANCE_OPTIONS.find(o => o.value === editLayer1.narrativeDistance)?.label || editLayer1.narrativeDistance} · 禁忌: ${editLayer1.taboos.length}条`}
+                  expanded={expandedLayers.layer1}
+                  onToggle={() => toggleLayer('layer1')}
+                >
+                  {renderLayer1Content()}
+                </AccordionSection>
 
-              <AccordionSection
-                id="layer2"
-                title="Layer ② 活跃设定"
-                summary={`角色: ${editLayer2.characters.length} · 场景: ${editLayer2.scenes.length} · 规则: ${editLayer2.rules.length}`}
-                expanded={expandedLayers.layer2}
-                onToggle={() => toggleLayer('layer2')}
-              >
-                {renderLayer2Content()}
-              </AccordionSection>
+                <AccordionSection
+                  id="layer2"
+                  title="Layer ② 活跃设定"
+                  summary={`角色: ${editLayer2.characters.length} · 场景: ${editLayer2.scenes.length} · 规则: ${editLayer2.rules.length}`}
+                  expanded={expandedLayers.layer2}
+                  onToggle={() => toggleLayer('layer2')}
+                >
+                  {renderLayer2Content()}
+                </AccordionSection>
 
-              <AccordionSection
-                id="layer4"
-                title="Layer ④ 执行层"
-                summary={`场景: ${editLayer4.scenes.length}个`}
-                expanded={expandedLayers.layer4}
-                onToggle={() => toggleLayer('layer4')}
-              >
-                {renderLayer4Content()}
-              </AccordionSection>
+                <AccordionSection
+                  id="layer4"
+                  title="Layer ④ 执行层"
+                  summary={`场景: ${editLayer4.scenes.length}个`}
+                  expanded={expandedLayers.layer4}
+                  onToggle={() => toggleLayer('layer4')}
+                >
+                  {renderLayer4Content()}
+                </AccordionSection>
 
-              {/* 审核模式底部提示 */}
-              <div style={{
-                textAlign: 'center', padding: '12px 0', fontSize: '0.6875rem',
-                color: 'var(--text-muted, #666)',
-                borderTop: '1px dashed var(--border-default, #2a2a2a)',
-                marginTop: 8,
-              }}>
-                审核模式 — 仅展示核心字段。切换到「完整模式」编辑全部四层内容。
-              </div>
-            </>
-          ) : (
-            /* ═══ 完整模式 — 四层全部可编辑 ═══ */
-            <>
-              <AccordionSection
-                id="layer1"
-                title="Layer ① 写作契约"
-                summary={`距离: ${DISTANCE_OPTIONS.find(o => o.value === editLayer1.narrativeDistance)?.label || editLayer1.narrativeDistance} · 禁忌: ${editLayer1.taboos.length}条`}
-                expanded={expandedLayers.layer1}
-                onToggle={() => toggleLayer('layer1')}
-              >
-                {renderLayer1Content()}
-              </AccordionSection>
+                {/* 审核模式底部提示 */}
+                <div style={{
+                  textAlign: 'center', padding: '12px 0', fontSize: '0.6875rem',
+                  color: 'var(--text-muted, #666)',
+                  borderTop: '1px dashed var(--border-default, #2a2a2a)',
+                  marginTop: 8,
+                }}>
+                  审核模式 — 仅展示核心字段。切换到「完整模式」编辑全部四层内容。
+                </div>
+              </>
+            ) : (
+              /* ═══ 完整模式 — 四层全部可编辑 ═══ */
+              <>
+                <AccordionSection
+                  id="layer1"
+                  title="Layer ① 写作契约"
+                  summary={`距离: ${DISTANCE_OPTIONS.find(o => o.value === editLayer1.narrativeDistance)?.label || editLayer1.narrativeDistance} · 禁忌: ${editLayer1.taboos.length}条`}
+                  expanded={expandedLayers.layer1}
+                  onToggle={() => toggleLayer('layer1')}
+                >
+                  {renderLayer1Content()}
+                </AccordionSection>
 
-              <AccordionSection
-                id="layer2"
-                title="Layer ② 活跃设定"
-                summary={`角色: ${editLayer2.characters.length} · 场景: ${editLayer2.scenes.length} · 规则: ${editLayer2.rules.length}`}
-                expanded={expandedLayers.layer2}
-                onToggle={() => toggleLayer('layer2')}
-              >
-                {renderLayer2Content()}
-              </AccordionSection>
+                <AccordionSection
+                  id="layer2"
+                  title="Layer ② 活跃设定"
+                  summary={`角色: ${editLayer2.characters.length} · 场景: ${editLayer2.scenes.length} · 规则: ${editLayer2.rules.length}`}
+                  expanded={expandedLayers.layer2}
+                  onToggle={() => toggleLayer('layer2')}
+                >
+                  {renderLayer2Content()}
+                </AccordionSection>
 
-              <AccordionSection
-                id="layer3"
-                title="Layer ③ 剧情压缩层"
-                summary={editLayer3.narrative ? `${editLayer3.narrative.slice(0, 40)}...` : '空'}
-                expanded={expandedLayers.layer3}
-                onToggle={() => toggleLayer('layer3')}
-              >
-                {renderLayer3Content()}
-              </AccordionSection>
+                <AccordionSection
+                  id="layer3"
+                  title="Layer ③ 剧情压缩层"
+                  summary={editLayer3.narrative ? `${editLayer3.narrative.slice(0, 40)}...` : '空'}
+                  expanded={expandedLayers.layer3}
+                  onToggle={() => toggleLayer('layer3')}
+                >
+                  {renderLayer3Content()}
+                </AccordionSection>
 
-              <AccordionSection
-                id="layer4"
-                title="Layer ④ 执行层"
-                summary={`场景: ${editLayer4.scenes.length}个`}
-                expanded={expandedLayers.layer4}
-                onToggle={() => toggleLayer('layer4')}
-              >
-                {renderLayer4Content()}
-              </AccordionSection>
-            </>
+                <AccordionSection
+                  id="layer4"
+                  title="Layer ④ 执行层"
+                  summary={`场景: ${editLayer4.scenes.length}个`}
+                  expanded={expandedLayers.layer4}
+                  onToggle={() => toggleLayer('layer4')}
+                >
+                  {renderLayer4Content()}
+                </AccordionSection>
+              </>
+            )
           )}
         </div>
       </div>

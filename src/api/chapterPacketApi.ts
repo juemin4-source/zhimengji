@@ -10,6 +10,13 @@ import type {
   UpdateLayersInput,
   ConfirmPacketInput,
   DeletePacketInput,
+  // CN-MET-04
+  DetailMode,
+  PacketDetailLevel,
+  PacketDetailResponse,
+  SetDetailModeInput,
+  AutoGenerateSketchInput,
+  SaveRefinedContentInput,
 } from '../contracts/chapter-packet.contract';
 
 export async function createChapterPacket(input: CreateChapterPacketInput): Promise<ChapterPacket> {
@@ -34,4 +41,22 @@ export async function confirmChapterPacket(packetId: string): Promise<ChapterPac
 
 export async function deleteChapterPacket(id: string): Promise<void> {
   return invoke('delete_chapter_packet', { input: { id } });
+}
+
+// ─── CN-MET-04: Detail Mode API ───
+
+export async function setDetailMode(input: SetDetailModeInput): Promise<PacketDetailLevel> {
+  return invoke('set_detail_mode', { input });
+}
+
+export async function getPacketDetail(projectId: string): Promise<PacketDetailResponse> {
+  return invoke('get_packet_detail', { input: { projectId } });
+}
+
+export async function autoGenerateSketch(projectId: string): Promise<void> {
+  await invoke('auto_generate_sketch', { input: { projectId } });
+}
+
+export async function saveRefinedContent(input: SaveRefinedContentInput): Promise<PacketDetailLevel> {
+  return invoke('save_refined_content', { input });
 }

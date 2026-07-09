@@ -6,9 +6,9 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Button } from '../../../components/ui';
-import DoNotAskAgainToggle from '../../common/method-step/DoNotAskAgainToggle';
-import type { ProtagonistStepType, CharacterStep3 } from '../../../contracts/setting.contract';
+import { Button } from '../../components/ui';
+import DoNotAskAgainToggle from '../common/method-step/DoNotAskAgainToggle';
+import type { ProtagonistStepType, CharacterStep3 } from '../../contracts/setting.contract';
 import './sparrow.css';
 
 export interface SparrowProtagonistStepsProps {

@@ -24,6 +24,16 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
     const title = await page.title();
     console.log('窗口标题:', title);
 
+    // ── Dismiss FirstLaunchGuide if visible (full-screen overlay z-index:100) ──
+    try {
+      const guide = page.getByRole('button', { name: '开始使用' });
+      if (await guide.isVisible({ timeout: 2000 })) {
+        await guide.click();                      // step 1 → step 2
+        await page.getByRole('button', { name: '跳过' }).click();  // dismiss
+        await page.waitForTimeout(500);
+      }
+    } catch { /* no guide */ }
+
     // ── 确保在书架页面 ──
     const backBtn = page.getByTitle('返回书架');
     if (await backBtn.isVisible().catch(() => false)) {
@@ -31,25 +41,33 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
       await page.waitForTimeout(1000);
     }
 
-    // ── 书架：创建新项目 ──
+    // ── 书架：创建或复用项目 ──
+    // If create dialog is already open (state from previous run), close it first
+    const closeBtn = page.getByRole('button', { name: '关闭' });
+    if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+      await closeBtn.click();
+      await page.waitForTimeout(500);
+    }
+
     const newBtn = page.getByRole('button', { name: '新建作品' });
     if (await newBtn.isVisible().catch(() => false)) {
       await newBtn.click();
-      const nameInput = page.getByPlaceholder('输入作品名称...');
-      await expect(nameInput).toBeVisible({ timeout: 5000 });
-      await nameInput.fill('CDP Golden Path');
-      await page.getByText('从零开始').first().click();
-      await page.getByRole('button', { name: '下一步' }).click();
-      await page.getByRole('button', { name: '开始创作' }).click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500);
     }
+
+    const nameInput = page.getByPlaceholder('输入作品名称...');
+    await expect(nameInput).toBeVisible({ timeout: 5000 });
+    await nameInput.fill('CDP Golden Path');
+    await page.getByText('从零开始').first().click();
+    await page.waitForTimeout(300);
+    // "下一步" appears after template selection (may be behind dialog overlay)
+    await page.getByRole('button', { name: '下一步' }).click({ force: true });
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: '开始创作' }).click();
+    await page.waitForTimeout(2000);
 
     // ── 画板① 前提卡 ──
     console.log('填写前提卡...');
-    // Close FirstLaunchGuide if visible
-    try {
-      await page.getByRole('button', { name: '开始使用' }).click({ timeout: 2000 });
-    } catch { /* guide might not be shown */ }
     await page.locator('.premise-textarea').first().waitFor({ state: 'visible', timeout: 10000 });
     await page.fill('.premise-textarea', '一个渴望掌控权力的王子，在政变中失去一切，必须带领乌合之众在边疆求生。');
     await page.evaluate(() => {

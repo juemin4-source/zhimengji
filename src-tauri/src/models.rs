@@ -1162,6 +1162,151 @@ pub struct PremiseStepStateResponse {
     pub state: Option<PremiseStepRecord>,
 }
 
+// ===== CN-MET-03: Canvas 3 Sparrow Mode 9+3 Structs =====
+
+/// A single sparrow step stored in DB (JSON content stored as string)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SparrowStepRecord {
+    pub id: String,
+    pub project_id: String,
+    pub step_id: String,
+    pub content: String,
+    pub is_complete: bool,
+    pub do_not_ask_again: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// A protagonist substep stored in DB
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProtagonistStepRecord {
+    pub id: String,
+    pub project_id: String,
+    pub step_type: String,
+    pub character_id: String,
+    pub description: String,
+    pub is_usable: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// Tian-Di-Ren layer stored in DB (as one row per project)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TianDiRenRecord {
+    pub id: String,
+    pub project_id: String,
+    pub tian: String,
+    pub di: String,
+    pub ren: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+// ── CN-MET-03: Command Input Types ──
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveSparrowStepInput {
+    pub project_id: String,
+    pub step_id: String,
+    pub content: String,
+    pub is_complete: bool,
+    pub do_not_ask_again: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveSparrowStepOutput {
+    pub project_id: String,
+    pub step_id: String,
+    pub saved: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveProtagonistStepInput {
+    pub project_id: String,
+    pub step_type: String,
+    pub character_id: String,
+    pub description: String,
+    pub is_usable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveProtagonistStepOutput {
+    pub project_id: String,
+    pub step_type: String,
+    pub saved: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkStepUsableInput {
+    pub project_id: String,
+    pub step_type: String,
+    pub character_id: String,
+    pub is_usable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkStepUsableOutput {
+    pub project_id: String,
+    pub step_type: String,
+    pub is_usable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateSparrowAiInput {
+    pub project_id: String,
+    pub step_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateSparrowAiOutput {
+    pub project_id: String,
+    pub step_id: String,
+    pub suggested_content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveTianDiRenLayerInput {
+    pub project_id: String,
+    pub tian: String,
+    pub di: String,
+    pub ren: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveTianDiRenLayerOutput {
+    pub project_id: String,
+    pub saved: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSparrowModuleInput {
+    pub project_id: String,
+}
+
+/// Response from get_sparrow_module: returns all steps + protagonist steps + tian-di-ren
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SparrowModuleResponse {
+    pub exists: bool,
+    pub steps: Vec<SparrowStepRecord>,
+    pub protagonist_steps: Vec<ProtagonistStepRecord>,
+    pub tian_di_ren: Option<TianDiRenRecord>,
+}
+
 // ===== v2.0.1 Feedback =====
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -6,6 +6,13 @@ use crate::models::{
     GetCharacterCardInput, GetFactionCardInput, GetWorldRuleInput, ListCharacterCardInput,
     ListFactionCardInput, ListWorldRuleInput, UpdateCharacterCardInput, UpdateFactionCardInput,
     UpdateWorldRuleInput, WorldRule,
+    // CN-MET-03
+    SaveSparrowStepInput, SaveSparrowStepOutput,
+    SaveProtagonistStepInput, SaveProtagonistStepOutput,
+    MarkStepUsableInput, MarkStepUsableOutput,
+    GenerateSparrowAiInput, GenerateSparrowAiOutput,
+    SaveTianDiRenLayerInput, SaveTianDiRenLayerOutput,
+    GetSparrowModuleInput, SparrowModuleResponse,
 };
 
 // ===== WorldRule =====
@@ -132,4 +139,64 @@ pub fn delete_faction_card(
     input: DeleteFactionCardInput,
 ) -> Result<(), String> {
     db.delete_faction_card(&input.id).map_err(|e| e.to_string())
+}
+
+// ===== CN-MET-03: Sparrow Mode 9+3 Commands =====
+
+#[tauri::command]
+pub fn save_sparrow_step(
+    db: State<'_, Database>,
+    input: SaveSparrowStepInput,
+) -> Result<SaveSparrowStepOutput, String> {
+    db.upsert_sparrow_step(&input).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn save_protagonist_step(
+    db: State<'_, Database>,
+    input: SaveProtagonistStepInput,
+) -> Result<SaveProtagonistStepOutput, String> {
+    db.upsert_protagonist_step(&input).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn mark_step_usable(
+    db: State<'_, Database>,
+    input: MarkStepUsableInput,
+) -> Result<MarkStepUsableOutput, String> {
+    db.mark_protagonist_step_usable(&input).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn generate_sparrow_ai(
+    db: State<'_, Database>,
+    input: GenerateSparrowAiInput,
+) -> Result<GenerateSparrowAiOutput, String> {
+    // v2.0.2: AI generation stub — returns placeholder content
+    // Full AI integration via command-router will be added in v2.2
+    let placeholder = format!(
+        "基于当前项目设定，{} 步骤的 AI 建议内容。请在此处编辑和补充。",
+        input.step_id
+    );
+    Ok(GenerateSparrowAiOutput {
+        project_id: input.project_id.clone(),
+        step_id: input.step_id,
+        suggested_content: placeholder,
+    })
+}
+
+#[tauri::command]
+pub fn save_tiandiren_layer(
+    db: State<'_, Database>,
+    input: SaveTianDiRenLayerInput,
+) -> Result<SaveTianDiRenLayerOutput, String> {
+    db.upsert_tiandiren_layer(&input).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_sparrow_module(
+    db: State<'_, Database>,
+    input: GetSparrowModuleInput,
+) -> Result<SparrowModuleResponse, String> {
+    db.get_sparrow_module(&input.project_id).map_err(|e| e.to_string())
 }

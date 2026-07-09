@@ -119,6 +119,13 @@ pub fn run() {
             setting_commands::get_faction_card,
             setting_commands::update_faction_card,
             setting_commands::delete_faction_card,
+            // v2.1.0 CN-MET-03 Sparrow Mode 9+3 commands
+            setting_commands::save_sparrow_step,
+            setting_commands::save_protagonist_step,
+            setting_commands::mark_step_usable,
+            setting_commands::generate_sparrow_ai,
+            setting_commands::save_tiandiren_layer,
+            setting_commands::get_sparrow_module,
             // v2 ChapterPacket commands
             chapter_packet_commands::create_chapter_packet,
             chapter_packet_commands::list_chapter_packets,

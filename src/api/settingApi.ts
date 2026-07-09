@@ -109,3 +109,73 @@ export async function updateFactionCard(input: UpdateFactionCardInput): Promise<
 export async function deleteFactionCard(id: string): Promise<void> {
   return invoke('delete_faction_card', { input: { id } });
 }
+
+// ── CN-MET-03: Canvas 3 Sparrow Mode 9+3 API ──
+
+import type {
+  SaveSparrowStepInput, SaveSparrowStepOutput,
+  SaveProtagonistStepInput, SaveProtagonistStepOutput,
+  MarkStepUsableInput, MarkStepUsableOutput,
+  GenerateSparrowAiInput, GenerateSparrowAiOutput,
+  SaveTianDiRenLayerInput, SaveTianDiRenLayerOutput,
+  GetSparrowModuleInput, SparrowModuleResponse,
+  SparrowStepState, CharacterStep3, TianDiRenLayer, SparrowStepId,
+} from '../contracts/setting.contract';
+
+function parseSparrowStepRecord(data: Record<string, unknown>): SparrowStepState {
+  return {
+    stepId: data.stepId as SparrowStepId,
+    label: data.stepId as string, // label will be derived in UI from stepId
+    content: (data.content as string) || '',
+    isExpanded: true,
+    isRequired: data.stepId === 'step_3',
+    isComplete: !!data.isComplete,
+    aiGenerated: false,
+    doNotAskAgain: !!data.doNotAskAgain,
+  };
+}
+
+function parseProtagonistStepRecord(data: Record<string, unknown>): CharacterStep3 {
+  return {
+    stepType: data.stepType as CharacterStep3['stepType'],
+    characterId: (data.characterId as string) || '',
+    description: (data.description as string) || '',
+    isUsable: !!data.isUsable,
+  };
+}
+
+export async function saveSparrowStep(input: SaveSparrowStepInput): Promise<SaveSparrowStepOutput> {
+  return invoke<SaveSparrowStepOutput>('save_sparrow_step', { input });
+}
+
+export async function saveProtagonistStep(input: SaveProtagonistStepInput): Promise<SaveProtagonistStepOutput> {
+  return invoke<SaveProtagonistStepOutput>('save_protagonist_step', { input });
+}
+
+export async function markStepUsable(input: MarkStepUsableInput): Promise<MarkStepUsableOutput> {
+  return invoke<MarkStepUsableOutput>('mark_step_usable', { input });
+}
+
+export async function generateSparrowAi(input: GenerateSparrowAiInput): Promise<GenerateSparrowAiOutput> {
+  return invoke<GenerateSparrowAiOutput>('generate_sparrow_ai', { input });
+}
+
+export async function saveTianDiRenLayer(input: SaveTianDiRenLayerInput): Promise<SaveTianDiRenLayerOutput> {
+  return invoke<SaveTianDiRenLayerOutput>('save_tiandiren_layer', { input });
+}
+
+export async function getSparrowModule(input: GetSparrowModuleInput): Promise<SparrowModuleResponse> {
+  const data = await invoke<Record<string, unknown>>('get_sparrow_module', { input });
+  const steps = ((data.steps as Record<string, unknown>[]) || []).map(parseSparrowStepRecord);
+  const protagonistSteps = ((data.protagonistSteps as Record<string, unknown>[]) || []).map(parseProtagonistStepRecord);
+  const tianDiRen = data.tianDiRen
+    ? { tian: '', di: '', ren: '', isExpanded: false }
+    : null;
+
+  return {
+    exists: !!data.exists,
+    steps,
+    protagonistSteps,
+    tianDiRen,
+  };
+}

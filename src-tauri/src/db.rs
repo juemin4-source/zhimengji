@@ -127,6 +127,7 @@ impl Database {
         init_quick_drafts_table(&conn)?;
         init_ai_tables(&conn)?;
         init_premise_steps_table(&conn)?;
+        init_sparrow_tables(&conn)?;
         Ok(())
     }
 
@@ -2278,6 +2279,277 @@ impl Database {
         conn.execute("DELETE FROM quick_drafts WHERE id = ?", params![id])?;
         Ok(())
     }
+
+    // ===== CN-MET-03: Canvas 3 Sparrow Mode 9+3 Tables =====
+
+pub fn init_sparrow_tables(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS canvas3_sparrow_steps (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          step_id TEXT NOT NULL,
+          content TEXT NOT NULL DEFAULT '',
+          is_complete INTEGER NOT NULL DEFAULT 0,
+          do_not_ask_again INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          UNIQUE(project_id, step_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS canvas3_protagonist_steps (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          step_type TEXT NOT NULL,
+          character_id TEXT NOT NULL DEFAULT '',
+          description TEXT NOT NULL DEFAULT '',
+          is_usable INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          UNIQUE(project_id, step_type, character_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_c3ss_project ON canvas3_sparrow_steps(project_id);
+        CREATE INDEX IF NOT EXISTS idx_c3ps_project ON canvas3_protagonist_steps(project_id);"
+    )?;
+    Ok(())
+}
+
+// ===== CN-MET-03: Sparrow Step CRUD =====
+
+pub fn get_sparrow_steps_by_project(&self, project_id: &str) -> SqlResult<Vec<SparrowStepRecord>> {
+    let conn = self.conn.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, step_id, content, is_complete, do_not_ask_again, created_at, updated_at
+         FROM canvas3_sparrow_steps WHERE project_id = ? ORDER BY step_id"
+    )?;
+    let rows = stmt.query_map(params![project_id], |row| {
+        Ok(SparrowStepRecord {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            step_id: row.get(2)?,
+            content: row.get(3)?,
+            is_complete: row.get::<_, i32>(4)? != 0,
+            do_not_ask_again: row.get::<_, i32>(5)? != 0,
+            created_at: row.get(6)?,
+            updated_at: row.get(7)?,
+        })
+    })?;
+    let mut steps = Vec::new();
+    for r in rows {
+        steps.push(r?);
+    }
+    Ok(steps)
+}
+
+pub fn upsert_sparrow_step(&self, input: &SaveSparrowStepInput) -> SqlResult<SaveSparrowStepOutput> {
+    let conn = self.conn.lock().unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+    let dna = input.do_not_ask_again.unwrap_or(false);
+
+    // Check if a row already exists for this project + step
+    let existing_id: Option<String> = conn.query_row(
+        "SELECT id FROM canvas3_sparrow_steps WHERE project_id = ?1 AND step_id = ?2",
+        params![input.project_id, input.step_id],
+        |row| row.get(0),
+    ).ok();
+
+    let id = match existing_id {
+        Some(existing) => {
+            conn.execute(
+                "UPDATE canvas3_sparrow_steps SET content=?1, is_complete=?2, do_not_ask_again=?3, updated_at=?4 WHERE id=?5",
+                params![input.content, input.is_complete as i32, dna as i32, now, existing],
+            )?;
+            existing
+        }
+        None => {
+            let new_id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO canvas3_sparrow_steps (id, project_id, step_id, content, is_complete, do_not_ask_again, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![new_id, input.project_id, input.step_id, input.content, input.is_complete as i32, dna as i32, now, now],
+            )?;
+            new_id
+        }
+    };
+
+    Ok(SaveSparrowStepOutput {
+        project_id: input.project_id.clone(),
+        step_id: input.step_id.clone(),
+        saved: true,
+    })
+}
+
+// ===== CN-MET-03: Protagonist Step CRUD =====
+
+pub fn get_protagonist_steps_by_project(&self, project_id: &str) -> SqlResult<Vec<ProtagonistStepRecord>> {
+    let conn = self.conn.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, step_type, character_id, description, is_usable, created_at, updated_at
+         FROM canvas3_protagonist_steps WHERE project_id = ? ORDER BY step_type"
+    )?;
+    let rows = stmt.query_map(params![project_id], |row| {
+        Ok(ProtagonistStepRecord {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            step_type: row.get(2)?,
+            character_id: row.get(3)?,
+            description: row.get(4)?,
+            is_usable: row.get::<_, i32>(5)? != 0,
+            created_at: row.get(6)?,
+            updated_at: row.get(7)?,
+        })
+    })?;
+    let mut steps = Vec::new();
+    for r in rows {
+        steps.push(r?);
+    }
+    Ok(steps)
+}
+
+pub fn upsert_protagonist_step(&self, input: &SaveProtagonistStepInput) -> SqlResult<SaveProtagonistStepOutput> {
+    let conn = self.conn.lock().unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+
+    let existing_id: Option<String> = conn.query_row(
+        "SELECT id FROM canvas3_protagonist_steps WHERE project_id = ?1 AND step_type = ?2 AND character_id = ?3",
+        params![input.project_id, input.step_type, input.character_id],
+        |row| row.get(0),
+    ).ok();
+
+    let id = match existing_id {
+        Some(existing) => {
+            conn.execute(
+                "UPDATE canvas3_protagonist_steps SET description=?1, is_usable=?2, updated_at=?3 WHERE id=?4",
+                params![input.description, input.is_usable as i32, now, existing],
+            )?;
+            existing
+        }
+        None => {
+            let new_id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO canvas3_protagonist_steps (id, project_id, step_type, character_id, description, is_usable, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![new_id, input.project_id, input.step_type, input.character_id, input.description, input.is_usable as i32, now, now],
+            )?;
+            new_id
+        }
+    };
+
+    Ok(SaveProtagonistStepOutput {
+        project_id: input.project_id.clone(),
+        step_type: input.step_type.clone(),
+        saved: true,
+    })
+}
+
+pub fn mark_protagonist_step_usable(&self, input: &MarkStepUsableInput) -> SqlResult<MarkStepUsableOutput> {
+    let conn = self.conn.lock().unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+
+    let rows = conn.execute(
+        "UPDATE canvas3_protagonist_steps SET is_usable=?1, updated_at=?2 WHERE project_id=?3 AND step_type=?4 AND character_id=?5",
+        params![input.is_usable as i32, now, input.project_id, input.step_type, input.character_id],
+    )?;
+
+    if rows == 0 {
+        // Create a record if it doesn't exist yet
+        let new_id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO canvas3_protagonist_steps (id, project_id, step_type, character_id, description, is_usable, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![new_id, input.project_id, input.step_type, input.character_id, "", input.is_usable as i32, now, now],
+        )?;
+    }
+
+    Ok(MarkStepUsableOutput {
+        project_id: input.project_id.clone(),
+        step_type: input.step_type.clone(),
+        is_usable: input.is_usable,
+    })
+}
+
+// ===== CN-MET-03: Tian-Di-Ren Layer CRUD =====
+
+pub fn get_tiandiren_layer(&self, project_id: &str) -> SqlResult<Option<TianDiRenRecord>> {
+    let conn = self.conn.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, tian, di, ren, created_at, updated_at
+         FROM canvas3_sparrow_steps WHERE project_id = ? AND step_id = 'tiandiren'"
+    )?;
+    let mut rows = stmt.query_map(params![project_id], |row| {
+        Ok(TianDiRenRecord {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            tian: row.get(2)?,
+            di: row.get(3)?,
+            ren: row.get(4)?,
+            created_at: row.get(5)?,
+            updated_at: row.get(6)?,
+        })
+    })?;
+    match rows.next() {
+        Some(r) => Ok(Some(r?)),
+        None => Ok(None),
+    }
+}
+
+pub fn upsert_tiandiren_layer(&self, input: &SaveTianDiRenLayerInput) -> SqlResult<SaveTianDiRenLayerOutput> {
+    let conn = self.conn.lock().unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+
+    let existing_id: Option<String> = conn.query_row(
+        "SELECT id FROM canvas3_sparrow_steps WHERE project_id = ?1 AND step_id = 'tiandiren'",
+        params![input.project_id],
+        |row| row.get(0),
+    ).ok();
+
+    match existing_id {
+        Some(existing) => {
+            conn.execute(
+                "UPDATE canvas3_sparrow_steps SET content=?1, updated_at=?2 WHERE id=?3",
+                params![
+                    serde_json::json!({"tian": input.tian, "di": input.di, "ren": input.ren}).to_string(),
+                    now, existing,
+                ],
+            )?;
+        }
+        None => {
+            let new_id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO canvas3_sparrow_steps (id, project_id, step_id, content, is_complete, do_not_ask_again, created_at, updated_at)
+                 VALUES (?1, ?2, 'tiandiren', ?3, 0, 0, ?4, ?5)",
+                params![
+                    new_id, input.project_id,
+                    serde_json::json!({"tian": input.tian, "di": input.di, "ren": input.ren}).to_string(),
+                    now, now,
+                ],
+            )?;
+        }
+    };
+
+    Ok(SaveTianDiRenLayerOutput {
+        project_id: input.project_id.clone(),
+        saved: true,
+    })
+}
+
+/// Get full sparrow module state for a project
+pub fn get_sparrow_module(&self, project_id: &str) -> SqlResult<SparrowModuleResponse> {
+    let steps = self.get_sparrow_steps_by_project(project_id)?;
+    let protagonist_steps = self.get_protagonist_steps_by_project(project_id)?;
+    let tian_di_ren = self.get_tiandiren_layer(project_id)?;
+
+    let exists = !steps.is_empty() || !protagonist_steps.is_empty() || tian_di_ren.is_some();
+
+    Ok(SparrowModuleResponse {
+        exists,
+        steps,
+        protagonist_steps,
+        tian_di_ren,
+    })
+}
 
     // ===== v2.0.1 Feedback =====
 

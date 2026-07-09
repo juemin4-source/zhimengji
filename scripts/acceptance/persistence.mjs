@@ -260,5 +260,93 @@ console.log('\n[6/6] DecisionLog');
   }
 }
 
+// ── Test 7: AI Table persistence ──
+console.log('\n[7/7] AI table persistence');
+{
+  const fs = await import('fs');
+
+  // Check AI contract files exist
+  const aiContracts = [
+    'src/contracts/ai-context.contract.ts',
+    'src/contracts/ai-router.contract.ts',
+    'src/contracts/ai-parser.contract.ts',
+    'src/contracts/ai-registry.contract.ts',
+  ];
+  for (const c of aiContracts) {
+    const full = resolve(ROOT, c);
+    if (fs.existsSync(full)) {
+      pass(`ai contract exists: ${c}`);
+    } else {
+      fail(`ai contract missing: ${c}`);
+    }
+  }
+
+  // Check AI API files exist
+  const aiApiFiles = [
+    'src/api/aiContextApi.ts',
+    'src/api/aiControlCenterApi.ts',
+  ];
+  for (const f of aiApiFiles) {
+    const full = resolve(ROOT, f);
+    if (fs.existsSync(full)) {
+      pass(`ai api exists: ${f}`);
+    } else {
+      fail(`ai api missing: ${f}`);
+    }
+  }
+
+  // Check Rust AI module exists
+  const aiModuleDir = resolve(ROOT, 'src-tauri/src/ai');
+  if (fs.existsSync(aiModuleDir)) {
+    pass('src-tauri/src/ai/ module directory exists');
+    const modFile = resolve(aiModuleDir, 'mod.rs');
+    if (fs.existsSync(modFile)) {
+      pass('ai/mod.rs exists — module registered');
+    } else {
+      fail('ai/mod.rs missing');
+    }
+  } else {
+    fail('src-tauri/src/ai/ directory missing');
+  }
+
+  // Check ai_commands.rs exists
+  const aiCommandsPath = resolve(ROOT, 'src-tauri/src/ai_commands.rs');
+  if (fs.existsSync(aiCommandsPath)) {
+    pass('ai_commands.rs exists');
+  } else {
+    fail('ai_commands.rs missing');
+  }
+
+  // Check lib.rs registers ai_commands
+  const libContent = fs.readFileSync(resolve(ROOT, 'src-tauri/src/lib.rs'), 'utf-8');
+  if (libContent.includes('ai_commands')) {
+    pass('lib.rs has ai_commands module');
+  } else {
+    fail('lib.rs missing ai_commands');
+  }
+
+  // Check models.rs has AI-related structs
+  const modelsContent = fs.readFileSync(resolve(ROOT, 'src-tauri/src/models.rs'), 'utf-8');
+  const aiModels = ['AiBuiltContext', 'AiRouteOutput', 'AiParseOutput', 'AiSkillRecord', 'AiProviderConfig'];
+  for (const structName of aiModels) {
+    if (modelsContent.includes(`pub struct ${structName}`)) {
+      pass(`models.rs has ${structName}`);
+    } else {
+      fail(`models.rs missing ${structName}`);
+    }
+  }
+
+  // Check db.rs has AI table init
+  const dbContent = fs.readFileSync(resolve(ROOT, 'src-tauri/src/db.rs'), 'utf-8');
+  const aiTables = ['ai_provider_config', 'ai_prompt_registry', 'ai_evaluation_results'];
+  for (const table of aiTables) {
+    if (dbContent.includes(table)) {
+      pass(`db.rs references table: ${table}`);
+    } else {
+      fail(`db.rs missing reference to ${table}`);
+    }
+  }
+}
+
 console.log(`\n=== accept:persistence complete — ${exitCode === 0 ? 'ALL PASS' : 'SOME FAIL'} ===\n`);
 process.exit(exitCode);

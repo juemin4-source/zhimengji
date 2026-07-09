@@ -9,8 +9,9 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { User, Bot, X, MessageSquare } from 'lucide-react';
+import { User, Bot, X, MessageSquare, CheckCircle, Info } from 'lucide-react';
 import type { AiOutputType } from '../../lib/ai-output';
+import type { ParseOutput } from '../../contracts/ai-parser.contract';
 
 // ─── Types ───
 
@@ -20,6 +21,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   outputType?: AiOutputType;
+  /** Structured parser output for formatted display */
+  structuredData?: ParseOutput;
 }
 
 export interface ChatDrawerProps {
@@ -245,7 +248,62 @@ export default function ChatDrawer({ open, onClose, messages, loading, onClear }
                 borderTopRightRadius: msg.role === 'user' ? 4 : 10,
                 borderTopLeftRadius: msg.role === 'assistant' ? 4 : 10,
               }}>
+                {/* Structured data indicator */}
+                {msg.structuredData && msg.structuredData.status !== 'fallback' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    marginBottom: 6, padding: '3px 8px',
+                    background: msg.structuredData.status === 'valid'
+                      ? 'rgba(76,175,80,0.08)'
+                      : msg.structuredData.status === 'repaired'
+                        ? 'rgba(255,193,7,0.08)'
+                        : 'transparent',
+                    borderRadius: 4, fontSize: '0.65rem',
+                    color: msg.structuredData.status === 'valid'
+                      ? 'var(--success, #4CAF50)'
+                      : '#FFC107',
+                  }}>
+                    {msg.structuredData.status === 'valid'
+                      ? <CheckCircle size={12} />
+                      : <Info size={12} />
+                    }
+                    <span>AI结构化输出 · {msg.structuredData.status === 'valid' ? '验证通过' : '已自动修复'}</span>
+                  </div>
+                )}
                 <div style={{ margin: 0 }}>{renderMd(msg.content)}</div>
+
+                {/* Structured data fields */}
+                {msg.structuredData && msg.structuredData.status !== 'fallback' && msg.structuredData.data && Object.keys(msg.structuredData.data).length > 0 && (
+                  <div style={{
+                    marginTop: 8, paddingTop: 6,
+                    borderTop: '1px solid var(--border-light, #2a2a2a)',
+                  }}>
+                    {Object.entries(msg.structuredData.data).map(([key, value]) => (
+                      <div key={key} style={{
+                        display: 'flex', gap: 8,
+                        padding: '2px 0', fontSize: '0.75rem',
+                      }}>
+                        <span style={{ color: 'var(--accent, #B7FF00)', fontWeight: 500, flexShrink: 0, minWidth: 80 }}>
+                          {key}:
+                        </span>
+                        <span style={{ color: 'var(--text-secondary, #a0a0a0)', wordBreak: 'break-word' }}>
+                          {typeof value === 'string' ? value : JSON.stringify(value, null, 1)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Repair log */}
+                {msg.structuredData && msg.structuredData.repairLog && msg.structuredData.repairLog.length > 0 && (
+                  <div style={{
+                    marginTop: 6, fontSize: '0.6rem', color: 'var(--text-muted, #666)',
+                    fontStyle: 'italic',
+                  }}>
+                    {msg.structuredData.repairLog.join('; ')}
+                  </div>
+                )}
+
                 <div style={{
                   fontSize: '0.6rem', color: 'var(--text-muted, #666)',
                   marginTop: 4, textAlign: msg.role === 'user' ? 'right' : 'left',

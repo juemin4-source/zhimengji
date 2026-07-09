@@ -104,6 +104,55 @@ const ENTITIES = [
     apiMethods: ['appendDecisionLog', 'listDecisionLogs', 'getDecisionLog'],
     dbMethods: ['append_decision_log', 'list_decision_logs', 'get_decision_log'],
   },
+  // ===== v2.0.2 AI Entities =====
+  {
+    name: 'AiContext',
+    contractFile: 'src/contracts/ai-context.contract.ts',
+    apiFile: 'src/api/aiContextApi.ts',
+    commandsFile: 'src-tauri/src/ai_commands.rs',
+    modelsStruct: 'AiBuiltContext',
+    dbPrefix: 'ai_context',
+    uiFiles: ['src/components/ai/CanvasAiBar.tsx'],
+    commands: ['build_context'],
+    apiMethods: ['fetchAiContext'],
+    dbMethods: [], // context builder uses existing DB methods
+  },
+  {
+    name: 'AiRouter',
+    contractFile: 'src/contracts/ai-router.contract.ts',
+    apiFile: 'src/api/aiContextApi.ts',
+    commandsFile: 'src-tauri/src/ai_commands.rs',
+    modelsStruct: 'AiRouteOutput',
+    dbPrefix: 'ai_router',
+    uiFiles: ['src/components/ai/CanvasAiBar.tsx'],
+    commands: ['route_intent'],
+    apiMethods: ['routeAiMessage'],
+    dbMethods: [],
+  },
+  {
+    name: 'AiParser',
+    contractFile: 'src/contracts/ai-parser.contract.ts',
+    apiFile: 'src/api/', // parser is pure-JS, no API layer
+    commandsFile: 'src-tauri/src/ai_commands.rs',
+    modelsStruct: 'AiParseOutput',
+    dbPrefix: 'ai_parser',
+    uiFiles: ['src/components/ai/AiSuggestionCard.tsx'],
+    commands: [], // parse_structured_output runs on frontend
+    apiMethods: [], // pure function, no API layer
+    dbMethods: [],
+  },
+  {
+    name: 'AiPromptRegistry',
+    contractFile: 'src/contracts/ai-registry.contract.ts',
+    apiFile: 'src/api/aiControlCenterApi.ts',
+    commandsFile: 'src-tauri/src/ai_commands.rs',
+    modelsStruct: 'AiSkillRecord',
+    dbPrefix: 'ai_skill_registry',
+    uiFiles: ['src/components/ai/AiControlCenter.tsx'],
+    commands: ['list_skills', 'get_skill', 'register_skill'],
+    apiMethods: ['listSkills', 'getSkill'],
+    dbMethods: [], // registry uses invoke, not direct DB methods
+  },
 ];
 
 // ---- Helpers ----

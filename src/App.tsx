@@ -29,7 +29,7 @@ import './styles/global.css';
 import './styles/variables.css';
 import './styles/ai.css';
 import { useProjectStore } from './stores/projectStore';
-import { getPipelineState } from './api/projectApi';
+import { getPipelineState, savePipelineState } from './api/projectApi';
 import PipelineNav from './features/pipeline-nav/PipelineNav';
 import CanvasShell from './features/pipeline-canvas/CanvasShell';
 import PremiseEntryGate from './features/canvas-01-premise/PremiseEntryGate';
@@ -393,13 +393,36 @@ function AppInner() {
     }
   }, [loadProjectData]);
 
-  const handleStageChange = useCallback((stage: string) => {
+  const handleStageChange = useCallback(async (stage: string) => {
     const target = canvasStages.find(s => s.stage === stage);
-    if (target && (target.status === 'active' || target.status === 'ready' || target.status === 'done')) {
-      setCurrentStage(stage);
-      setActiveNavTab('文档');
+    if (!target || !(target.status === 'active' || target.status === 'ready' || target.status === 'done')) return;
+    if (!activeBookId) return;
+
+    // Update local stage
+    setCurrentStage(stage);
+    setActiveNavTab('文档');
+
+    // Build updated stages: clicked stage becomes active, others stay as-is
+    const updatedStages = canvasStages.map(s => ({
+      ...s,
+      status: s.stage === stage ? 'active' as const : (s.status === 'active' ? 'done' as const : s.status as 'locked' | 'ready' | 'active' | 'done'),
+    }));
+    setCanvasStages(updatedStages);
+
+    // Persist to SQLite via full pipeline
+    try {
+      const ps = await savePipelineState({
+        projectId: activeBookId,
+        currentStage: stage,
+        canvasStages: updatedStages.map(s => ({ stage: s.stage, status: s.status })),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      setPipelineState(ps);
+    } catch (e) {
+      console.error('Failed to save pipeline state', e);
     }
-  }, [canvasStages]);
+  }, [canvasStages, activeBookId]);
 
   const handleBackToBookshelf = useCallback(() => {
     setActiveBookId(null);

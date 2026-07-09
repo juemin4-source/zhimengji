@@ -69,7 +69,13 @@ Full review: `V2_1_1_GATE_REVIEW.md`
 | `src/features/canvas-04-packet/ChapterPacketCanvas.tsx` | T-001/T-002/T-003 | PipelineIndicator, premise→contract auto-fill, initialPacketId |
 | `src/contracts/premise.contract.ts` | T-002 | Added CN-INT-02: PremiseToContractMapping |
 | `scripts/acceptance/scan-contract-chain.mjs` | T-001/T-002 | Registered CN-INT-01, CN-INT-02 |
+| `src/contracts/setting.contract.ts` | T-004 | Added GenerateTianDiRenAiInput/Output types |
+| `src/features/canvas-03-setting/TianDiRenSection.tsx` | T-004 | NEW — TianDiRen collapsible section component |
+| `src/features/canvas-03-setting/SparrowStepList.tsx` | T-001/T-004 | PipelineIndicator + TianDiRenSection integration |
 | `src/features/canvas-03-setting/sparrow.css` | T-004 | TianDiRen styles |
+| `src-tauri/src/models.rs` | T-004 | Added GenerateTianDiRenAi structs |
+| `src-tauri/src/setting_commands.rs` | T-004 | Added generate_tiandiren_ai stub command |
+| `src-tauri/src/lib.rs` | T-004 | Registered new command |
 | `src/lib/generateChapterPacket.ts` | T-003 | DetailMode parameter support |
 
 ## Architecture — Integration Layer

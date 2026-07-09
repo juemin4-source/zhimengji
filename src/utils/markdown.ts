@@ -232,3 +232,76 @@ export function countWords(content: string): number {
   const englishWords = englishText.split(/\s+/).filter(w => w.length > 0).length;
   return chineseChars + englishWords;
 }
+
+// ─── Markdown Export Utilities ───
+
+import type { ChapterPacket } from '../contracts/chapter-packet.contract';
+
+/**
+ * Extract readable text from a chapter packet's layer4 (final text layer).
+ * Layer4 is stored as JSON string — parse it and extract the 'text' or 'content' field.
+ * Falls back to layer3 if layer4 is empty, then to markdown block content.
+ */
+function extractLayerText(packet: ChapterPacket): string {
+  // Try layer4 (final text output)
+  if (packet.layer4 && packet.layer4 !== '{}') {
+    try {
+      const parsed = JSON.parse(packet.layer4);
+      if (parsed.text) return parsed.text;
+      if (parsed.content) return parsed.content;
+      // If it's a block structure, concatenate block texts
+      if (Array.isArray(parsed.blocks)) {
+        return parsed.blocks.map((b: any) => b.text || '').join('\n\n');
+      }
+    } catch { /* fall through */ }
+  }
+  // Fallback to layer3
+  if (packet.layer3 && packet.layer3 !== '{}') {
+    try {
+      const parsed = JSON.parse(packet.layer3);
+      if (parsed.text) return parsed.text;
+      if (parsed.content) return parsed.content;
+    } catch { /* fall through */ }
+  }
+  return packet.title; // minimum fallback
+}
+
+/**
+ * Convert an array of chapter packets to a complete Markdown document string.
+ * Each chapter becomes an H2 section with its title and content.
+ * The result is ready to be saved as a .md file.
+ */
+export function chapterPacketsToMarkdown(chapters: ChapterPacket[]): string {
+  const parts: string[] = [];
+  parts.push('# 正文导出\n\n');
+  let chapterNum = 0;
+  for (const ch of chapters) {
+    chapterNum++;
+    // Extract layer content
+    const content = extractLayerText(ch);
+    if (!content) continue;
+    parts.push(`## 第${chapterNum}章 ${ch.title}\n\n`);
+    parts.push(content);
+    parts.push('\n\n---\n\n');
+  }
+  return parts.join('');
+}
+
+/**
+ * Escape content for markdown — ensure no raw HTML or broken syntax
+ * leaks into the exported .md file.
+ */
+export function sanitizeForMarkdown(text: string): string {
+  return text
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Generate a suggested filename from project name + date.
+ * Returns e.g. "我的小说_2026-07-09.md"
+ */
+export function suggestExportFilename(projectName: string): string {
+  const date = new Date().toISOString().slice(0, 10);
+  return `${projectName}_${date}.md`;
+}

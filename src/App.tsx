@@ -39,6 +39,7 @@ import PacketComingSoon from './features/canvas-04-packet/PacketComingSoon';
 import TextCanvas from './features/canvas-05-text/TextCanvas';
 import SettingCanvasV2 from './features/canvas-03-setting/SettingCanvasV2';
 import CanvasAiBar from './components/ai/CanvasAiBar';
+import { FeedbackTrigger, FeedbackModal } from './components/feedback';
 
 // ===== ID Generators =====
 let _nextId = 1000;
@@ -122,6 +123,9 @@ function AppInner() {
   const [showCanonGuide, setShowCanonGuide] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [lastGenre, setLastGenre] = useState('科幻');
+
+  // v2.0.1: Feedback state
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // v1.3: AI Chat state
   const [showAiSettings, setShowAiSettings] = useState(false);
@@ -968,6 +972,7 @@ function AppInner() {
               onLockObject={onLockObject} onDiscardObject={onDiscardObject}
               onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject}
               saveStatus={saveStatus} onTriggerSave={triggerAutoSave}
+              projectName={activeBook?.title || ''}
             />
           </CanvasShell>
         );
@@ -1051,6 +1056,18 @@ function AppInner() {
             linkCount={totalLinkCount}
             onRetrySave={() => { syncManager.retryFailed(); }}
           />
+
+          {/* Feedback trigger & modal (v2.0.1) */}
+          <FeedbackTrigger
+            projectId={activeBookId}
+            onOpen={() => setShowFeedback(true)}
+          />
+          {showFeedback && (
+            <FeedbackModal
+              projectId={activeBookId}
+              onClose={() => setShowFeedback(false)}
+            />
+          )}
         </>
       )}
 

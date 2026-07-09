@@ -247,3 +247,113 @@ export const SEED_PROJECTS: Project[] = [
   { id: 'book-2', title: '星空彼岸', genre: '奇幻', status: 'conceiving', wordCount: 3800, gradient: ['#0f2027', '#203a43'] as [string, string] },
   { id: 'book-3', title: '江湖行', genre: '武侠', status: 'editing', wordCount: 28600, gradient: ['#8e0e00', '#1f1c18'] as [string, string] },
 ];
+
+// ══════════════════════════════════════════
+//  Demo Project Seed Data (v2.0.1)
+// ══════════════════════════════════════════
+
+export const DEMO_PROJECT = {
+  id: 'demo-project-id',
+  name: 'Demo：星际拓荒者',
+  genre: '科幻',
+  status: 'demo',
+  wordCount: 1860,
+  gradient: '["#0f2027","#203a43"]',
+};
+
+export const DEMO_PREMISE = {
+  projectId: 'demo-project-id',
+  premiseText: '公元2157年，人类收到了一段来自银河系边缘的神秘重复信号。信号中包含着远超人类当前科技水平的数学模式，证明它来自一个高等智慧文明。主角林星舰长率领深空探索飞船"先驱号"前往信号源头执行首次接触任务。然而，当他们到达目的地时，发现的不仅是一个外星文明，更是一个关乎两个文明存亡的宇宙级抉择。',
+  readerQuestions: [
+    '人类准备好面对比自身更先进的文明了吗？',
+    '当两个文明的根本利益冲突时，和平共处是否只是幻想？',
+  ],
+  storyType: 'high_concept' as const,
+  status: 'confirmed' as const,
+};
+
+export const DEMO_STRUCTURE_NODES = [
+  {
+    projectId: 'demo-project-id',
+    parentId: null,
+    title: '深空信号',
+    nodeType: 'chapter' as const,
+    narrativeFunction: '引入冲突——神秘信号打破常规探索任务',
+    summary: '先驱号在执行常规深空探测任务时，接收到一段来自银河系边缘的重复信号。首席科学家方晴解析发现信号中嵌入了质数序列和圆周率，证实其为智慧文明产物。舰长林星必须在继续原定任务和转向追踪信号之间做出抉择。',
+    positionX: 0,
+    positionY: 0,
+    sortOrder: 1,
+    chapterFunction: 'opening' as const,
+  },
+  {
+    projectId: 'demo-project-id',
+    parentId: null,
+    title: '异星之门',
+    nodeType: 'chapter' as const,
+    narrativeFunction: '首次接触与真相揭露',
+    summary: '先驱号跟随信号抵达坐标点，发现一座悬浮在虚空中的巨型外星建筑——星门。星门自动激活，开启了一道通往另一个星系的空间通道。穿过星门后，船员们遇到了古老的守望者文明。守望者揭示：他们数千年来一直在观测人类文明的发展，而这次召唤正是为了决定是否将人类纳入星际文明共同体。但守望者内部对此存在严重分歧。',
+    positionX: 200,
+    positionY: 0,
+    sortOrder: 2,
+    chapterFunction: 'escalation' as const,
+  },
+  {
+    projectId: 'demo-project-id',
+    parentId: null,
+    title: '最后的抉择',
+    nodeType: 'chapter' as const,
+    narrativeFunction: '高潮与结局——人类的回答',
+    summary: '守望者议会分裂为两派：接纳派认为人类已经展现出足够的智慧和同理心，应当被接纳；隔离派则认为人类尚处于文明早期阶段，其侵略性和短视可能对整个星际秩序构成威胁。林星必须在有限的时间内向守望者证明人类的价值。与此同时，飞船上的AI发现了一个惊人的真相——守望者文明的母星正在衰亡，他们需要的不仅是新成员，更是一个文明的延续。',
+    positionX: 400,
+    positionY: 0,
+    sortOrder: 3,
+    chapterFunction: 'climax' as const,
+  },
+];
+
+export const DEMO_WORLD_RULE = {
+  projectId: 'demo-project-id',
+  title: '超光速通信协议',
+  ruleText: '在2157年，人类已掌握量子纠缠通信技术，实现了太阳系内的实时通信。但远距离（超过10光年）通信仍存在显著延迟。外星文明"守望者"使用一种名为"共鸣网"的跨维度通信技术，可以实现银河系范围内的即时信息传递，但这种技术有被"监听"的风险。',
+  cost: '量子纠缠信道需要极高能量维持，每次通信约消耗相当于一个中型城市日用电量。',
+  enforcer: '联合政府太空通信管理局',
+};
+
+export const DEMO_CHARACTER_CARD = {
+  projectId: 'demo-project-id',
+  name: '林星',
+  hook: '地球最后的理想主义舰长',
+  currentWant: '完成首次接触任务，为人类带来和平',
+  realBlock: '内心深处质疑人类是否真的准备好面对外星文明',
+  archetype: '船长 / 探索者',
+  description: '38岁，联合政府深空探索舰队最年轻的舰长。冷静理性，但在关键时刻会跟随直觉。曾参与火星殖民地的建设，对人类的团结充满理想。父亲是失踪的深空科学家，这个未解之谜驱使他走向星辰大海。'
+};
+
+export const DEMO_FACTION_CARD = {
+  projectId: 'demo-project-id',
+  name: '守望者议会',
+  trueGoal: '寻找能够继承守望者文明遗产的种族，确保文明知识不会随母星衰亡而消失',
+  publicSlogan: '宇宙的守护者，文明的引路人',
+  resources: ['星际通信网络（共鸣网）', '跨星系星门系统', '千万年级文明知识库', '先进生物技术改造能力'],
+  representativeCharacterIds: [],
+  dailyInterface: '在闪耀的水晶殿堂中围绕全息星图展开永恒辩论',
+};
+
+export const DEMO_CHAPTER_PACKETS = [
+  {
+    projectId: 'demo-project-id',
+    structureNodeId: null,
+    chapterNumber: 1,
+    title: '深空信号',
+    position: '开篇',
+    chapterFunction: 'opening',
+  },
+  {
+    projectId: 'demo-project-id',
+    structureNodeId: null,
+    chapterNumber: 2,
+    title: '异星之门',
+    position: '发展',
+    chapterFunction: 'escalation',
+  },
+];

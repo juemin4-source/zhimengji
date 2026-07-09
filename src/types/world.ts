@@ -134,7 +134,7 @@ export interface Project {
   id: string;
   title: string;
   genre: string;
-  status: 'drafting' | 'conceiving' | 'editing' | 'done';
+  status: 'drafting' | 'conceiving' | 'editing' | 'done' | 'demo';
   wordCount: number;
   gradient: [string, string];
 }

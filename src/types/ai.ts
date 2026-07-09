@@ -139,6 +139,34 @@ export interface CapabilityStatus {
 }
 
 /**
+ * v2 AI provider configuration stored in the ai_provider_config table.
+ */
+export interface AiProviderConfigV2 {
+  id: string;
+  providerId: string;
+  providerName: string;
+  apiKeyEncrypted: string;
+  endpoint: string;
+  models: string;
+  timeoutMs: number;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Input for saving a v2 provider config.
+ */
+export interface SaveProviderConfigInput {
+  providerId: string;
+  providerName: string;
+  apiKeyEncrypted: string;
+  endpoint: string;
+  models: string[];
+  timeoutMs: number;
+}
+
+/**
  * Router configuration for AI intent routing.
  */
 export interface RouterConfig {

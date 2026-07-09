@@ -906,6 +906,18 @@ pub struct GetSkillInput {
     pub id: String,
 }
 
+/// Input for register_skill command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterSkillInput {
+    pub skill_id: String,
+    pub name: String,
+    pub prompt_template: String,
+    pub input_schema: String,
+    pub output_schema: String,
+    pub version: String,
+}
+
 /// Input for save_provider_config command
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -933,6 +945,16 @@ pub struct TestProviderConnectionInput {
     pub endpoint: String,
     pub api_key: String,
     pub model: String,
+}
+
+/// Result from test_provider_connection command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderConnectionTestResult {
+    pub success: bool,
+    pub message: String,
+    pub latency_ms: i64,
+    pub models: Vec<String>,
 }
 
 /// Input for run_evaluation command

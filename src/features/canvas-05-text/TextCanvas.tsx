@@ -21,7 +21,7 @@
  * - 不含 mock AI
  * - AI 生成不做 fallback mock
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DocumentView from '../../components/DocumentView';
 import PacketReferencePanel from './PacketReferencePanel';
 import { generateDraftFromChapterPacket } from '../../lib/generateDraft';
@@ -31,6 +31,9 @@ import type { AiModel } from '../../types/ai';
 import type { WorldObject, ObjectType, SaveStatus } from '../../types/world';
 import type { ChapterPacket } from '../../contracts/chapter-packet.contract';
 import { Button } from '../../components/ui';
+import { useToast } from '../../components/Toast';
+import { chapterPacketsToMarkdown, suggestExportFilename } from '../../utils/markdown';
+import { exportTextAsMarkdown } from '../../api/exportApi';
 import './text-canvas.css';
 
 interface TextCanvasProps {
@@ -53,6 +56,8 @@ interface TextCanvasProps {
   chapterPacket?: ChapterPacket | null;
   /** 所有可用的 packets（用于导航），C5 集成时可用 */
   chapterPackets?: ChapterPacket[];
+  /** 项目名称（用于导出文件名） */
+  projectName?: string;
 }
 
 export default function TextCanvas(props: TextCanvasProps) {
@@ -70,6 +75,8 @@ export default function TextCanvas(props: TextCanvasProps) {
     saveStatus,
     onTriggerSave,
     chapterPacket,
+    chapterPackets,
+    projectName,
   } = props;
 
   // ── AI state ──
@@ -129,6 +136,41 @@ export default function TextCanvas(props: TextCanvasProps) {
     setShowPreviewModal(false);
   };
 
+  // ── Markdown Export ──
+
+  const { showToast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportMarkdown = useCallback(async () => {
+    // Use chapterPackets if available, otherwise wrap the single packet
+    const packets = (chapterPackets && chapterPackets.length > 0)
+      ? chapterPackets
+      : (chapterPacket ? [chapterPacket] : []);
+
+    if (!projectName || packets.length === 0) {
+      showToast('没有可导出的正文内容', 'warning');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const markdownContent = chapterPacketsToMarkdown(packets);
+      const defaultName = suggestExportFilename(projectName);
+      const savedPath = await exportTextAsMarkdown({
+        chapterContent: markdownContent,
+        defaultName,
+      });
+      showToast(`已导出: ${savedPath}`, 'success');
+    } catch (err: any) {
+      if (err?.includes?.('CANCELLED')) {
+        // User cancelled the dialog — not an error
+      } else {
+        showToast('导出失败: ' + (err || '未知错误'), 'error');
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  }, [projectName, chapterPacket, chapterPackets, showToast]);
+
   // ── Render ──
 
   // 无 packet 时显示空状态引导
@@ -162,6 +204,28 @@ export default function TextCanvas(props: TextCanvasProps) {
             <span className="text-canvas-ai-row-meta">第{chapterPacket.chapterNumber}章 · {chapterPacket.chapterFunction || '未指定功能'}</span>
           </div>
           <div className="text-canvas-ai-row-actions">
+            <button
+              onClick={handleExportMarkdown}
+              disabled={isExporting}
+              title="导出 Markdown"
+              aria-label="导出 Markdown 文件"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                padding: '0.4rem 0.75rem',
+                borderRadius: 6,
+                background: isExporting ? '#333' : '#1a1a2e',
+                color: isExporting ? '#666' : '#90CAF9',
+                border: `1px solid ${isExporting ? '#333' : '#2a2a4e'}`,
+                fontSize: '0.8125rem',
+                fontFamily: 'inherit',
+                cursor: isExporting ? 'not-allowed' : 'pointer',
+                lineHeight: 1.4,
+              }}
+            >
+              {isExporting ? '导出中...' : '📄 导出 .md'}
+            </button>
             <Button
               variant="secondary"
               onClick={() => setShowModelPicker(true)}

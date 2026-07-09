@@ -1794,12 +1794,99 @@ pub fn init_ai_tables(conn: &Connection) -> SqlResult<()> {
           FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS ai_skill_registry (
+          id TEXT PRIMARY KEY,
+          skill_id TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL DEFAULT '',
+          prompt_template TEXT NOT NULL DEFAULT '',
+          input_schema TEXT NOT NULL DEFAULT '{}',
+          output_schema TEXT NOT NULL DEFAULT '{}',
+          version TEXT NOT NULL DEFAULT '1.0.0',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_ai_prompt_project ON ai_prompt_registry(project_id);
         CREATE INDEX IF NOT EXISTS idx_ai_prompt_status ON ai_prompt_registry(status);
         CREATE INDEX IF NOT EXISTS idx_ai_provider_id ON ai_provider_config(provider_id);
         CREATE INDEX IF NOT EXISTS idx_ai_eval_project ON ai_evaluation_results(project_id);
-        CREATE INDEX IF NOT EXISTS idx_ai_eval_provider ON ai_evaluation_results(provider_id);"
+        CREATE INDEX IF NOT EXISTS idx_ai_eval_provider ON ai_evaluation_results(provider_id);
+        CREATE INDEX IF NOT EXISTS idx_ai_skill_id ON ai_skill_registry(skill_id);"
     )?;
+
+    // Seed 5 default skills if the table is empty
+    init_default_skills(conn)?;
+
+    Ok(())
+}
+
+fn init_default_skills(conn: &Connection) -> SqlResult<()> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM ai_skill_registry",
+        [],
+        |row| row.get(0),
+    )?;
+    if count > 0 {
+        return Ok(());
+    }
+
+    let now = chrono::Utc::now().timestamp_millis();
+    let defaults = vec![
+        (
+            uuid::Uuid::new_v4().to_string(),
+            "premise.five_step",
+            "premise five-step method",
+            "You are a professional premise analyst. Given the following {{story_type}} story input, generate a five-step premise:\n\n1. **Protagonist**: {{protagonist}}\n2. **Situation**: {{situation}}\n3. **Objective**: {{objective}}\n4. **Obstacle**: {{obstacle}}\n5. **Stakes**: {{stakes}}\n\nOutput in JSON format.",
+            r#"{"type":"object","properties":{"story_type":{"type":"string"},"protagonist":{"type":"string"},"situation":{"type":"string"},"objective":{"type":"string"},"obstacle":{"type":"string"},"stakes":{"type":"string"}},"required":["story_type","protagonist","situation","objective","obstacle","stakes"]}"#,
+            r#"{"type":"object","properties":{"premise":{"type":"string"},"fiveSteps":{"type":"array"}},"required":["premise","fiveSteps"]}"#,
+            "1.0.0",
+        ),
+        (
+            uuid::Uuid::new_v4().to_string(),
+            "structure.l1_l4",
+            "structure L1-L4 outline",
+            "You are a story structure architect. Given the premise {{premise_text}} and genre {{genre}}, generate a four-level structural outline:\n\nL1 — Story Arc (beginning / middle / end)\nL2 — Acts (1-3 or 1-5)\nL3 — Sequences (3-6 per act)\nL4 — Scenes (key scenes per sequence)\n\nOutput in JSON format.",
+            r#"{"type":"object","properties":{"premise_text":{"type":"string"},"genre":{"type":"string"}},"required":["premise_text","genre"]}"#,
+            r#"{"type":"object","properties":{"l1Arc":{"type":"string"},"l2Acts":{"type":"array"},"l3Sequences":{"type":"array"},"l4Scenes":{"type":"array"}},"required":["l1Arc","l2Acts","l3Sequences","l4Scenes"]}"#,
+            "1.0.0",
+        ),
+        (
+            uuid::Uuid::new_v4().to_string(),
+            "setting.sparrow_9_3",
+            "setting sparrow 9-grid 3.0",
+            "You are a worldbuilding specialist using the 9-Panel Setting System v3. Given the premise {{premise_text}} and genre {{genre}}, fill in 9 panels:\n\n1. Space (physical environment)\n2. Time (era / timeline)\n3. Society (power structures)\n4. Magic / Tech (rules of the world)\n5. Economy (resources & trade)\n6. Culture (norms & values)\n7. History (key events)\n8. Factions (key groups)\n9. Mood (emotional tone)\n\nOutput in JSON format.",
+            r#"{"type":"object","properties":{"premise_text":{"type":"string"},"genre":{"type":"string"}},"required":["premise_text","genre"]}"#,
+            r#"{"type":"object","properties":{"panels":{"type":"array","items":{"type":"object","properties":{"panelId":{"type":"integer"},"title":{"type":"string"},"content":{"type":"string"}}}}}},"required":["panels"]"#,
+            "1.0.0",
+        ),
+        (
+            uuid::Uuid::new_v4().to_string(),
+            "packet.three_detail_modes",
+            "packet three detail modes",
+            "You are a chapter packet detailer. Given the chapter {{chapter_title}} and outline {{outline_text}}, generate three detail modes:\n\n**Full Mode**: max detail with character intents, scene by scene\n**Balanced Mode**: key scenes with summary for transitions\n**Sparse Mode**: bullet-point outline only\n\nOutput in JSON format.",
+            r#"{"type":"object","properties":{"chapter_title":{"type":"string"},"outline_text":{"type":"string"}},"required":["chapter_title","outline_text"]}"#,
+            r#"{"type":"object","properties":{"fullDetail":{"type":"string"},"balancedDetail":{"type":"string"},"sparseDetail":{"type":"string"}},"required":["fullDetail","balancedDetail","sparseDetail"]}"#,
+            "1.0.0",
+        ),
+        (
+            uuid::Uuid::new_v4().to_string(),
+            "draft.chapter_writer",
+            "draft chapter writer",
+            "You are a fiction prose writer. Based on the chapter packet {{packet_json}} and detail mode {{detail_mode}}, write the complete chapter draft.\n\nMaintain consistent {{character_voice}} and {{narrative_distance}}. Follow the outline structure precisely.\n\nOutput the chapter in plain text with proper paragraph breaks.",
+            r#"{"type":"object","properties":{"packet_json":{"type":"string"},"detail_mode":{"type":"string","enum":["full","balanced","sparse"]},"character_voice":{"type":"string"},"narrative_distance":{"type":"string"}},"required":["packet_json","detail_mode","character_voice","narrative_distance"]}"#,
+            r#"{"type":"object","properties":{"chapter_text":{"type":"string"},"word_count":{"type":"integer"}},"required":["chapter_text","word_count"]}"#,
+            "1.0.0",
+        ),
+    ];
+
+    for (id, skill_id, name, template, input_schema, output_schema, version) in defaults {
+        conn.execute(
+            "INSERT INTO ai_skill_registry (id, skill_id, name, prompt_template, input_schema, output_schema, version, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![id, skill_id, name, template, input_schema, output_schema, version, now, now],
+        )?;
+    }
+
     Ok(())
 }
 
@@ -2180,6 +2267,230 @@ impl Database {
                 serde_json::json!({"text": input.feedback_text}).to_string()
             }),
         })
+    }
+
+    // ===== AI Skill Registry CRUD =====
+
+    pub fn list_ai_skills(&self) -> SqlResult<Vec<crate::models::AiSkillRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, skill_id, name, prompt_template, input_schema, output_schema, version
+             FROM ai_skill_registry ORDER BY skill_id"
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(crate::models::AiSkillRecord {
+                id: row.get(0)?,
+                skill_id: row.get(1)?,
+                name: row.get(2)?,
+                prompt_template: row.get(3)?,
+                input_schema: row.get(4)?,
+                output_schema: row.get(5)?,
+                version: row.get(6)?,
+            })
+        })?;
+        let mut skills = Vec::new();
+        for r in rows {
+            skills.push(r?);
+        }
+        Ok(skills)
+    }
+
+    pub fn get_ai_skill(&self, id: &str) -> SqlResult<Option<crate::models::AiSkillRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, skill_id, name, prompt_template, input_schema, output_schema, version
+             FROM ai_skill_registry WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(crate::models::AiSkillRecord {
+                id: row.get(0)?,
+                skill_id: row.get(1)?,
+                name: row.get(2)?,
+                prompt_template: row.get(3)?,
+                input_schema: row.get(4)?,
+                output_schema: row.get(5)?,
+                version: row.get(6)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn get_ai_skill_by_skill_id(&self, skill_id: &str) -> SqlResult<Option<crate::models::AiSkillRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, skill_id, name, prompt_template, input_schema, output_schema, version
+             FROM ai_skill_registry WHERE skill_id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![skill_id], |row| {
+            Ok(crate::models::AiSkillRecord {
+                id: row.get(0)?,
+                skill_id: row.get(1)?,
+                name: row.get(2)?,
+                prompt_template: row.get(3)?,
+                input_schema: row.get(4)?,
+                output_schema: row.get(5)?,
+                version: row.get(6)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn register_ai_skill(&self, input: &crate::models::RegisterSkillInput) -> SqlResult<crate::models::AiSkillRecord> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO ai_skill_registry (id, skill_id, name, prompt_template, input_schema, output_schema, version, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![id, input.skill_id, input.name, input.prompt_template, input.input_schema, input.output_schema, input.version, now, now],
+        )?;
+        Ok(crate::models::AiSkillRecord {
+            id,
+            skill_id: input.skill_id.clone(),
+            name: input.name.clone(),
+            prompt_template: input.prompt_template.clone(),
+            input_schema: input.input_schema.clone(),
+            output_schema: input.output_schema.clone(),
+            version: input.version.clone(),
+        })
+    }
+
+    // ===== AI Provider Config CRUD =====
+
+    pub fn list_ai_provider_configs(&self) -> SqlResult<Vec<crate::models::AiProviderConfig>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at
+             FROM ai_provider_config ORDER BY provider_name"
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(crate::models::AiProviderConfig {
+                id: row.get(0)?,
+                provider_id: row.get(1)?,
+                provider_name: row.get(2)?,
+                api_key_encrypted: row.get(3)?,
+                endpoint: row.get(4)?,
+                models: row.get(5)?,
+                timeout_ms: row.get(6)?,
+                is_active: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        let mut configs = Vec::new();
+        for r in rows {
+            configs.push(r?);
+        }
+        Ok(configs)
+    }
+
+    pub fn get_ai_provider_config(&self, provider_id: &str) -> SqlResult<Option<crate::models::AiProviderConfig>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at
+             FROM ai_provider_config WHERE provider_id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![provider_id], |row| {
+            Ok(crate::models::AiProviderConfig {
+                id: row.get(0)?,
+                provider_id: row.get(1)?,
+                provider_name: row.get(2)?,
+                api_key_encrypted: row.get(3)?,
+                endpoint: row.get(4)?,
+                models: row.get(5)?,
+                timeout_ms: row.get(6)?,
+                is_active: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn save_ai_provider_config(&self, input: &crate::models::SaveProviderConfigInput) -> SqlResult<crate::models::AiProviderConfig> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+
+        let existing_id: Option<String> = conn.query_row(
+            "SELECT id FROM ai_provider_config WHERE provider_id = ?1",
+            params![input.provider_id],
+            |row| row.get(0),
+        ).ok();
+
+        let models_json = serde_json::to_string(&input.models).unwrap_or_else(|_| "[]".to_string());
+
+        let id = match existing_id {
+            Some(existing) => {
+                conn.execute(
+                    "UPDATE ai_provider_config SET provider_name=?1, api_key_encrypted=?2, endpoint=?3, models=?4, timeout_ms=?5, updated_at=?6 WHERE id=?7",
+                    params![input.provider_name, input.api_key_encrypted, input.endpoint, &models_json, input.timeout_ms, now, existing],
+                )?;
+                existing
+            }
+            None => {
+                let new_id = uuid::Uuid::new_v4().to_string();
+                conn.execute(
+                    "INSERT INTO ai_provider_config (id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8, ?9)",
+                    params![new_id, input.provider_id, input.provider_name, input.api_key_encrypted, input.endpoint, &models_json, input.timeout_ms, now, now],
+                )?;
+                new_id
+            }
+        };
+
+        Ok(crate::models::AiProviderConfig {
+            id,
+            provider_id: input.provider_id.clone(),
+            provider_name: input.provider_name.clone(),
+            api_key_encrypted: input.api_key_encrypted.clone(),
+            endpoint: input.endpoint.clone(),
+            models: models_json,
+            timeout_ms: input.timeout_ms,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn delete_ai_provider_config(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM ai_provider_config WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    pub fn get_ai_provider_config_by_id(&self, id: &str) -> SqlResult<Option<crate::models::AiProviderConfig>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at
+             FROM ai_provider_config WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(crate::models::AiProviderConfig {
+                id: row.get(0)?,
+                provider_id: row.get(1)?,
+                provider_name: row.get(2)?,
+                api_key_encrypted: row.get(3)?,
+                endpoint: row.get(4)?,
+                models: row.get(5)?,
+                timeout_ms: row.get(6)?,
+                is_active: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
     }
 }
 

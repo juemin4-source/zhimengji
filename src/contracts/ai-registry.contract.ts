@@ -36,3 +36,13 @@ export interface RegisterSkillInput {
   outputSchema: string;
   version: string;
 }
+
+/**
+ * Result of testing a provider connection.
+ */
+export interface ConnectionTestResult {
+  success: boolean;
+  message: string;
+  latencyMs: number;
+  models: string[];
+}

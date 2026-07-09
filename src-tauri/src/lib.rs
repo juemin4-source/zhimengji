@@ -140,6 +140,7 @@ pub fn run() {
             ai_commands::parse_output,
             ai_commands::list_skills,
             ai_commands::get_skill,
+            ai_commands::register_skill,
             ai_commands::list_providers_v2,
             ai_commands::save_provider_config,
             ai_commands::delete_provider_config,

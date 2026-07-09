@@ -443,6 +443,10 @@ function AppInner() {
     setConnections([]);
     changelog.clear();
     setChangelogEntries([]);
+    // Reset pipeline state
+    setCurrentStage(null);
+    setCanvasStages([]);
+    useProjectStore.getState().reset();
   }, []);
 
   // ── Creation Wizard ──
@@ -489,6 +493,16 @@ function AppInner() {
       setCanvasStates(createDefaultCanvasStates());
       setSelectedObjectId(null);
       setShowGuide(true);
+      // Load pipeline state for the new project (prevents leaking previous project's state)
+      setProjectId(project.id);
+      try {
+        const ps = await getPipelineState(project.id);
+        setPipelineState(ps);
+        setCurrentStage(ps.currentStage);
+        setCanvasStages(ps.canvasStages);
+      } catch (e) {
+        console.error('Failed to load pipeline state', e);
+      }
       showToast(`作品「${title}」已创建`, 'success');
     } catch (e) {
       console.error('Failed to create project', e);

@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import './canvas-shell.css';
 
 type CanvasStatus = 'locked' | 'ready' | 'active' | 'done';
 
@@ -50,78 +51,17 @@ const STATUS_MESSAGES: Record<string, { icon: string; title: string; desc: strin
   },
 };
 
-const styles: Record<string, React.CSSProperties> = {
-  shell: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    position: 'relative',
-  },
-  overlay: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    padding: 40,
-    textAlign: 'center',
-  },
-  icon: {
-    fontSize: '2.5rem',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: '1.1rem',
-    fontWeight: 600,
-    color: '#e0e0e0',
-    marginBottom: 8,
-  },
-  desc: {
-    fontSize: '0.85rem',
-    color: '#888',
-    maxWidth: 360,
-    lineHeight: 1.6,
-  },
-  enterBtn: {
-    marginTop: 20,
-    padding: '8px 24px',
-    fontSize: '0.85rem',
-    fontWeight: 600,
-    border: '1.5px solid #4A9EFF',
-    borderRadius: 6,
-    background: 'rgba(74, 158, 255, 0.1)',
-    color: '#4A9EFF',
-    cursor: 'pointer',
-    transition: 'background 0.15s ease',
-    fontFamily: 'inherit',
-  },
-  doneBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: '6px 16px',
-    background: 'rgba(34, 197, 94, 0.1)',
-    borderBottom: '1px solid rgba(34, 197, 94, 0.2)',
-    color: '#22C55E',
-    fontSize: '0.78rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-  },
-};
-
 export default function CanvasShell({ stage, status, children, onStageClick }: CanvasShellProps) {
   const stageName = STAGE_NAMES[stage] || stage;
   const msg = STATUS_MESSAGES[status] || STATUS_MESSAGES.locked;
 
   if (status === 'locked') {
     return (
-      <div style={styles.shell}>
-        <div style={styles.overlay}>
-          <div style={styles.icon}>{msg.icon}</div>
-          <div style={styles.title}>{stageName} — {msg.title}</div>
-          <div style={styles.desc}>{msg.desc}</div>
+      <div className="canvas-shell">
+        <div className="canvas-shell-overlay">
+          <div className="canvas-shell-icon">{msg.icon}</div>
+          <div className="canvas-shell-title">{stageName} — {msg.title}</div>
+          <div className="canvas-shell-desc">{msg.desc}</div>
         </div>
       </div>
     );
@@ -129,17 +69,15 @@ export default function CanvasShell({ stage, status, children, onStageClick }: C
 
   if (status === 'ready') {
     return (
-      <div style={styles.shell}>
-        <div style={styles.overlay}>
-          <div style={{ ...styles.icon, color: '#4A9EFF' }}>{msg.icon}</div>
-          <div style={styles.title}>{stageName} — {msg.title}</div>
-          <div style={styles.desc}>{msg.desc}</div>
+      <div className="canvas-shell">
+        <div className="canvas-shell-overlay">
+          <div className="canvas-shell-icon canvas-shell-icon-ready">{msg.icon}</div>
+          <div className="canvas-shell-title">{stageName} — {msg.title}</div>
+          <div className="canvas-shell-desc">{msg.desc}</div>
           {onStageClick && (
             <button
-              style={styles.enterBtn}
+              className="canvas-shell-enter-btn"
               onClick={() => onStageClick(stage)}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(74, 158, 255, 0.2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(74, 158, 255, 0.1)'; }}
             >
               进入 {stageName}
             </button>
@@ -151,11 +89,11 @@ export default function CanvasShell({ stage, status, children, onStageClick }: C
 
   if (status === 'done') {
     return (
-      <div style={styles.shell}>
-        <div style={styles.doneBanner}>
+      <div className="canvas-shell">
+        <div className="canvas-shell-done-banner">
           {msg.icon} {stageName} — {msg.title}
         </div>
-        <div style={{ flex: 1, overflow: 'auto', paddingTop: 36 }}>
+        <div className="canvas-shell-content-padded">
           {children}
         </div>
       </div>
@@ -164,8 +102,8 @@ export default function CanvasShell({ stage, status, children, onStageClick }: C
 
   // active — render children
   return (
-    <div style={styles.shell}>
-      <div style={{ flex: 1, overflow: 'auto' }}>
+    <div className="canvas-shell">
+      <div className="canvas-shell-content">
         {children}
       </div>
     </div>

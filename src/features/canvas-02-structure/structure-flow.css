@@ -1,0 +1,167 @@
+/* StructureFlowView — 结构 @xyflow 节点图 */
+.structure-flow-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.structure-flow-flex {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+.structure-flow-flow {
+  flex: 1;
+  height: 100%;
+}
+.structure-flow-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-4, 16px);
+  color: var(--text-muted, #888);
+}
+.structure-flow-empty-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #aaa);
+}
+.structure-flow-empty-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted, #666);
+  max-width: 320px;
+  text-align: center;
+}
+.structure-flow-toolbar {
+  display: flex;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  border-bottom: 1px solid var(--border-default, #2a2a2a);
+  background: var(--bg-surface, #12122a);
+  align-items: center;
+}
+.structure-flow-toolbar-spacer {
+  flex: 1;
+}
+.structure-flow-inspector {
+  width: 280px;
+  border-left: 1px solid var(--border-default, #2a2a2a);
+  background: var(--bg-surface, #16162a);
+  padding: var(--space-4, 16px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+.structure-flow-insp-title {
+  font-size: 0.85rem;
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-primary, #e0e0e0);
+  margin-bottom: var(--space-1, 4px);
+}
+.structure-flow-label {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  margin-bottom: var(--space-1, 4px);
+}
+.structure-flow-input {
+  width: 100%;
+  padding: var(--space-2, 8px) 10px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-default, #333);
+  background: var(--bg-raised, #1a1a2e);
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.82rem;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.structure-flow-textarea {
+  width: 100%;
+  padding: var(--space-2, 8px) 10px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-default, #333);
+  background: var(--bg-raised, #1a1a2e);
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.82rem;
+  outline: none;
+  resize: vertical;
+  min-height: 56px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.structure-flow-btn-row {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-1, 4px);
+}
+.structure-flow-btn-full {
+  width: 100%;
+}
+.structure-flow-node-id {
+  font-size: 0.68rem;
+  color: var(--text-disabled, #555);
+  margin-top: var(--space-2, 8px);
+}
+
+/* Base button */
+.structure-flow-btn {
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  border-radius: var(--radius-sm, 6px);
+  border: none;
+  cursor: pointer;
+  font-weight: var(--fw-semibold, 600);
+  font-size: 0.8rem;
+  font-family: inherit;
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+.structure-flow-btn-primary {
+  background: #4A9EFF;
+  color: #fff;
+}
+.structure-flow-btn-danger {
+  background: var(--danger, #E74C3C);
+  color: #fff;
+}
+.structure-flow-btn-secondary {
+  background: #2a2a3e;
+  color: var(--text-secondary, #aaa);
+  border: 1px solid #3a3a4e;
+}
+.structure-flow-btn-success {
+  background: var(--safe, #22C55E);
+  color: #fff;
+}
+
+/* StructureNodeComponent — custom @xyflow node */
+.structure-node-container {
+  background: var(--bg-raised, #1a1a2e);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-2, 8px) 14px;
+  min-width: 130px;
+  max-width: 210px;
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast, 0.15s ease), border-color var(--transition-fast, 0.15s ease);
+}
+.structure-node-container:hover {
+  box-shadow: var(--shadow-md, 0 2px 6px rgba(0,0,0,0.3));
+  z-index: 10;
+}
+.structure-node-type-label {
+  font-size: 0.62rem;
+  font-weight: var(--fw-semibold, 600);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  letter-spacing: 0.5px;
+}
+.structure-node-title {
+  font-size: 0.9rem;
+  font-weight: var(--fw-medium, 500);
+  word-break: break-word;
+  color: var(--text-primary, #e0e0e0);
+}
+.structure-node-handle {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--bg-raised, #1a1a2e);
+}

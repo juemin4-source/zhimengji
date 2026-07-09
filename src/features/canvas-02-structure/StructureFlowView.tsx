@@ -23,6 +23,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import * as structureApi from '../../api/structureApi';
 import type { StructureNode, StructureNodeType } from '../../contracts/structure.contract';
 import { confirmStructure } from '../../stores/pipeline-helper';
+import './structure-flow.css';
 
 // ===== Constants =====
 
@@ -59,126 +60,34 @@ function StructureNodeComponent({ data, selected }: NodeProps) {
       <Handle
         type="target"
         position={Position.Top}
-        style={{ background: color, width: 8, height: 8, border: '2px solid #1a1a2e' }}
+        className="structure-node-handle"
+        style={{ background: color }}
       />
       <div
+        className="structure-node-container"
         style={{
-          background: '#1a1a2e',
           border: `2px solid ${selected ? '#fff' : color}`,
-          borderRadius: 8,
-          padding: '8px 14px',
-          minWidth: 130,
-          maxWidth: 210,
-          color: '#e0e0e0',
-          cursor: 'pointer',
           boxShadow: selected
             ? `0 0 14px ${color}44, 0 2px 6px rgba(0,0,0,0.3)`
             : '0 2px 6px rgba(0,0,0,0.3)',
-          transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
         }}
       >
-        <div
-          style={{
-            fontSize: '0.62rem',
-            color,
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            marginBottom: 3,
-            letterSpacing: 0.5,
-          }}
-        >
+        <div className="structure-node-type-label" style={{ color }}>
           {label}
         </div>
-        <div style={{ fontSize: '0.9rem', fontWeight: 500, wordBreak: 'break-word' }}>
+        <div className="structure-node-title">
           {data.title || '未命名'}
         </div>
       </div>
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ background: color, width: 8, height: 8, border: '2px solid #1a1a2e' }}
+        className="structure-node-handle"
+        style={{ background: color }}
       />
     </>
   );
 }
-
-// ===== Styles =====
-
-const s = {
-  wrapper: { display: 'flex', height: '100%', position: 'relative' as const },
-  flow: { flex: 1, height: '100%' },
-  empty: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    gap: 16,
-    color: '#888',
-  },
-  toolbar: {
-    display: 'flex',
-    gap: 8,
-    padding: '8px 16px',
-    borderBottom: '1px solid #2a2a2a',
-    background: '#12122a',
-    alignItems: 'center',
-  },
-  inspector: {
-    width: 280,
-    borderLeft: '1px solid #2a2a2a',
-    background: '#16162a',
-    padding: 16,
-    overflowY: 'auto' as const,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 12,
-  },
-  inspTitle: { fontSize: '0.85rem', fontWeight: 600, color: '#e0e0e0', marginBottom: 4 },
-  label: { fontSize: '0.75rem', color: '#888', marginBottom: 4 },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    borderRadius: 6,
-    border: '1px solid #333',
-    background: '#1a1a2e',
-    color: '#e0e0e0',
-    fontSize: '0.82rem',
-    outline: 'none',
-    boxSizing: 'border-box' as const,
-    fontFamily: 'inherit',
-  },
-  textarea: {
-    width: '100%',
-    padding: '8px 10px',
-    borderRadius: 6,
-    border: '1px solid #333',
-    background: '#1a1a2e',
-    color: '#e0e0e0',
-    fontSize: '0.82rem',
-    outline: 'none',
-    resize: 'vertical' as const,
-    minHeight: 56,
-    boxSizing: 'border-box' as const,
-    fontFamily: 'inherit',
-  },
-  btn: {
-    padding: '8px 16px',
-    borderRadius: 6,
-    border: 'none',
-    cursor: 'pointer',
-    fontWeight: 600,
-    fontSize: '0.8rem',
-    fontFamily: 'inherit',
-    transition: 'opacity 0.15s ease',
-  },
-  btnPrimary: { background: '#4A9EFF', color: '#fff' },
-  btnDanger: { background: '#E74C3C', color: '#fff' },
-  btnSecondary: { background: '#2a2a3e', color: '#aaa', border: '1px solid #3a3a4e' },
-  btnSuccess: { background: '#22C55E', color: '#fff' },
-};
-
-// ===== Main Component =====
 
 export default function StructureFlowView() {
   const projectId = useProjectStore(s => s.currentProjectId);
@@ -402,22 +311,23 @@ export default function StructureFlowView() {
 
   if (loading) {
     return (
-      <div style={s.empty}>
+      <div className="structure-flow-empty">
         <div className="spinner" />
-        <p style={{ fontSize: '0.85rem' }}>加载结构节点...</p>
+        <p>加载结构节点...</p>
       </div>
     );
   }
 
   if (nodes.length === 0) {
     return (
-      <div style={s.empty}>
-        <p style={{ fontSize: '0.95rem', color: '#aaa' }}>还没有结构节点</p>
-        <p style={{ fontSize: '0.78rem', color: '#666', maxWidth: 320, textAlign: 'center' }}>
+      <div className="structure-flow-empty">
+        <p className="structure-flow-empty-text">还没有结构节点</p>
+        <p className="structure-flow-empty-hint">
           点击下方按钮创建包含作品 + 三阶段（开端/发展/高潮）的默认骨架
         </p>
         <button
-          style={{ ...s.btn, ...s.btnPrimary, padding: '10px 28px', fontSize: '0.85rem' }}
+          className="structure-flow-btn structure-flow-btn-primary"
+          style={{ padding: '10px 28px', fontSize: '0.85rem' }}
           onClick={handleCreateDefault}
         >
           创建默认结构
@@ -427,19 +337,19 @@ export default function StructureFlowView() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={s.toolbar}>
-        <button style={{ ...s.btn, ...s.btnSecondary }} onClick={handleCreateDefault}>
+    <div className="structure-flow-wrapper">
+      <div className="structure-flow-toolbar">
+        <button className="structure-flow-btn structure-flow-btn-secondary" onClick={handleCreateDefault}>
           重建默认结构
         </button>
-        <div style={{ flex: 1 }} />
-        <button style={{ ...s.btn, ...s.btnSuccess }} onClick={handleConfirm}>
+        <div className="structure-flow-toolbar-spacer" />
+        <button className="structure-flow-btn structure-flow-btn-success" onClick={handleConfirm}>
           确认结构 ✓
         </button>
       </div>
 
-      <div style={s.wrapper}>
-        <div style={s.flow}>
+      <div className="structure-flow-flex">
+        <div className="structure-flow-flow">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -461,15 +371,15 @@ export default function StructureFlowView() {
 
         {/* Inspector Panel */}
         {selectedNode && (
-          <div style={s.inspector}>
-            <div style={s.inspTitle}>
+          <div className="structure-flow-inspector">
+            <div className="structure-flow-insp-title">
               编辑 {NODE_LABELS[selectedNode.nodeType as StructureNodeType] || '节点'}
             </div>
 
             <div>
-              <div style={s.label}>标题</div>
+              <div className="structure-flow-label">标题</div>
               <input
-                style={s.input}
+                className="structure-flow-input"
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
                 placeholder="节点标题"
@@ -477,9 +387,9 @@ export default function StructureFlowView() {
             </div>
 
             <div>
-              <div style={s.label}>叙事功能</div>
+              <div className="structure-flow-label">叙事功能</div>
               <textarea
-                style={s.textarea}
+                className="structure-flow-textarea"
                 value={editNarrativeFunction}
                 onChange={e => setEditNarrativeFunction(e.target.value)}
                 placeholder="该节点在叙事中的功能作用"
@@ -488,9 +398,9 @@ export default function StructureFlowView() {
             </div>
 
             <div>
-              <div style={s.label}>摘要</div>
+              <div className="structure-flow-label">摘要</div>
               <textarea
-                style={s.textarea}
+                className="structure-flow-textarea"
                 value={editSummary}
                 onChange={e => setEditSummary(e.target.value)}
                 placeholder="节点内容摘要"
@@ -498,15 +408,17 @@ export default function StructureFlowView() {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div className="structure-flow-btn-row">
               <button
-                style={{ ...s.btn, ...s.btnPrimary, flex: 1 }}
+                className="structure-flow-btn structure-flow-btn-primary"
+                style={{ flex: 1 }}
                 onClick={handleSaveEdit}
               >
                 保存
               </button>
               <button
-                style={{ ...s.btn, ...s.btnSecondary, flex: 1 }}
+                className="structure-flow-btn structure-flow-btn-secondary"
+                style={{ flex: 1 }}
                 onClick={handleAddChild}
               >
                 + 添加子节点
@@ -515,14 +427,14 @@ export default function StructureFlowView() {
 
             <div style={{ marginTop: 4 }}>
               <button
-                style={{ ...s.btn, ...s.btnDanger, width: '100%' }}
+                className="structure-flow-btn structure-flow-btn-danger structure-flow-btn-full"
                 onClick={handleDelete}
               >
                 删除节点（含子节点）
               </button>
             </div>
 
-            <div style={{ fontSize: '0.68rem', color: '#555', marginTop: 8 }}>
+            <div className="structure-flow-node-id">
               ID: {selectedNode.id.slice(0, 10)}...
             </div>
           </div>

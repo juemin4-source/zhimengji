@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import './canvas-ai-bar.css';
 
 interface CanvasAiBarProps {
   stage: string;
@@ -42,56 +43,15 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
   );
 
   return (
-    <div
-      className="canvas-ai-bar"
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: 'var(--bg-surface, #141414)',
-        borderTop: '1px solid var(--border-default, #2a2a2a)',
-        padding: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
+    <div className="canvas-ai-bar">
       {status === 'connecting' ? (
-        <div
-          style={{
-            flex: 1,
-            fontSize: '0.82rem',
-            color: 'var(--text-secondary, #a0a0a0)',
-            padding: '8px 12px',
-            textAlign: 'center',
-          }}
-        >
+        <div className="canvas-ai-bar-connecting">
           AI 助手正在接入中...
         </div>
       ) : (
         <>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              color: 'var(--text-muted, #6b6b6b)',
-              fontSize: '0.72rem',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-block',
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: '#666',
-              }}
-            />
+          <div className="canvas-ai-bar-stage">
+            <span className="canvas-ai-bar-dot" />
             {stageName} 画板
           </div>
           <input
@@ -101,34 +61,12 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
             onKeyDown={handleKeyDown}
             placeholder="画板 AI 助手即将就绪"
             disabled
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              fontSize: '0.82rem',
-              background: 'var(--bg-input, #0a0a0a)',
-              border: '1px solid var(--border-default, #2a2a2a)',
-              borderRadius: 6,
-              color: 'var(--text-primary, #e8e8e8)',
-              outline: 'none',
-              opacity: 0.5,
-              fontFamily: 'inherit',
-            }}
+            className="canvas-ai-bar-input"
           />
           <button
             onClick={handleSend}
             disabled
-            style={{
-              padding: '8px 16px',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              border: '1px solid var(--border-default, #2a2a2a)',
-              borderRadius: 6,
-              background: 'var(--bg-hover, #1a1a1a)',
-              color: 'var(--text-muted, #6b6b6b)',
-              cursor: 'not-allowed',
-              opacity: 0.5,
-              fontFamily: 'inherit',
-            }}
+            className="canvas-ai-bar-send-btn"
           >
             发送
           </button>

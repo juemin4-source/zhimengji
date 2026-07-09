@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import * as settingApi from '../../api/settingApi';
 import type { WorldRule } from '../../contracts/setting.contract';
+import './world-rule-panel.css';
 
 const s: Record<string, React.CSSProperties> = {
   wrapper: { display: 'flex', flexDirection: 'column', height: '100%', gap: 12, padding: 16 },

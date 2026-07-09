@@ -1,0 +1,218 @@
+/* PremiseEntryGate — 前提卡编辑器 */
+.premise-container {
+  padding: var(--space-8, 32px);
+  max-width: 680px;
+  margin: 0 auto;
+}
+.premise-header {
+  margin-bottom: var(--space-6, 24px);
+}
+.premise-title {
+  font-size: var(--fs-lg, 1.1rem);
+  font-weight: var(--fw-bold, 700);
+  color: var(--text-primary, #e8e8e8);
+  margin-bottom: var(--space-2, 8px);
+}
+.premise-subtitle {
+  font-size: var(--fs-sm, 0.8125rem);
+  color: var(--text-secondary, #a0a0a0);
+  line-height: var(--lh-base, 1.6);
+}
+.premise-hint-box {
+  background: var(--bg-surface, #141414);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-4, 16px) var(--space-5, 20px);
+  margin-bottom: var(--space-6, 24px);
+}
+.premise-hint-title {
+  font-size: var(--fs-sm, 0.8125rem);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-primary, #e8e8e8);
+  margin-bottom: var(--space-2, 8px);
+}
+.premise-hint-text {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--text-secondary, #a0a0a0);
+  line-height: var(--lh-loose, 1.7);
+  margin-bottom: var(--space-1, 4px);
+}
+.premise-hint-text-italic {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--text-muted, #6b6b6b);
+  line-height: var(--lh-loose, 1.7);
+  margin-bottom: var(--space-1, 4px);
+  font-style: italic;
+  margin-top: var(--space-2, 8px);
+}
+.premise-form-group {
+  margin-bottom: var(--space-5, 20px);
+}
+.premise-label {
+  display: block;
+  font-size: var(--fs-sm, 0.8125rem);
+  font-weight: var(--fw-medium, 500);
+  color: var(--text-secondary, #a0a0a0);
+  margin-bottom: var(--space-1, 6px);
+}
+.premise-label-hint {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--text-muted, #6b6b6b);
+  margin-left: var(--space-2, 8px);
+  font-weight: var(--fw-normal, 400);
+}
+.premise-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: var(--space-3, 12px) 14px;
+  font-size: var(--fs-base, 0.9375rem);
+  line-height: var(--lh-loose, 1.7);
+  background: var(--bg-input, #0a0a0a);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary, #e8e8e8);
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast, 0.15s ease);
+}
+.premise-textarea:focus {
+  border-color: var(--border-focus, #B7FF00);
+}
+.premise-textarea-short {
+  min-height: 80px;
+}
+.premise-select-wrapper {
+  position: relative;
+}
+.premise-select {
+  width: 100%;
+  padding: 10px 36px 10px 14px;
+  font-size: var(--fs-base, 0.9375rem);
+  background: var(--bg-input, #0a0a0a);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary, #e8e8e8);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color var(--transition-fast, 0.15s ease);
+  box-sizing: border-box;
+}
+.premise-select:focus {
+  border-color: var(--border-focus, #B7FF00);
+}
+.premise-select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #6b6b6b);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.premise-button-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: var(--space-2, 8px);
+  align-items: center;
+}
+.premise-btn-secondary {
+  padding: 9px 22px;
+  font-size: var(--fs-sm, 0.8125rem);
+  font-weight: var(--fw-medium, 500);
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-default, #2a2a2a);
+  background: transparent;
+  color: var(--text-secondary, #a0a0a0);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+.premise-btn-secondary:hover {
+  background: var(--bg-raised, #1e1e1e);
+  color: var(--text-primary, #e8e8e8);
+}
+.premise-btn-primary {
+  padding: 9px 22px;
+  font-size: var(--fs-sm, 0.8125rem);
+  font-weight: var(--fw-semibold, 600);
+  border-radius: var(--radius-sm, 6px);
+  border: 1.5px solid var(--accent, #B7FF00);
+  background: var(--accent, #B7FF00);
+  color: var(--text-inverse, #0a0a0a);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+.premise-btn-primary:hover {
+  background: var(--accent-hover, #c8ff33);
+  border-color: var(--accent-hover, #c8ff33);
+}
+.premise-btn-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.premise-error-text {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--danger, #FF6B6B);
+  margin-top: var(--space-1, 6px);
+  margin-bottom: var(--space-2, 8px);
+}
+.premise-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: var(--text-muted, #6b6b6b);
+  font-size: var(--fs-sm, 0.8125rem);
+}
+.premise-success-banner {
+  background: rgba(76, 175, 80, 0.08);
+  border: 1px solid rgba(76, 175, 80, 0.25);
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-8, 32px) var(--space-6, 24px);
+  text-align: center;
+  margin-top: var(--space-4, 16px);
+}
+.premise-success-icon {
+  font-size: 2.4rem;
+  margin-bottom: var(--space-3, 12px);
+}
+.premise-success-title {
+  font-size: var(--fs-base, 1rem);
+  font-weight: var(--fw-bold, 700);
+  color: var(--safe, #22C55E);
+  margin-bottom: var(--space-2, 8px);
+}
+.premise-success-desc {
+  font-size: var(--fs-sm, 0.8125rem);
+  color: var(--text-secondary, #a0a0a0);
+  line-height: var(--lh-loose, 1.7);
+}
+.premise-nav-hint {
+  display: inline-block;
+  margin-top: var(--space-4, 16px);
+  padding: var(--space-1, 6px) var(--space-4, 16px);
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--accent, #B7FF00);
+  border: 1px solid var(--accent, #B7FF00);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--accent-soft, rgba(183, 255, 0, 0.08));
+}
+.premise-divider {
+  height: 1px;
+  background: var(--border-default, #2a2a2a);
+  margin: var(--space-1, 6px) 0 var(--space-1, 4px);
+}
+.premise-draft-notice {
+  text-align: right;
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--text-muted, #6b6b6b);
+  margin-top: var(--space-1, 6px);
+}
+.premise-question-count {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--text-muted, #6b6b6b);
+  margin-top: var(--space-1, 4px);
+}

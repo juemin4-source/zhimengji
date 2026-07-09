@@ -1,0 +1,64 @@
+/* CanvasAiBar — 画板 AI 助手输入壳 */
+.canvas-ai-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--bg-surface, #141414);
+  border-top: 1px solid var(--border-default, #2a2a2a);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+.canvas-ai-bar-connecting {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #a0a0a0);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  text-align: center;
+}
+.canvas-ai-bar-stage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 6px);
+  color: var(--text-muted, #6b6b6b);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.canvas-ai-bar-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted, #666);
+  flex-shrink: 0;
+}
+.canvas-ai-bar-input {
+  flex: 1;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  font-size: 0.82rem;
+  background: var(--bg-input, #0a0a0a);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary, #e8e8e8);
+  outline: none;
+  font-family: inherit;
+}
+.canvas-ai-bar-input:disabled {
+  opacity: 0.5;
+}
+.canvas-ai-bar-send-btn {
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  font-size: 0.8rem;
+  font-weight: var(--fw-semibold, 600);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-hover, #1a1a1a);
+  color: var(--text-muted, #6b6b6b);
+  cursor: not-allowed;
+  opacity: 0.5;
+  font-family: inherit;
+}

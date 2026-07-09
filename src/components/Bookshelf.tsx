@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Search } from 'lucide-react';
 import type { Project } from '../types/world';
 
 interface BookshelfProps {
@@ -437,10 +438,12 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
   return (
     <div
       style={{
-        maxWidth: 1100,
+        maxWidth: 1400,
+        width: '100%',
         margin: '0 auto',
         padding: '2rem 1rem',
-        minHeight: '80vh',
+        height: '100%',
+        overflowY: 'auto',
         fontFamily: "-apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
         color: '#e0e0e0',
         fontSize: '0.9375rem',
@@ -563,7 +566,7 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
               pointerEvents: 'none',
             }}
           >
-            &#x1F50D;
+            <Search size={14} />
           </span>
           <input
             type="text"
@@ -619,7 +622,7 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
             gap: '1.25rem',
             padding: '1.5rem 0',
             width: '100%',

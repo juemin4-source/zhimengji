@@ -132,6 +132,16 @@ function AppInner() {
   const [currentStage, setCurrentStage] = useState<string | null>(null);
   const [canvasStages, setCanvasStages] = useState<{stage: string; status: string}[]>([]);
 
+  // Sync local state when pipeline-helper updates the store (e.g. confirmPremise)
+  const storeStage = useProjectStore(s => s.currentStage);
+  const storeStages = useProjectStore(s => s.canvasStages);
+  useEffect(() => {
+    if (storeStage && storeStage !== currentStage) {
+      setCurrentStage(storeStage);
+      if (storeStages.length > 0) setCanvasStages(storeStages);
+    }
+  }, [storeStage]);
+
   const [aiUsageStats, setAiUsageStats] = useState<UsageStats>({
     todayTokens: 0, maxTokens: 0,
     dailyHistory: [],

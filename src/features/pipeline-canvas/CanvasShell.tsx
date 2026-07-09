@@ -2,13 +2,14 @@
  * CanvasShell — 通用画板外壳 (织梦机 v2)
  *
  * Wraps each stage's content with a consistent status-based UI.
- * locked → 🔒 + grey hint
- * ready → blue "就绪" message
+ * locked → EmptyState with grey hint
+ * ready → EmptyState with "就绪" message + action button
  * active → renders children
- * done → ✅ + green confirmation
+ * done → green confirmation + children
  */
 
 import React from 'react';
+import { Button, EmptyState } from '../../components/ui';
 import './canvas-shell.css';
 
 type CanvasStatus = 'locked' | 'ready' | 'active' | 'done';
@@ -30,7 +31,7 @@ const STAGE_NAMES: Record<string, string> = {
 
 const STATUS_MESSAGES: Record<string, { icon: string; title: string; desc: string }> = {
   locked: {
-    icon: '🔒',
+    icon: '\u{1F512}',
     title: '尚未开放',
     desc: '请先完成前置画板的内容，本画板将自动解锁。',
   },
@@ -58,11 +59,11 @@ export default function CanvasShell({ stage, status, children, onStageClick }: C
   if (status === 'locked') {
     return (
       <div className="canvas-shell">
-        <div className="canvas-shell-overlay">
-          <div className="canvas-shell-icon">{msg.icon}</div>
-          <div className="canvas-shell-title">{stageName} — {msg.title}</div>
-          <div className="canvas-shell-desc">{msg.desc}</div>
-        </div>
+        <EmptyState
+          title={`${stageName} — ${msg.title}`}
+          description={msg.desc}
+          icon={<span>{msg.icon}</span>}
+        />
       </div>
     );
   }
@@ -70,19 +71,18 @@ export default function CanvasShell({ stage, status, children, onStageClick }: C
   if (status === 'ready') {
     return (
       <div className="canvas-shell">
-        <div className="canvas-shell-overlay">
-          <div className="canvas-shell-icon canvas-shell-icon-ready">{msg.icon}</div>
-          <div className="canvas-shell-title">{stageName} — {msg.title}</div>
-          <div className="canvas-shell-desc">{msg.desc}</div>
-          {onStageClick && (
-            <button
-              className="canvas-shell-enter-btn"
-              onClick={() => onStageClick(stage)}
-            >
-              进入 {stageName}
-            </button>
-          )}
-        </div>
+        <EmptyState
+          title={`${stageName} — ${msg.title}`}
+          description={msg.desc}
+          icon={<span>{msg.icon}</span>}
+          action={
+            onStageClick && (
+              <Button variant="primary" onClick={() => onStageClick(stage)}>
+                进入 {stageName}
+              </Button>
+            )
+          }
+        />
       </div>
     );
   }

@@ -39,10 +39,8 @@ export default function SettingCanvasV2() {
 
   return (
     <div className="setting-canvas-wrapper">
-      {/* Tab Bar */}
-      <div className="setting-canvas-tab-bar">
-        <Tabs tabs={TABS} activeTab={activeTab} onChange={(id) => setActiveTab(id as SettingTab)} />
-      </div>
+      {/* Tab Bar — using Tabs primitive */}
+      <Tabs tabs={TABS} activeTab={activeTab} onChange={(id) => setActiveTab(id as SettingTab)} />
 
       {/* Content */}
       <div className="setting-canvas-content">

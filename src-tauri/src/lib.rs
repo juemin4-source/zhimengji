@@ -101,6 +101,13 @@ pub fn run() {
             structure_commands::get_structure_node,
             structure_commands::update_structure_node,
             structure_commands::delete_structure_node,
+            // v2.1.0 CN-MET-02 Canvas 2 StructureGraph L1-L4 commands
+            structure_commands::save_structure_node,
+            structure_commands::get_structure_tree,
+            structure_commands::update_node_position,
+            structure_commands::zoom_to_layer,
+            structure_commands::delete_canvas2_node,
+            structure_commands::ai_generate_structure,
             // v2 WorldRule commands
             setting_commands::create_world_rule,
             setting_commands::list_world_rules,

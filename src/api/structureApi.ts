@@ -2,7 +2,12 @@
  * structureApi — 织梦机 v2 StructureNode API layer.
  */
 import { invoke } from '@tauri-apps/api/core';
-import type { StructureNode, CreateStructureNodeInput, UpdateStructureNodeInput } from '../contracts/structure.contract';
+import type {
+  StructureNode, CreateStructureNodeInput, UpdateStructureNodeInput,
+  Canvas2NodeRecord, SaveCanvas2NodeInput, StructureTreeOutput,
+  UpdateNodePositionInput, ZoomToLayerInput, ZoomToLayerOutput,
+  AiGenerateStructureInput, AiGenerateStructureOutput,
+} from '../contracts/structure.contract';
 
 export async function createStructureNode(input: CreateStructureNodeInput): Promise<StructureNode> {
   return invoke('create_structure_node', { input });
@@ -22,4 +27,30 @@ export async function updateStructureNode(input: UpdateStructureNodeInput): Prom
 
 export async function deleteStructureNode(id: string): Promise<void> {
   return invoke('delete_structure_node', { input: { id } });
+}
+
+// ===== CN-MET-02: Canvas 2 StructureGraph L1-L4 API =====
+
+export async function saveCanvas2Node(input: SaveCanvas2NodeInput): Promise<Canvas2NodeRecord> {
+  return invoke('save_structure_node', { input });
+}
+
+export async function getCanvas2StructureTree(projectId: string): Promise<StructureTreeOutput> {
+  return invoke('get_structure_tree', { input: { projectId } });
+}
+
+export async function updateCanvas2NodePosition(input: UpdateNodePositionInput): Promise<void> {
+  return invoke('update_node_position', { input });
+}
+
+export async function zoomToLayer(input: ZoomToLayerInput): Promise<ZoomToLayerOutput> {
+  return invoke('zoom_to_layer', { input });
+}
+
+export async function deleteCanvas2Node(id: string): Promise<void> {
+  return invoke('delete_canvas2_node', { input: { id } });
+}
+
+export async function aiGenerateStructure(projectId: string): Promise<AiGenerateStructureOutput> {
+  return invoke('ai_generate_structure', { input: { projectId } });
 }

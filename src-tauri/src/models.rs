@@ -1380,3 +1380,131 @@ pub struct SaveRefinedContentInput {
     pub layer4: String,
     pub word_count: Option<i64>,
 }
+
+// ===== CN-MET-02: Canvas 2 StructureGraph L1-L4 Hierarchy =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Canvas2NodeRecord {
+    pub id: String,
+    pub project_id: String,
+    pub parent_id: Option<String>,
+    pub layer_type: String,
+    pub title: String,
+    pub summary: String,
+    pub time_period: String,
+    pub chapter_range: String,
+    pub scene_count: i64,
+    pub word_count: i64,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub expanded: bool,
+    pub sort_order: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCanvas2NodeInput {
+    pub project_id: String,
+    pub parent_id: Option<String>,
+    pub layer_type: String,
+    pub title: String,
+    pub summary: String,
+    pub time_period: String,
+    pub chapter_range: String,
+    pub scene_count: i64,
+    pub word_count: i64,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub sort_order: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCanvas2NodeInput {
+    pub id: String,
+    pub title: Option<String>,
+    pub summary: Option<String>,
+    pub time_period: Option<String>,
+    pub chapter_range: Option<String>,
+    pub scene_count: Option<i64>,
+    pub word_count: Option<i64>,
+    pub expanded: Option<bool>,
+    pub sort_order: Option<i64>,
+    pub position_x: Option<f64>,
+    pub position_y: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateNodePositionInput {
+    pub id: String,
+    pub position_x: f64,
+    pub position_y: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureTreeOutput {
+    pub nodes: Vec<Canvas2NodeRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetStructureTreeInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ZoomToLayerInput {
+    pub project_id: String,
+    pub layer_type: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ZoomToLayerOutput {
+    pub nodes: Vec<Canvas2NodeRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiGenerateStructureInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiGenerateStructureOutput {
+    pub nodes: Vec<Canvas2NodeRecord>,
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteCanvas2NodeInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveCanvas2NodeInput {
+    pub id: Option<String>,
+    pub project_id: String,
+    pub parent_id: Option<String>,
+    pub layer_type: String,
+    pub title: String,
+    pub summary: String,
+    pub time_period: String,
+    pub chapter_range: String,
+    pub scene_count: i64,
+    pub word_count: i64,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub expanded: bool,
+    pub sort_order: i64,
+}

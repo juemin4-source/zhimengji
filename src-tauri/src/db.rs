@@ -138,6 +138,7 @@ impl Database {
         init_premise_steps_table(&conn)?;
         init_sparrow_tables(&conn)?;
         init_packet_detail_modes_table(&conn)?;
+        init_canvas2_structure_nodes_table(&conn)?;
         Ok(())
     }
 
@@ -2343,6 +2344,37 @@ pub fn init_packet_detail_modes_table(conn: &Connection) -> SqlResult<()> {
     Ok(())
 }
 
+// ===== CN-MET-02: Canvas 2 StructureGraph nodes table =====
+
+pub fn init_canvas2_structure_nodes_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS canvas2_structure_nodes (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          parent_id TEXT,
+          layer_type TEXT NOT NULL DEFAULT 'zhang',
+          title TEXT NOT NULL DEFAULT '',
+          summary TEXT NOT NULL DEFAULT '',
+          time_period TEXT NOT NULL DEFAULT '',
+          chapter_range TEXT NOT NULL DEFAULT '',
+          scene_count INTEGER NOT NULL DEFAULT 0,
+          word_count INTEGER NOT NULL DEFAULT 0,
+          position_x REAL NOT NULL DEFAULT 0,
+          position_y REAL NOT NULL DEFAULT 0,
+          expanded INTEGER NOT NULL DEFAULT 1,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_c2sn_project ON canvas2_structure_nodes(project_id);
+        CREATE INDEX IF NOT EXISTS idx_c2sn_parent ON canvas2_structure_nodes(parent_id);
+        CREATE INDEX IF NOT EXISTS idx_c2sn_layer ON canvas2_structure_nodes(layer_type);"
+    )?;
+    Ok(())
+}
+
 // ===== CN-MET-03: Sparrow Step CRUD =====
 
 impl Database {
@@ -3083,6 +3115,295 @@ impl Database {
             step: "genreJudgment".to_string(),
             genre_judgment: input.genre_judgment.clone(),
         })
+    }
+}
+
+// ===== CN-MET-02: Canvas 2 StructureGraph L1-L4 CRUD =====
+
+impl Database {
+    pub fn list_canvas2_nodes(&self, project_id: &str) -> SqlResult<Vec<crate::models::Canvas2NodeRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, parent_id, layer_type, title, summary, time_period, chapter_range,
+                    scene_count, word_count, position_x, position_y, expanded, sort_order,
+                    created_at, updated_at
+             FROM canvas2_structure_nodes WHERE project_id = ? ORDER BY sort_order"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(crate::models::Canvas2NodeRecord {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                parent_id: row.get(2)?,
+                layer_type: row.get(3)?,
+                title: row.get(4)?,
+                summary: row.get(5)?,
+                time_period: row.get(6)?,
+                chapter_range: row.get(7)?,
+                scene_count: row.get(8)?,
+                word_count: row.get(9)?,
+                position_x: row.get(10)?,
+                position_y: row.get(11)?,
+                expanded: row.get::<_, i32>(12)? != 0,
+                sort_order: row.get(13)?,
+                created_at: row.get(14)?,
+                updated_at: row.get(15)?,
+            })
+        })?;
+        let mut nodes = Vec::new();
+        for r in rows {
+            nodes.push(r?);
+        }
+        Ok(nodes)
+    }
+
+    pub fn create_canvas2_node(&self, input: &crate::models::CreateCanvas2NodeInput) -> SqlResult<crate::models::Canvas2NodeRecord> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO canvas2_structure_nodes (id, project_id, parent_id, layer_type, title, summary, time_period, chapter_range, scene_count, word_count, position_x, position_y, expanded, sort_order, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+            params![id, input.project_id, input.parent_id, input.layer_type, input.title, input.summary, input.time_period, input.chapter_range, input.scene_count, input.word_count, input.position_x, input.position_y, input.expanded as i32, input.sort_order, now, now],
+        )?;
+        Ok(crate::models::Canvas2NodeRecord {
+            id,
+            project_id: input.project_id.clone(),
+            parent_id: input.parent_id.clone(),
+            layer_type: input.layer_type.clone(),
+            title: input.title.clone(),
+            summary: input.summary.clone(),
+            time_period: input.time_period.clone(),
+            chapter_range: input.chapter_range.clone(),
+            scene_count: input.scene_count,
+            word_count: input.word_count,
+            position_x: input.position_x,
+            position_y: input.position_y,
+            expanded: input.expanded,
+            sort_order: input.sort_order,
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn save_canvas2_node(&self, input: &crate::models::SaveCanvas2NodeInput) -> SqlResult<crate::models::Canvas2NodeRecord> {
+        // Upsert: if id is provided and exists, update; otherwise create
+        if let Some(ref node_id) = input.id {
+            let exists: bool = {
+                let conn = self.conn.lock().unwrap();
+                let count: i64 = conn.query_row(
+                    "SELECT COUNT(*) FROM canvas2_structure_nodes WHERE id = ?",
+                    params![node_id],
+                    |row| row.get(0),
+                ).unwrap_or(0);
+                count > 0
+            };
+
+            if exists {
+                let conn = self.conn.lock().unwrap();
+                let now = chrono::Utc::now().timestamp_millis();
+                conn.execute(
+                    "UPDATE canvas2_structure_nodes SET parent_id=?1, layer_type=?2, title=?3, summary=?4, time_period=?5, chapter_range=?6, scene_count=?7, word_count=?8, position_x=?9, position_y=?10, expanded=?11, sort_order=?12, updated_at=?13 WHERE id=?14",
+                    params![input.parent_id, input.layer_type, input.title, input.summary, input.time_period, input.chapter_range, input.scene_count, input.word_count, input.position_x, input.position_y, input.expanded as i32, input.sort_order, now, node_id],
+                )?;
+
+                let mut stmt = conn.prepare(
+                    "SELECT id, project_id, parent_id, layer_type, title, summary, time_period, chapter_range,
+                            scene_count, word_count, position_x, position_y, expanded, sort_order,
+                            created_at, updated_at
+                     FROM canvas2_structure_nodes WHERE id = ?"
+                )?;
+                let node = stmt.query_row(params![node_id], |row| {
+                    Ok(crate::models::Canvas2NodeRecord {
+                        id: row.get(0)?,
+                        project_id: row.get(1)?,
+                        parent_id: row.get(2)?,
+                        layer_type: row.get(3)?,
+                        title: row.get(4)?,
+                        summary: row.get(5)?,
+                        time_period: row.get(6)?,
+                        chapter_range: row.get(7)?,
+                        scene_count: row.get(8)?,
+                        word_count: row.get(9)?,
+                        position_x: row.get(10)?,
+                        position_y: row.get(11)?,
+                        expanded: row.get::<_, i32>(12)? != 0,
+                        sort_order: row.get(13)?,
+                        created_at: row.get(14)?,
+                        updated_at: row.get(15)?,
+                    })
+                })?;
+                return Ok(node);
+            }
+        }
+
+        // Create new node
+        let create_input = crate::models::CreateCanvas2NodeInput {
+            project_id: input.project_id.clone(),
+            parent_id: input.parent_id.clone(),
+            layer_type: input.layer_type.clone(),
+            title: input.title.clone(),
+            summary: input.summary.clone(),
+            time_period: input.time_period.clone(),
+            chapter_range: input.chapter_range.clone(),
+            scene_count: input.scene_count,
+            word_count: input.word_count,
+            position_x: input.position_x,
+            position_y: input.position_y,
+            sort_order: input.sort_order,
+        };
+        self.create_canvas2_node(&create_input)
+    }
+
+    pub fn update_canvas2_node_position(&self, input: &crate::models::UpdateNodePositionInput) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE canvas2_structure_nodes SET position_x=?1, position_y=?2, updated_at=?3 WHERE id=?4",
+            params![input.position_x, input.position_y, now, input.id],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_canvas2_node(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM canvas2_structure_nodes WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    pub fn get_canvas2_structure_tree(&self, project_id: &str) -> SqlResult<crate::models::StructureTreeOutput> {
+        let nodes = self.list_canvas2_nodes(project_id)?;
+        Ok(crate::models::StructureTreeOutput { nodes })
+    }
+
+    pub fn get_canvas2_nodes_by_layer(&self, project_id: &str, layer_type: &str) -> SqlResult<Vec<crate::models::Canvas2NodeRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, parent_id, layer_type, title, summary, time_period, chapter_range,
+                    scene_count, word_count, position_x, position_y, expanded, sort_order,
+                    created_at, updated_at
+             FROM canvas2_structure_nodes WHERE project_id = ? AND layer_type = ? ORDER BY sort_order"
+        )?;
+        let rows = stmt.query_map(params![project_id, layer_type], |row| {
+            Ok(crate::models::Canvas2NodeRecord {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                parent_id: row.get(2)?,
+                layer_type: row.get(3)?,
+                title: row.get(4)?,
+                summary: row.get(5)?,
+                time_period: row.get(6)?,
+                chapter_range: row.get(7)?,
+                scene_count: row.get(8)?,
+                word_count: row.get(9)?,
+                position_x: row.get(10)?,
+                position_y: row.get(11)?,
+                expanded: row.get::<_, i32>(12)? != 0,
+                sort_order: row.get(13)?,
+                created_at: row.get(14)?,
+                updated_at: row.get(15)?,
+            })
+        })?;
+        let mut nodes = Vec::new();
+        for r in rows {
+            nodes.push(r?);
+        }
+        Ok(nodes)
+    }
+
+    pub fn update_canvas2_node(&self, input: &crate::models::UpdateCanvas2NodeInput) -> SqlResult<crate::models::Canvas2NodeRecord> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+
+        let mut set_clauses = Vec::new();
+        let mut param_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+        if let Some(ref v) = input.title { set_clauses.push("title = ?"); param_values.push(Box::new(v.clone())); }
+        if let Some(ref v) = input.summary { set_clauses.push("summary = ?"); param_values.push(Box::new(v.clone())); }
+        if let Some(ref v) = input.time_period { set_clauses.push("time_period = ?"); param_values.push(Box::new(v.clone())); }
+        if let Some(ref v) = input.chapter_range { set_clauses.push("chapter_range = ?"); param_values.push(Box::new(v.clone())); }
+        if let Some(ref v) = input.scene_count { set_clauses.push("scene_count = ?"); param_values.push(Box::new(*v)); }
+        if let Some(ref v) = input.word_count { set_clauses.push("word_count = ?"); param_values.push(Box::new(*v)); }
+        if let Some(ref v) = input.expanded { set_clauses.push("expanded = ?"); param_values.push(Box::new(*v as i32)); }
+        if let Some(ref v) = input.sort_order { set_clauses.push("sort_order = ?"); param_values.push(Box::new(*v)); }
+        if let Some(ref v) = input.position_x { set_clauses.push("position_x = ?"); param_values.push(Box::new(*v)); }
+        if let Some(ref v) = input.position_y { set_clauses.push("position_y = ?"); param_values.push(Box::new(*v)); }
+
+        if set_clauses.is_empty() {
+            drop(conn);
+            // Re-read the node as-is
+            let conn2 = self.conn.lock().unwrap();
+            let mut stmt = conn2.prepare(
+                "SELECT id, project_id, parent_id, layer_type, title, summary, time_period, chapter_range,
+                        scene_count, word_count, position_x, position_y, expanded, sort_order,
+                        created_at, updated_at
+                 FROM canvas2_structure_nodes WHERE id = ?"
+            )?;
+            let node = stmt.query_row(params![input.id], |row| {
+                Ok(crate::models::Canvas2NodeRecord {
+                    id: row.get(0)?,
+                    project_id: row.get(1)?,
+                    parent_id: row.get(2)?,
+                    layer_type: row.get(3)?,
+                    title: row.get(4)?,
+                    summary: row.get(5)?,
+                    time_period: row.get(6)?,
+                    chapter_range: row.get(7)?,
+                    scene_count: row.get(8)?,
+                    word_count: row.get(9)?,
+                    position_x: row.get(10)?,
+                    position_y: row.get(11)?,
+                    expanded: row.get::<_, i32>(12)? != 0,
+                    sort_order: row.get(13)?,
+                    created_at: row.get(14)?,
+                    updated_at: row.get(15)?,
+                })
+            })?;
+            return Ok(node);
+        }
+
+        set_clauses.push("updated_at = ?");
+        param_values.push(Box::new(now));
+        param_values.push(Box::new(input.id.clone()));
+
+        let sql = format!(
+            "UPDATE canvas2_structure_nodes SET {} WHERE id = ?",
+            set_clauses.join(", ")
+        );
+
+        let param_refs: Vec<&dyn rusqlite::types::ToSql> = param_values.iter().map(|p| p.as_ref()).collect();
+        conn.execute(&sql, rusqlite::params_from_iter(param_refs))
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+
+        drop(conn);
+        // Re-read
+        let conn2 = self.conn.lock().unwrap();
+        let mut stmt = conn2.prepare(
+            "SELECT id, project_id, parent_id, layer_type, title, summary, time_period, chapter_range,
+                    scene_count, word_count, position_x, position_y, expanded, sort_order,
+                    created_at, updated_at
+             FROM canvas2_structure_nodes WHERE id = ?"
+        )?;
+        let node = stmt.query_row(params![input.id], |row| {
+            Ok(crate::models::Canvas2NodeRecord {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                parent_id: row.get(2)?,
+                layer_type: row.get(3)?,
+                title: row.get(4)?,
+                summary: row.get(5)?,
+                time_period: row.get(6)?,
+                chapter_range: row.get(7)?,
+                scene_count: row.get(8)?,
+                word_count: row.get(9)?,
+                position_x: row.get(10)?,
+                position_y: row.get(11)?,
+                expanded: row.get::<_, i32>(12)? != 0,
+                sort_order: row.get(13)?,
+                created_at: row.get(14)?,
+                updated_at: row.get(15)?,
+            })
+        })?;
+        Ok(node)
     }
 }
 

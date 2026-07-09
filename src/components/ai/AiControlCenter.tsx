@@ -477,9 +477,35 @@ export default function AiControlCenter() {
                       style={{ ...s.formInput, fontFamily: 'var(--font-mono, monospace)' }}
                       type="password"
                       value={formApiKey}
-                      onChange={(e) => setFormApiKey(e.target.value)}
+                      onChange={(e) => { setFormApiKey(e.target.value); setClearKeyConfirm(false); }}
                       placeholder={editingProvider ? '(leave empty to keep existing)' : 'sk-...'}
                     />
+                    {editingProvider && !formApiKey && !clearKeyConfirm && (
+                      <div style={{ marginTop: 6, display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted, #666)' }}>
+                          Leave empty to keep existing key
+                        </span>
+                        <button
+                          style={{ ...s.btnD, padding: '2px 8px', fontSize: '0.7rem' }}
+                          onClick={() => setClearKeyConfirm(true)}
+                        >
+                          Clear API Key
+                        </button>
+                      </div>
+                    )}
+                    {clearKeyConfirm && (
+                      <div style={{ marginTop: 6, display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--danger, #f44336)' }}>
+                          API key will be cleared on save. Confirm?
+                        </span>
+                        <button
+                          style={{ ...s.btnD, padding: '2px 8px', fontSize: '0.7rem' }}
+                          onClick={() => setClearKeyConfirm(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: 1 }}>

@@ -382,15 +382,17 @@ async function callProvider(
     available: true,
   };
 
-  // Look up API key from provider config
+  // Look up API key from provider config — [v2.1.1-AI] use credential resolver
   let apiKey = '';
   try {
-    const { listProviderConfigs } = await import('../../api/aiControlCenterApi');
-    const configs = await listProviderConfigs();
-    const cfg = configs.find((c: { providerId: string; apiKeyEncrypted: string }) => c.providerId === providerId);
-    if (cfg && cfg.apiKeyEncrypted) apiKey = cfg.apiKeyEncrypted;
-  } catch {
-    // Fallback: no API key, callLlm will use its own default
+    const { resolveProviderCredential } = await import('../../api/aiControlCenterApi');
+    apiKey = await resolveProviderCredential(providerId);
+  } catch (err: any) {
+    throw new RouterError(
+      err.message?.includes('AI_PROVIDER_API_KEY_MISSING')
+        ? `AI_PROVIDER_API_KEY_MISSING: Provider '${providerId}' has no API key configured. Please configure a key in AI Settings.`
+        : `Failed to resolve credential for provider '${providerId}': ${err.message || err}`
+    );
   }
 
   const response = await callLlm(messages, {

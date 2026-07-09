@@ -5,7 +5,7 @@ use serde_json::json;
 use crate::ai::context_builder;
 use crate::db::Database;
 use crate::models::{
-    AiBuiltContext, AiEvaluationResult, AiParseOutput, AiProviderConfig, AiRouteOutput,
+    AiBuiltContext, AiEvaluationResult, AiParseOutput, AiRouteOutput,
     AiRouteInput, BuildContextInput, AiParseInput, AiSkillRecord, ListSkillsOutput,
     ListSkillsInput, GetSkillInput, SaveProviderConfigInput, DeleteProviderConfigInput,
     TestProviderConnectionInput, RunEvaluationInput, ProviderConnectionTestResult,

@@ -51,6 +51,15 @@ export async function deleteCanvas2Node(id: string): Promise<void> {
   return invoke('delete_canvas2_node', { input: { id } });
 }
 
+/**
+ * getStructureUpdatedAt — 查询大纲画板最近更新时间 (CN-INT-01).
+ * 返回 Unix ms 时间戳，0 表示不存在。
+ */
+export async function getStructureUpdatedAt(projectId: string): Promise<number> {
+  const result = await invoke<{ updatedAt: number }>('get_structure_updated_at', { input: { projectId } });
+  return result.updatedAt;
+}
+
 export async function aiGenerateStructure(projectId: string): Promise<AiGenerateStructureOutput> {
   return invoke('ai_generate_structure', { input: { projectId } });
 }

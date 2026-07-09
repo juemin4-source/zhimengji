@@ -164,6 +164,15 @@ export async function saveTianDiRenLayer(input: SaveTianDiRenLayerInput): Promis
   return invoke<SaveTianDiRenLayerOutput>('save_tiandiren_layer', { input });
 }
 
+/**
+ * getSparrowLastSavedAt — 查询设定画板最近保存时间 (CN-INT-01).
+ * 返回 Unix ms 时间戳，0 表示未保存过。
+ */
+export async function getSparrowLastSavedAt(projectId: string): Promise<number> {
+  const result = await invoke<{ updatedAt: number }>('get_sparrow_last_saved_at', { input: { projectId } });
+  return result.updatedAt;
+}
+
 export async function getSparrowModule(input: GetSparrowModuleInput): Promise<SparrowModuleResponse> {
   const data = await invoke<Record<string, unknown>>('get_sparrow_module', { input });
   const steps = ((data.steps as Record<string, unknown>[]) || []).map(parseSparrowStepRecord);

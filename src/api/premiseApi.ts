@@ -101,6 +101,15 @@ export async function saveGenreJudgment(input: SaveGenreJudgmentInput): Promise<
   return invoke<SaveGenreJudgmentOutput>('save_genre_judgment', { input });
 }
 
+/**
+ * getPremiseUpdatedAt — 查询前提画板最近更新时间 (CN-INT-01).
+ * 返回 Unix ms 时间戳，0 表示不存在。
+ */
+export async function getPremiseUpdatedAt(projectId: string): Promise<number> {
+  const result = await invoke<{ updatedAt: number }>('get_premise_updated_at', { input: { projectId } });
+  return result.updatedAt;
+}
+
 export async function getPremiseStepState(input: GetPremiseStepStateInput): Promise<PremiseStepStateResponse> {
   const data = await invoke<Record<string, unknown>>('get_premise_step_state', { input });
   // Parse JSON string fields if state exists

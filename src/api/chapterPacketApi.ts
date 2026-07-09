@@ -57,6 +57,15 @@ export async function autoGenerateSketch(projectId: string): Promise<void> {
   await invoke('auto_generate_sketch', { input: { projectId } });
 }
 
+/**
+ * getPacketsUpdatedAt — 查询细纲画板最近更新时间 (CN-INT-01).
+ * 返回 Unix ms 时间戳，0 表示不存在。
+ */
+export async function getPacketsUpdatedAt(projectId: string): Promise<number> {
+  const result = await invoke<{ updatedAt: number }>('get_packets_updated_at', { input: { projectId } });
+  return result.updatedAt;
+}
+
 export async function saveRefinedContent(input: SaveRefinedContentInput): Promise<PacketDetailLevel> {
   return invoke('save_refined_content', { input });
 }

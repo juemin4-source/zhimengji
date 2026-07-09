@@ -97,4 +97,45 @@ AI 输出在画板数据上的写入模式，而非 UI 样式：
 
 **硬约束：** Phase 2 结束前必须冻结旧 WorldObject 存储路径。
 
-*无更多 ADR 内容——当前阶段的剩余设计决策不满足 ADR 条件（可逆转、非惊讶、有真实权衡）。*
+### ADR-003：StructureNode 字段选择（Round B 设计决策）
+
+**状态：** 此分析识别出 Round C 的依赖缺口
+
+**上下文：** Round B 的 StructureNode 包含 title/nodeType/parentId/narrativeFunction/summary/position/sortOrder。Round C 的 ChapterPacket 需要额外三个信息：线路（line）、章节功能（chapterFunction enum）、时位显式引用。
+
+**决策方向（推荐）：** StructureNode 增加 line 和 chapterFunction 字段，由画板②在用户生成结构时赋值，而非由画板④的 AI 重新推断。这保持画板②的决策权在画板②。
+
+## 术语辨析（从 Round B→C 对齐分析中发现）
+
+### "PremiseCard" vs "前提卡"
+
+当前 PremiseCard 对应画板①产出的子集（前提句 + 追问 + 类型）。完整前提卡还应包含八字/六变分析，但 Round B 的 PremiseCard 不包含。Round C 可以直接使用 Round B 的字段，八字/六变数据可在 Round C 后期补充。
+
+### "StructureNode" vs "结构图"
+
+- **结构图（Structure Diagram）**：画板②的整体产出，是一个四层分形树（L1-L4）
+- **结构节点（StructureNode）**：结构图中的原子单元，通过 parentId 构成树。Round B 中定义为 book/phase/position/chapter 四种类型
+
+两者的关系：结构图是集合，结构节点是元素。画板④读取时通过 parentId 重建树结构。
+
+### "线路（Line）" — Round C 必要字段
+
+多线叙事中标记章节所属的故事线（如"地面线""太空线""地面线/太空线"）。当前 StructureNode 无此字段，Round C 必须补充。
+
+### "章节功能（ChapterFunction）" — Round C 必要枚举
+
+章节在全书的叙事功能，枚举值：opening/setup/escalation/reversal/reveal/relationship_shift/decision/aftermath/transition/climax/closure。当前 StructureNode 的 narrativeFunction 是自由文本，Round C 需要将此字段规范化或新增枚举字段。
+
+### "CanvasTabState" vs "画板"（重要！）
+
+- **CanvasTabState（v1 旧概念）**：旧版 CanvasView 的画布交互状态，包含节点位置/便利贴/连线。这是 v1 自由画布的遗留概念。
+- **画板（v2 新概念）**：管道阶段的"工作空间"，有编号、输入依赖、输出契约、交互模式。与 CanvasTabState 是完全不同的概念。
+
+**硬规则：** 在 v2 代码中提及"画板"时，应引用 PipelineState / CanvasStage 类型，而非 CanvasTabState 类型。CanvasTabState 仅在 v1 旧路径和 CanvasView 中使用。
+
+### "角色状态（CharacterState）" vs "角色卡（CharacterCard）"
+
+- **角色卡（CharacterCard）**：角色的静态属性和设计（钩子/所求/现实卡点）。Round B 已实现。
+- **角色状态（CharacterState）**：角色随故事推进的动态变化（当前状态/关系变化/知识边界）。Round B 未建模。
+
+Round C 必须新增 CharacterState 模型，因为 ChapterPacket Layer ② 需要"角色当前状态"字段。两者是互补关系，不是替代关系。

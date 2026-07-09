@@ -156,9 +156,34 @@ async function writeAIContentToCanvas(
       } as any);
       break;
     }
-    case 'text':
-      // Text canvas write API not available in this scope
+    case 'text': {
+      // Write AI-generated text to chapter packet layer4
+      // If a chapter packet exists, update it; otherwise create one
+      const packets = await listChapterPackets(projectId);
+      if (packets.length > 0) {
+        const p = packets[0];
+        await updateChapterPacketLayers({
+          packetId: p.id,
+          layer4: JSON.stringify({ aiGeneratedText: content, title }),
+          status: 'draft',
+        } as any);
+      } else {
+        const created = await createChapterPacket({
+          projectId,
+          structureNodeId: '',
+          chapterNumber: 1,
+          title,
+          position: '',
+          chapterFunction: '',
+        } as any);
+        await updateChapterPacketLayers({
+          packetId: created.id,
+          layer4: JSON.stringify({ aiGeneratedText: content, title }),
+          status: 'draft',
+        } as any);
+      }
       break;
+    }
     default:
       break;
   }

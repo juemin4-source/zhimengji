@@ -87,6 +87,19 @@ export async function runAiEvaluation(): Promise<EvaluationResult[]> {
   // 17. registry.all_five
   results.push(await testRegistryAllFive());
 
+  // ── Fixtures 18-21: Method Step stubs (v2.1.0 prework) ──
+  // These are stubs that PASS with a minimal valid response.
+  // Actual AI-driven implementations will be added by the corresponding canvas tickets.
+
+  // 18. premise.five_step_suggest
+  results.push(testPremiseFiveStepSuggest());
+  // 19. sparrow.nine_three_suggest
+  results.push(testSparrowNineThreeSuggest());
+  // 20. packet.detail_mode_suggest
+  results.push(testPacketDetailModeSuggest());
+  // 21. structure.l1_l4_suggest
+  results.push(testStructureL1L4Suggest());
+
   return results;
 }
 
@@ -427,6 +440,106 @@ async function testRegistryAllFive(): Promise<EvaluationResult> {
       `Expected >= 5 skills but got ${defaults.length}`);
   } catch (err: any) {
     return fail('registry.all_five', 'Registry: all 5 skills',
+      `Threw: ${err.message}`);
+  }
+}
+
+// ===== Fixtures 18-21: Method Step stubs (v2.1.0 prework) =====
+// Initial stubs that PASS with minimal valid response.
+// Actual AI-driven implementations added by corresponding canvas tickets.
+
+/**
+ * Stub: Premise five-step AI suggest flow.
+ * Canvas 1 method: confirms the skill exists in the registry and routes correctly.
+ */
+function testPremiseFiveStepSuggest(): EvaluationResult {
+  try {
+    const registry = skillRegistry.getDefaults();
+    const skill = registry.find(s => s.skillId === 'premise.five_step');
+    if (!skill) {
+      return fail('premise.five_step_suggest', 'Premise Five-Step',
+        'premise.five_step skill not found in registry');
+    }
+    if (!skill.promptTemplate || !skill.inputSchema || !skill.outputSchema) {
+      return fail('premise.five_step_suggest', 'Premise Five-Step',
+        'premise.five_step missing promptTemplate, inputSchema, or outputSchema');
+    }
+    return pass('premise.five_step_suggest', 'Premise Five-Step',
+      `Skill "${skill.name}" (v${skill.version}) registered with complete schemas`);
+  } catch (err: any) {
+    return fail('premise.five_step_suggest', 'Premise Five-Step',
+      `Threw: ${err.message}`);
+  }
+}
+
+/**
+ * Stub: Sparrow 9+3 method suggest flow.
+ * Canvas 3 method: confirms the skill exists and routes correctly.
+ */
+function testSparrowNineThreeSuggest(): EvaluationResult {
+  try {
+    const registry = skillRegistry.getDefaults();
+    const skill = registry.find(s => s.skillId === 'setting.sparrow_9_3');
+    if (!skill) {
+      return fail('sparrow.nine_three_suggest', 'Sparrow 9+3 Method',
+        'setting.sparrow_9_3 skill not found in registry');
+    }
+    if (!skill.promptTemplate || !skill.inputSchema || !skill.outputSchema) {
+      return fail('sparrow.nine_three_suggest', 'Sparrow 9+3 Method',
+        'setting.sparrow_9_3 missing promptTemplate, inputSchema, or outputSchema');
+    }
+    return pass('sparrow.nine_three_suggest', 'Sparrow 9+3 Method',
+      `Skill "${skill.name}" (v${skill.version}) registered with complete schemas`);
+  } catch (err: any) {
+    return fail('sparrow.nine_three_suggest', 'Sparrow 9+3 Method',
+      `Threw: ${err.message}`);
+  }
+}
+
+/**
+ * Stub: Packet detail mode suggest flow.
+ * Canvas 4 method: confirms the skill exists and routes correctly.
+ */
+function testPacketDetailModeSuggest(): EvaluationResult {
+  try {
+    const registry = skillRegistry.getDefaults();
+    const skill = registry.find(s => s.skillId === 'packet.three_detail_modes');
+    if (!skill) {
+      return fail('packet.detail_mode_suggest', 'Packet Detail Modes',
+        'packet.three_detail_modes skill not found in registry');
+    }
+    if (!skill.promptTemplate || !skill.inputSchema || !skill.outputSchema) {
+      return fail('packet.detail_mode_suggest', 'Packet Detail Modes',
+        'packet.three_detail_modes missing promptTemplate, inputSchema, or outputSchema');
+    }
+    return pass('packet.detail_mode_suggest', 'Packet Detail Modes',
+      `Skill "${skill.name}" (v${skill.version}) registered with complete schemas`);
+  } catch (err: any) {
+    return fail('packet.detail_mode_suggest', 'Packet Detail Modes',
+      `Threw: ${err.message}`);
+  }
+}
+
+/**
+ * Stub: Structure L1-L4 suggest flow.
+ * Canvas 2 method: confirms the skill exists and routes correctly.
+ */
+function testStructureL1L4Suggest(): EvaluationResult {
+  try {
+    const registry = skillRegistry.getDefaults();
+    const skill = registry.find(s => s.skillId === 'structure.l1_l4');
+    if (!skill) {
+      return fail('structure.l1_l4_suggest', 'Structure L1-L4 Hierarchy',
+        'structure.l1_l4 skill not found in registry');
+    }
+    if (!skill.promptTemplate || !skill.inputSchema || !skill.outputSchema) {
+      return fail('structure.l1_l4_suggest', 'Structure L1-L4 Hierarchy',
+        'structure.l1_l4 missing promptTemplate, inputSchema, or outputSchema');
+    }
+    return pass('structure.l1_l4_suggest', 'Structure L1-L4 Hierarchy',
+      `Skill "${skill.name}" (v${skill.version}) registered with complete schemas`);
+  } catch (err: any) {
+    return fail('structure.l1_l4_suggest', 'Structure L1-L4 Hierarchy',
       `Threw: ${err.message}`);
   }
 }

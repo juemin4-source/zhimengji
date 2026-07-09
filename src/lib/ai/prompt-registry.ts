@@ -18,7 +18,7 @@ const DEFAULT_SKILLS: SkillRecord[] = [
   {
     id: '',
     skillId: 'premise.five_step',
-    name: 'premise five-step method',
+    name: 'Premise Five-Step Assistant',
     promptTemplate: [
       'You are a professional premise analyst. Given the following {{story_type}} story input, generate a five-step premise:',
       '',
@@ -55,7 +55,7 @@ const DEFAULT_SKILLS: SkillRecord[] = [
   {
     id: '',
     skillId: 'structure.l1_l4',
-    name: 'structure L1-L4 outline',
+    name: 'Structure L1-L4 Hierarchy',
     promptTemplate: [
       'You are a story structure architect. Given the premise {{premise_text}} and genre {{genre}},',
       'generate a four-level structural outline:',
@@ -90,7 +90,7 @@ const DEFAULT_SKILLS: SkillRecord[] = [
   {
     id: '',
     skillId: 'setting.sparrow_9_3',
-    name: 'setting sparrow 9-grid 3.0',
+    name: 'Sparrow 9+3 Method',
     promptTemplate: [
       'You are a worldbuilding specialist using the 9-Panel Setting System v3.',
       'Given the premise {{premise_text}} and genre {{genre}}, fill in 9 panels:',
@@ -137,7 +137,7 @@ const DEFAULT_SKILLS: SkillRecord[] = [
   {
     id: '',
     skillId: 'packet.three_detail_modes',
-    name: 'packet three detail modes',
+    name: 'ChapterPacket Detail Modes',
     promptTemplate: [
       'You are a chapter packet detailer. Given the chapter {{chapter_title}}',
       'and outline {{outline_text}}, generate three detail modes:',
@@ -170,7 +170,7 @@ const DEFAULT_SKILLS: SkillRecord[] = [
   {
     id: '',
     skillId: 'draft.chapter_writer',
-    name: 'draft chapter writer',
+    name: 'Chapter Writer',
     promptTemplate: [
       'You are a fiction prose writer. Based on the chapter packet {{packet_json}}',
       'and detail mode {{detail_mode}}, write the complete chapter draft.',

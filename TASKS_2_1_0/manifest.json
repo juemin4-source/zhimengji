@@ -1,0 +1,55 @@
+{
+  "tickets": [
+    "T-000-PREWORK.md",
+    "T-001-SPIKE-CANVAS2.md",
+    "T-002-CANVAS1-PREMISE.md",
+    "T-003-CANVAS3-SPARROW.md",
+    "T-004-CANVAS4-PACKET.md",
+    "T-005-CANVAS2-STRUCTURE.md",
+    "T-006-CANVAS3-TIANDI.md",
+    "T-007-FINAL-GATE.md"
+  ],
+  "version": "v2.1.0",
+  "risk": "high",
+  "executionMode": "serial",
+  "executionOrder": [
+    { "order": 0, "file": "T-000-PREWORK.md", "label": "Prework: v2.0.1 fix obligation, skill registration, eval fixture prep, pre-dispatch gate", "risk": "medium" },
+    { "order": 1, "file": "T-001-SPIKE-CANVAS2.md", "label": "Tech Spike: Canvas 2 @xyflow custom hierarchy feasibility", "risk": "medium" },
+    { "order": 2, "file": "T-002-CANVAS1-PREMISE.md", "label": "Batch 1: Canvas 1 PremiseCard v2 five-step (CN-MET-01)", "risk": "low" },
+    { "order": 3, "file": "T-003-CANVAS3-SPARROW.md", "label": "Batch 2: Canvas 3 Sparrow mode 9+3 (CN-MET-03)", "risk": "low-medium" },
+    { "order": 4, "file": "T-004-CANVAS4-PACKET.md", "label": "Batch 3: Canvas 4 ChapterPacket three detail modes (CN-MET-04)", "risk": "medium" },
+    { "order": 5, "file": "T-005-CANVAS2-STRUCTURE.md", "label": "Batch 4: Canvas 2 StructureGraph L1-L4 (CN-MET-02, spike-informed)", "risk": "high" },
+    { "order": 6, "file": "T-006-CANVAS3-TIANDI.md", "label": "Batch 5: Canvas 3 Heaven/Earth/Human 3-layer expansion (P1, optional)", "risk": "low" },
+    { "order": 7, "file": "T-007-FINAL-GATE.md", "label": "Final Gate: full acceptance, contract chain 46/46, e2e, ai-eval >= 14", "risk": "medium" }
+  ],
+  "constraints": {
+    "serialExecution": "Each batch (T-002~T-005) must pass per-batch acceptance before the next starts. No parallel canvas work.",
+    "spikePrerequisite": "T-001 spike verdict must be FEASIBLE before T-005 begins. If INFEASIBLE, T-005 is BLOCKED.",
+    "p1Deferral": "T-006 (P1) may be deferred to v2.1.1 if all P0 batches are accepted but time/context budget runs low.",
+    "contractOwnership": {
+      "CN-MET-01": "T-002 (premise.contract.ts)",
+      "CN-MET-02": "T-005 (structure.contract.ts)",
+      "CN-MET-03": "T-003 (setting.contract.ts)",
+      "CN-MET-04": "T-004 (chapter-packet.contract.ts)"
+    },
+    "skillRegistry": "All 5 skills registered in T-000 before any batch runs",
+    "v201FixObligation": ">= 80% fixes applied by T-000, verified in T-007",
+    "dbMode": "Additive only in all tickets. No ALTER TABLE, no migration, no existing table changes.",
+    "aiInfra": "All AI through v2.0.2 Foundation (Command Router, Structured Output Parser). No new infra."
+  },
+  "fileConflictWarnings": {
+    "src/contracts/premise.contract.ts": "Modified by T-002 (CN-MET-01 additive). No other ticket touches this.",
+    "src/contracts/setting.contract.ts": "Modified by T-003 (CN-MET-03) and potentially T-006 (TianDiRenLayer). T-006 must check if TianDiRenLayer already added in T-003.",
+    "src/contracts/chapter-packet.contract.ts": "Modified by T-004 (CN-MET-04 additive). No other ticket touches this.",
+    "src/contracts/structure.contract.ts": "Modified by T-005 (CN-MET-02 additive). No other ticket touches this.",
+    "src-tauri/src/db.rs": "Modified by T-000 (none), T-002 (+1 table), T-003 (+2 tables), T-004 (+1 table), T-005 (+1 table), optionally T-006 (+1 table). Additive only — no ALTER TABLE.",
+    "src-tauri/src/models.rs": "Modified by T-002 (+1 struct), T-003 (+3 structs), T-004 (+2 structs), T-005 (+3 structs), optionally T-006 (+1 struct). Additive only.",
+    "scripts/acceptance/scan-contract-chain.mjs": "Modified by T-000 (add 4 CN-MET as PENDING) and T-007 (change to IMPLEMENTED check, 46 total)."
+  },
+  "executionNotes": {
+    "commonComponents": "T-002 creates shared method-step components (StepProgressIndicator, AiFillCard, DoNotAskAgainToggle) in src/features/common/method-step/. T-003, T-004, T-005 reuse them.",
+    "spikeReport": "T-001 spike report is the critical decision point for T-005. Read before implementing Canvas 2.",
+    "preDispatchGate": "T-000 runs pre-dispatch gate checks. If any command fails, BLOCKED — do not proceed to T-001.",
+    "finalGateBlockers": "T-007 is verification only. If it finds failures, file a Fix Pulse ticket — do not fix in T-007."
+  }
+}

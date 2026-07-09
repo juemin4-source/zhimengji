@@ -92,6 +92,18 @@ const ENTITIES = [
     apiMethods: ['createChapterPacket', 'listChapterPackets', 'getChapterPacket', 'updateChapterPacketLayers', 'confirmChapterPacket', 'deleteChapterPacket'],
     dbMethods: ['create_chapter_packet', 'list_chapter_packets', 'get_chapter_packet', 'update_chapter_packet_layers', 'confirm_chapter_packet', 'delete_chapter_packet'],
   },
+  {
+    name: 'DecisionLogEntry',
+    contractFile: 'src/contracts/decision-log.contract.ts',
+    apiFile: 'src/api/decisionLogApi.ts',
+    commandsFile: 'src-tauri/src/decision_log_commands.rs',
+    modelsStruct: 'DecisionLogEntry',
+    dbPrefix: 'decision_log',
+    uiFiles: [],
+    commands: ['append_decision_log', 'list_decision_logs', 'get_decision_log'],
+    apiMethods: ['appendDecisionLog', 'listDecisionLogs', 'getDecisionLog'],
+    dbMethods: ['append_decision_log', 'list_decision_logs', 'get_decision_log'],
+  },
 ];
 
 // ---- Helpers ----

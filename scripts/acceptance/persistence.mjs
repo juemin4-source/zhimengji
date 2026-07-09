@@ -186,5 +186,79 @@ console.log('\n[5/5] Pipeline helper has confirmPacket');
   }
 }
 
+// ── Test 6: DecisionLog ──
+console.log('\n[6/6] DecisionLog');
+{
+  const fs = await import('fs');
+
+  // Contract file
+  const contractPath = 'src/contracts/decision-log.contract.ts';
+  const contractFull = resolve(ROOT, contractPath);
+  if (fs.existsSync(contractFull)) {
+    pass(`contract exists: ${contractPath}`);
+  } else {
+    fail(`contract missing: ${contractPath}`);
+  }
+
+  // Api file
+  const apiPath = 'src/api/decisionLogApi.ts';
+  const apiFull = resolve(ROOT, apiPath);
+  if (fs.existsSync(apiFull)) {
+    pass(`api exists: ${apiPath}`);
+  } else {
+    fail(`api missing: ${apiPath}`);
+  }
+
+  // Rust commands file
+  const cmdPath = 'src-tauri/src/decision_log_commands.rs';
+  const cmdFull = resolve(ROOT, cmdPath);
+  if (fs.existsSync(cmdFull)) {
+    pass(`rust file exists: ${cmdPath}`);
+  } else {
+    fail(`rust file missing: ${cmdPath}`);
+  }
+
+  // lib.rs registration
+  const libContent = fs.readFileSync(resolve(ROOT, 'src-tauri/src/lib.rs'), 'utf-8');
+  if (libContent.includes('decision_log_commands')) {
+    pass('lib.rs has decision_log_commands module');
+  } else {
+    fail('lib.rs missing decision_log_commands');
+  }
+
+  // models.rs struct
+  const modelsContent = fs.readFileSync(resolve(ROOT, 'src-tauri/src/models.rs'), 'utf-8');
+  if (modelsContent.includes('pub struct DecisionLogEntry')) {
+    pass('models.rs has DecisionLogEntry struct');
+  } else {
+    fail('models.rs missing DecisionLogEntry struct');
+  }
+
+  // db.rs methods
+  const dbContent = fs.readFileSync(resolve(ROOT, 'src-tauri/src/db.rs'), 'utf-8');
+  if (dbContent.includes('init_decision_logs_table')) {
+    pass('db.rs has init_decision_logs_table');
+  } else {
+    fail('db.rs missing init_decision_logs_table');
+  }
+  const dbMethods = ['append_decision_log', 'list_decision_logs', 'get_decision_log'];
+  for (const m of dbMethods) {
+    if (dbContent.includes(`pub fn ${m}`)) {
+      pass(`db.rs has method: ${m}`);
+    } else {
+      fail(`db.rs missing method: ${m}`);
+    }
+  }
+
+  // assumption-helper.ts exists
+  const helperPath = 'src/lib/assumption-helper.ts';
+  const helperFull = resolve(ROOT, helperPath);
+  if (fs.existsSync(helperFull)) {
+    pass(`assumption-helper exists: ${helperPath}`);
+  } else {
+    fail(`assumption-helper missing: ${helperPath}`);
+  }
+}
+
 console.log(`\n=== accept:persistence complete — ${exitCode === 0 ? 'ALL PASS' : 'SOME FAIL'} ===\n`);
 process.exit(exitCode);

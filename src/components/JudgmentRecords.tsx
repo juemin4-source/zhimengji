@@ -7,13 +7,14 @@ interface JudgmentRecordsProps {
   changelogEntries?: ChangelogEntry[];
 }
 
-type TabKey = 'actionLog' | 'fieldChanges';
+type TabKey = 'actionLog' | 'fieldChanges' | 'decisionLog';
 
 const JUDGMENT_TYPES: JudgmentOperation[] = ['锁定', '废弃', '待验证', '提升正典', '收录'];
 
 const TAB_OPTIONS: { key: TabKey; label: string }[] = [
   { key: 'actionLog', label: '动作日志' },
   { key: 'fieldChanges', label: '字段变更' },
+  { key: 'decisionLog', label: '决策日志' },
 ];
 
 const ACTION_LABELS: Record<string, string> = {
@@ -191,6 +192,19 @@ export default function JudgmentRecords({ allObjects, onNavigate, changelogEntri
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {activeTab === 'decisionLog' && (
+        <div className="judgment-list">
+          <div className="judgment-empty">
+            <p style={{ fontSize: 16, marginBottom: 8 }}>🗒 决策日志 (Decision Log)</p>
+            <p style={{ color: 'var(--text-muted, #6b6b6b)', maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>
+              AI 关键操作留痕（假设采纳/驳回、packet 确认、AI 生成确认）将在此展示。
+              <br /><br />
+              后端集成完成后自动生效。
+            </p>
+          </div>
         </div>
       )}
     </div>

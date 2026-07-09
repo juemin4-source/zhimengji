@@ -10,6 +10,8 @@ use crate::models::{
     WorldObject, WorldObjectRow, WorldRule,
     // v2 ChapterPacket
     ChapterPacket, ChapterPacketRow, CreateChapterPacketInput, UpdateChapterPacketLayersInput,
+    // v2 DecisionLog
+    AppendDecisionLogInput, DecisionLogEntry, DecisionLogRow,
 };
 
 pub struct Database {
@@ -116,6 +118,7 @@ impl Database {
         init_character_cards_table(&conn)?;
         init_faction_cards_table(&conn)?;
         init_chapter_packets_table(&conn)?;
+        init_decision_logs_table(&conn)?;
         Ok(())
     }
 
@@ -1695,7 +1698,108 @@ pub fn init_chapter_packets_table(conn: &Connection) -> SqlResult<()> {
     Ok(())
 }
 
+// ===== v2 DecisionLog =====
+
+pub fn init_decision_logs_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS decision_logs (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          operation TEXT NOT NULL DEFAULT '',
+          entity_type TEXT NOT NULL DEFAULT '',
+          entity_id TEXT NOT NULL DEFAULT '',
+          summary TEXT NOT NULL DEFAULT '',
+          details TEXT NOT NULL DEFAULT '{}',
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_dl_project ON decision_logs(project_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_dl_operation ON decision_logs(operation);"
+    )?;
+    Ok(())
+}
+
 impl Database {
+    pub fn append_decision_log(&self, input: &AppendDecisionLogInput) -> SqlResult<DecisionLogEntry> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO decision_logs (id, project_id, operation, entity_type, entity_id, summary, details, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            rusqlite::params![
+                id,
+                input.project_id,
+                input.operation,
+                input.entity_type.as_deref().unwrap_or(""),
+                input.entity_id.as_deref().unwrap_or(""),
+                input.summary,
+                input.details.as_deref().unwrap_or("{}"),
+                now,
+            ],
+        )?;
+        Ok(DecisionLogEntry {
+            id,
+            project_id: input.project_id.clone(),
+            operation: input.operation.clone(),
+            entity_type: input.entity_type.clone().unwrap_or_default(),
+            entity_id: input.entity_id.clone().unwrap_or_default(),
+            summary: input.summary.clone(),
+            details: input.details.clone().unwrap_or_else(|| "{}".to_string()),
+            created_at: now,
+        })
+    }
+
+    pub fn list_decision_logs(&self, project_id: &str) -> SqlResult<Vec<DecisionLogEntry>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, operation, entity_type, entity_id, summary, details, created_at
+             FROM decision_logs WHERE project_id = ? ORDER BY created_at DESC"
+        )?;
+        let rows = stmt.query_map(rusqlite::params![project_id], |row| {
+            Ok(DecisionLogRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                operation: row.get(2)?,
+                entity_type: row.get(3)?,
+                entity_id: row.get(4)?,
+                summary: row.get(5)?,
+                details: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })?;
+        let mut logs = Vec::new();
+        for r in rows {
+            logs.push(r?.to_api());
+        }
+        Ok(logs)
+    }
+
+    pub fn get_decision_log(&self, id: &str) -> SqlResult<Option<DecisionLogEntry>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, operation, entity_type, entity_id, summary, details, created_at
+             FROM decision_logs WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(rusqlite::params![id], |row| {
+            Ok(DecisionLogRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                operation: row.get(2)?,
+                entity_type: row.get(3)?,
+                entity_id: row.get(4)?,
+                summary: row.get(5)?,
+                details: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?.to_api())),
+            None => Ok(None),
+        }
+    }
+
     pub fn create_chapter_packet(&self, input: &CreateChapterPacketInput) -> SqlResult<ChapterPacket> {
         let conn = self.conn.lock().unwrap();
         let id = uuid::Uuid::new_v4().to_string();

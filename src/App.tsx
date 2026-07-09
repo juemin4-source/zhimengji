@@ -445,6 +445,7 @@ function AppInner() {
 
   const handleBackToBookshelf = useCallback(() => {
     setActiveBookId(null);
+    setLegacyView(null);
     setSelectedObjectId(null);
     setObjects([]);
     setConnections([]);
@@ -454,6 +455,11 @@ function AppInner() {
     setCurrentStage(null);
     setCanvasStages([]);
     useProjectStore.getState().reset();
+  }, []);
+
+  // D3: Legacy view handler
+  const handleLegacySelect = useCallback((type: 'canvas' | 'ai-chat' | 'setting-collection') => {
+    setLegacyView(type);
   }, []);
 
   // ── Creation Wizard ──
@@ -872,6 +878,34 @@ function AppInner() {
   }, [canvasStates]);
 
   const renderMainContent = () => {
+    // D3: Legacy view overrides pipeline stages
+    if (legacyView) {
+      switch (legacyView) {
+        case 'canvas': return <CanvasView
+          allObjects={objects} connections={connections} canvasStates={canvasStates}
+          selectedObjectId={selectedObjectId} onSelectObject={onSelectObject}
+          onNavigate={onNavigate} onUpdateCanvasState={onUpdateCanvasState}
+          onAddConnection={onAddConnection} onAddSticky={onAddSticky}
+          onAddToBoard={onAddToBoard} onCreateObject={onCreateObject}
+          onCreateCanvasObject={onCreateCanvasObject}
+        />;
+        case 'ai-chat': return <AIChat
+          allObjects={objects}
+          activeBookId={activeBookId}
+          onNavigate={onNavigate}
+          onUpdateObject={onUpdateObject}
+          onShowToast={showToast}
+          onCreateObject={(templateType: string) => onCreateObject(templateType as ObjectType)}
+        />;
+        case 'setting-collection': return <SettingCollection
+          allObjects={objects} onSelectObject={onSelectObject}
+          onNavigate={onNavigate} onUpdateObject={onUpdateObject}
+          onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected}
+        />;
+        default: break;
+      }
+    }
+
     if (currentStage) {
       const stageInfo = canvasStages.find(s => s.stage === currentStage);
       const status = (stageInfo?.status || 'active') as 'locked' | 'ready' | 'active' | 'done';
@@ -973,6 +1007,7 @@ function AppInner() {
             onBack={handleBackToBookshelf}
             projectTitle={activeBook?.title ?? '设定管理器'}
             onSettingsClick={() => setShowAiSettings(true)}
+            onLegacySelect={handleLegacySelect}
           />
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>

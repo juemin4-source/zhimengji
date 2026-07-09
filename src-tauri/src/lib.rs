@@ -3,6 +3,7 @@ mod byok_commands;
 mod chapter_packet_commands;
 mod commands;
 mod db;
+mod decision_log_commands;
 mod models;
 mod pipeline_commands;
 mod premise_commands;
@@ -112,6 +113,10 @@ pub fn run() {
             chapter_packet_commands::update_chapter_packet_layers,
             chapter_packet_commands::confirm_chapter_packet,
             chapter_packet_commands::delete_chapter_packet,
+            // v2 DecisionLog commands
+            decision_log_commands::append_decision_log,
+            decision_log_commands::list_decision_logs,
+            decision_log_commands::get_decision_log,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

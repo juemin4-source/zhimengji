@@ -3249,6 +3249,7 @@ impl Database {
             word_count: input.word_count,
             position_x: input.position_x,
             position_y: input.position_y,
+            expanded: input.expanded,
             sort_order: input.sort_order,
         };
         self.create_canvas2_node(&create_input)

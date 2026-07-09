@@ -1418,6 +1418,7 @@ pub struct CreateCanvas2NodeInput {
     pub word_count: i64,
     pub position_x: f64,
     pub position_y: f64,
+    pub expanded: bool,
     pub sort_order: i64,
 }
 

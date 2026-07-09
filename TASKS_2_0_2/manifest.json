@@ -1,23 +1,24 @@
 {
   "tickets": [
-    "T1-AI-Foundation.md",
-    "T2-Prompt-Registry.md",
-    "T3-Context-Builder.md",
-    "T4-Command-Router.md",
-    "T5-Evaluation-Harness.md"
+    "W01_AI_FOUNDATION.md",
+    "W02_CONTEXT_BUILDER_ROUTER.md",
+    "W03_STRUCTURED_OUTPUT_PARSER.md",
+    "W04_REGISTRY_CONTROL_CENTER.md",
+    "W05_INTEGRATION_EVALUATION.md"
   ],
   "executionOrder": [
-    { "order": 1, "file": "T1-AI-Foundation.md", "label": "AI Foundation -- Parser + Control Center" },
-    { "order": 2, "file": "T2-Prompt-Registry.md", "label": "Prompt/Skill Registry" },
-    { "order": 3, "file": "T3-Context-Builder.md", "label": "AI Context Builder v2" },
-    { "order": 4, "file": "T4-Command-Router.md", "label": "AI Command Router v2 + Canvas Integration" },
-    { "order": 5, "file": "T5-Evaluation-Harness.md", "label": "AI Evaluation Harness + Acceptance" }
+    { "order": 1, "file": "W01_AI_FOUNDATION.md", "label": "AI Foundation: Contracts, Types, DB, Rust Scaffold" },
+    { "order": 2, "file": "W02_CONTEXT_BUILDER_ROUTER.md", "label": "AI Context Builder v2 + Command Router v2" },
+    { "order": 2, "file": "W03_STRUCTURED_OUTPUT_PARSER.md", "label": "Structured Output Parser", "parallel": true },
+    { "order": 2, "file": "W04_REGISTRY_CONTROL_CENTER.md", "label": "Prompt/Skill Registry + AI Control Center v2", "parallel": true },
+    { "order": 4, "file": "W05_INTEGRATION_EVALUATION.md", "label": "Frontend Integration + AI Evaluation Harness" }
   ],
-  "dependencyGraph": {
-    "T1": [],
-    "T2": ["T1"],
-    "T3": ["T2"],
-    "T4": ["T1", "T3"],
-    "T5": ["T1", "T2", "T3", "T4"]
+  "parallelGroups": {
+    "groupA": ["W02", "W03", "W04"],
+    "dependency": "W01 must be complete before groupA starts; W05 requires groupA complete"
+  },
+  "fileConflictWarnings": {
+    "src/types/ai.ts": "Modified by W01 and potentially by v2.0.1 branch. Merge-time resolution needed.",
+    "src/components/ai/CanvasAiBar.tsx": "Modified by W05 and potentially by v2.0.1 branch. Merge-time resolution needed."
   }
 }

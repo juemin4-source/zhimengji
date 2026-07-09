@@ -1,9 +1,9 @@
 # Blocked Reason
 
 **Status:** BLOCKED  
-**Target:** Scope Freeze  
-**Reason:** 未生成 Scope Freeze 文件。  
+**Target:** T1-AI-Foundation  
+**Reason:** Ticket file `T1-AI-Foundation.md` does not exist.
 
-现有 `V2_1_0_SCOPE_FREEZE_PLAN.md` 是 scope freeze 的前置计划文档，但尚未运行 `scope-freeze` skill 产出正式的 Scope Freeze 文件。缺少 `scope-freeze` skill 的终态产物意味着本轮 scope 冻结尚未完成，无法进入下一节点。
+The required ticket file is missing from the project directory. Without the ticket definition, the task scope, contracts, and execution plan cannot be determined. Progress on T1-AI-Foundation cannot proceed until the ticket file is created or provided.
 
-**Required Action:** 调用 `scope-freeze` skill 生成 Scope Freeze 文件，或手动创建符合 Council workflow 标准的 scope freeze 文档。
+**Required Action:** Create `T1-AI-Foundation.md` with the full task definition, or restore it from an upstream source.

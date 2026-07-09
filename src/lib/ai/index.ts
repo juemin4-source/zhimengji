@@ -6,7 +6,7 @@
  */
 
 export { buildContext } from './context-builder';
-export { route } from './command-router';
+export { route, executeLlmCall, acceptWrite, confirmWrite, RouterError } from './command-router';
 export {
   parseStructuredOutput,
   parseChapterPacket,

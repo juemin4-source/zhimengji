@@ -2,14 +2,15 @@
  * generateChapterPacket — 前端 AI 细纲包生成器 (织梦机 v2)
  *
  * 纯前端工具函数，不经过 Tauri command。
- * 读取上游数据 → 构造 prompt → 调用 llm-client → 解析 JSON → 创建 ChapterPacket。
+ * 读取上游数据 → 构造 prompt → 调用 Router → 解析 JSON → 创建 ChapterPacket。
+ *
+ * [v2.1.1-AI] Rewired to use Router instead of direct callLlm.
  *
  * 硬规则：
  * - 不 mock AI
  * - 解析失败就抛错误
  * - 不自动 confirm
  */
-import { callLlm } from './llm-client';
 import { listPremiseCards } from '../api/premiseApi';
 import { listStructureNodes } from '../api/structureApi';
 import { listCharacterCards, listWorldRules, listFactionCards } from '../api/settingApi';
@@ -266,12 +267,21 @@ export async function generateChapterPacketFromUpstream(
     detailMode: options.detailMode,
   });
 
-  const response = await callLlm([{ role: 'user', content: prompt }], {
-    model: options.model,
-    timeout: 60000,
+  // [v2.1.1-AI] Use Router instead of direct callLlm
+  const { route, executeLlmCall } = await import('./ai/command-router');
+  const routeOutput = await route({
+    message: prompt.slice(0, 100),
+    canvasId: 'packet',
+    projectId: options.projectId,
+    outputType: options.outputType || 'write_preview',
+    providerId: options.model.providerId,
+    modelId: options.model.id,
   });
+  const llmResult = await executeLlmCall(routeOutput, [
+    { role: 'user', content: prompt },
+  ]);
 
-  const parsedRaw = parsePacketResponse(response.content);
+  const parsedRaw = parsePacketResponse(llmResult.content);
 
   const resolvedTitle = (parsedRaw.title as string) || options.title || `第${options.chapterNumber}章`;
   const resolvedLine = (parsedRaw.line as string) || '';
@@ -291,7 +301,7 @@ export async function generateChapterPacketFromUpstream(
         layer3: (parsedRaw.layer3 as any) || {},
         layer4: (parsedRaw.layer4 as any) || {},
       },
-      rawContent: response.content,
+      rawContent: llmResult.content,
     };
   }
 

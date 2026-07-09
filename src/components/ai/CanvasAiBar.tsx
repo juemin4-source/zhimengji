@@ -8,7 +8,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { testConnection, callLlm } from '../../lib/llm-client';
 import { Button } from '../ui';
 import ChatDrawer from './ChatDrawer';
 import AiSuggestionCard from './AiSuggestionCard';
@@ -33,6 +32,8 @@ import type { GenerateDraftOptions } from '../../lib/generateDraft';
 import { routeAiMessage, fetchAiContext } from '../../api/aiContextApi';
 import { listProviderConfigs } from '../../api/aiControlCenterApi';
 import { parseStructuredOutput } from '../../lib/ai/structured-parser';
+// [v2.1.1-AI] Router replaces direct callLlm imports
+import { route, executeLlmCall, RouterError } from '../../lib/ai/command-router';
 import './canvas-ai-bar.css';
 
 // ─── Types ───
@@ -236,49 +237,16 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
                 setActiveModel(matched);
               }
             }
-            if (activeConfig.apiKeyEncrypted && !cancelled) {
-              setActiveApiKey(activeConfig.apiKeyEncrypted);
-            }
             if (!cancelled) { setAiStatus('ready'); return; }
           }
         } catch {
-          // Fall through to v1 config
+          // Fall through: no v2 config found
         }
       }
 
-      // Try v1 config (existing behavior)
+      // Check connection — if we reach here, no provider was configured
       if (!cancelled) {
-        try {
-          if (hasTauri) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const infos: any[] = await invoke('list_providers');
-            if (infos && infos.length > 0) {
-              const firstProvider = infos[0].provider;
-              const matched = DEFAULT_MODELS.find(m => m.providerId === firstProvider);
-              if (matched && !cancelled) {
-                setActiveModel(matched);
-              }
-            }
-          }
-        } catch {
-          // Backend not available, keep default model
-        }
-      }
-
-      // Check connection
-      if (hasTauri) {
-        // V2 config block above returns early with 'ready' if active config found.
-        // If we reach here, no v2 config was found. Check v1 list_providers result.
-        if (!cancelled) setAiStatus('unconfigured');
-        return;
-      }
-      try {
-        const result = await testConnection('http://localhost:3001/v1', '');
-        if (!cancelled) {
-          setAiStatus(result.success ? 'ready' : 'unconfigured');
-        }
-      } catch {
-        if (!cancelled) setAiStatus('unconfigured');
+        setAiStatus('unconfigured');
       }
     };
     init();
@@ -316,7 +284,14 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
 
       messages.push({ role: 'user', content: text });
 
-      const response = await callLlm(messages, { model: activeModel, apiKey: activeApiKey, timeout: 30000 });
+      // [v2.1.1-AI] Use Router for all AI calls
+      const routeOutput = await route({
+        message: text,
+        canvasId: stage,
+        projectId: projectId || '',
+        outputType: 'discuss',
+      });
+      const llmResult = await executeLlmCall(routeOutput, messages);
 
       // Try to parse as structured output
       let structuredData: ParseResult | undefined;
@@ -327,7 +302,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
           required: [],
         });
         const parsed = parseStructuredOutput({
-          rawContent: response.content,
+          rawContent: llmResult.content,
           schema,
           strict: false,
         });
@@ -341,7 +316,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
       const aiMsg: ChatMessage = {
         id: uid(),
         role: 'assistant',
-        content: response.content,
+        content: llmResult.content,
         timestamp: Date.now(),
         outputType: 'discuss',
         structuredData,
@@ -383,19 +358,24 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
           });
 
           const systemContent = context.systemPrompt + '\n\nContext:\n' + context.contextData;
-          const response = await callLlm(
-            [
-              { role: 'system' as const, content: systemContent },
-              { role: 'user' as const, content: text },
-            ],
-            { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
-          );
+
+          // [v2.1.1-AI] Use Router for all AI calls
+          const routeOutput = await route({
+            message: text,
+            canvasId: stage,
+            projectId,
+            outputType: 'suggest',
+          });
+          const llmResult = await executeLlmCall(routeOutput, [
+            { role: 'system' as const, content: systemContent },
+            { role: 'user' as const, content: text },
+          ]);
 
           // Parse output with structured parser
           let structuredData: ParseResult | undefined;
           try {
             const parsed = parseStructuredOutput({
-              rawContent: response.content,
+              rawContent: llmResult.content,
               schema: JSON.stringify({
                 type: 'object',
                 properties: {
@@ -417,7 +397,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
 
           const titleText = structuredData?.data?.title
             ? String(structuredData.data.title)
-            : (response.content.slice(0, 60) + (response.content.length > 60 ? '...' : ''));
+            : (llmResult.content.slice(0, 60) + (llmResult.content.length > 60 ? '...' : ''));
 
           setCurrentSuggestions(prev => [...prev, {
             id: sugUid(),
@@ -493,15 +473,20 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         }
       }
 
-      // Generic fallback: call LLM directly
-      const response = await callLlm(
-        [{ role: 'user' as const, content: text }],
-        { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
-      );
+      // [v2.1.1-AI] Generic fallback: use Router
+      const routeOutput = await route({
+        message: text,
+        canvasId: stage,
+        projectId: projectId || '',
+        outputType: 'suggest',
+      });
+      const llmResult = await executeLlmCall(routeOutput, [
+        { role: 'user' as const, content: text },
+      ]);
       setCurrentSuggestions(prev => [...prev, {
         id: sugUid(),
-        title: response.content.slice(0, 60) + (response.content.length > 60 ? '...' : ''),
-        content: response.content,
+        title: llmResult.content.slice(0, 60) + (llmResult.content.length > 60 ? '...' : ''),
+        content: llmResult.content,
         stage,
       }]);
     } catch (err) {
@@ -529,19 +514,23 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
             additionalPrompt: text,
           });
 
-          const response = await callLlm(
-            [
-              { role: 'system' as const, content: context.systemPrompt + '\n\nContext:\n' + context.contextData },
-              { role: 'user' as const, content: text },
-            ],
-            { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
-          );
+          // [v2.1.1-AI] Use Router for all AI calls
+          const routeOutput = await route({
+            message: text,
+            canvasId: stage,
+            projectId,
+            outputType: 'write_preview',
+          });
+          const llmResult = await executeLlmCall(routeOutput, [
+            { role: 'system' as const, content: context.systemPrompt + '\n\nContext:\n' + context.contextData },
+            { role: 'user' as const, content: text },
+          ]);
 
           // Parse output with structured parser
           let structuredData: ParseResult | undefined;
           try {
             const parsed = parseStructuredOutput({
-              rawContent: response.content,
+              rawContent: llmResult.content,
               schema: JSON.stringify({
                 type: 'object',
                 properties: {
@@ -635,13 +624,18 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         }
       }
 
-      // Generic fallback: call LLM directly
-      const response = await callLlm(
-        [{ role: 'user' as const, content: text }],
-        { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
-      );
+      // [v2.1.1-AI] Generic fallback: use Router
+      const routeOutput = await route({
+        message: text,
+        canvasId: stage,
+        projectId: projectId || '',
+        outputType: 'write_preview',
+      });
+      const llmResult = await executeLlmCall(routeOutput, [
+        { role: 'user' as const, content: text },
+      ]);
       setCurrentPreview({
-        content: response.content,
+        content: llmResult.content,
         title: 'AI 生成预览',
         subtitle: `基于「${text}」生成`,
       });

@@ -149,7 +149,7 @@ export async function executeLlmCall(
 export async function acceptWrite(decisionLogId: string): Promise<void> {
   await appendDecisionLog({
     projectId: '',
-    operation: 'ai_accept_write',
+    operation: 'ai_suggestion_accepted' as DecisionOperation,
     summary: `User accepted AI suggestion (decisionLogId: ${decisionLogId})`,
     entityType: 'ai_runtime',
     entityId: decisionLogId,
@@ -167,7 +167,7 @@ export async function confirmWrite(decisionLogId: string): Promise<void> {
 
   await appendDecisionLog({
     projectId: '',
-    operation: 'ai_confirm_write',
+    operation: 'write_preview_confirmed' as DecisionOperation,
     summary: `User confirmed AI write (decisionLogId: ${decisionLogId})`,
     entityType: 'ai_runtime',
     entityId: decisionLogId,
@@ -407,7 +407,7 @@ async function logRouterCall(log: RouterCallLog): Promise<string> {
   try {
     await appendDecisionLog({
       projectId: '',
-      operation: 'ai_call',
+      operation: 'packet_ai_generated' as DecisionOperation,
       summary: `[${log.intent}] ${log.providerId}/${log.modelId} — ${log.status}${log.errorMessage ? ': ' + log.errorMessage : ''}`,
       entityType: 'ai_runtime',
       entityId: `router-${log.timestamp}`,

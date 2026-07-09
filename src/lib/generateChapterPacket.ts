@@ -14,11 +14,13 @@ import { listPremiseCards } from '../api/premiseApi';
 import { listStructureNodes } from '../api/structureApi';
 import { listCharacterCards, listWorldRules, listFactionCards } from '../api/settingApi';
 import { createChapterPacket, updateChapterPacketLayers } from '../api/chapterPacketApi';
+import type { DetailMode } from '../contracts/chapter-packet.contract';
 import type { PremiseCard } from '../contracts/premise.contract';
 import type { StructureNode } from '../contracts/structure.contract';
 import type { CharacterCard, WorldRule, FactionCard } from '../contracts/setting.contract';
 import type { AiModel } from '../types/ai';
 import type { AiOutputType } from './ai-output';
+import { getDetailModeInstruction } from '../features/common/ai/detail-mode-prompt';
 
 // ─── Types ───
 
@@ -30,6 +32,8 @@ export interface GeneratePacketOptions {
   model: AiModel;
   /** AI 输出三态：discuss | suggest | write_preview。默认 write_preview */
   outputType?: AiOutputType;
+  /** T-003 Sub-B: 细纲模式，控制 AI 输出颗粒度 */
+  detailMode?: DetailMode;
 }
 
 /**
@@ -64,7 +68,7 @@ export interface UpstreamData {
 
 export function buildPacketPrompt(
   upstream: UpstreamData,
-  options: { chapterNumber: number; title?: string },
+  options: { chapterNumber: number; title?: string; detailMode?: DetailMode },
 ): string {
   const { premise, structureNodes, characters, rules, factions } = upstream;
 
@@ -177,6 +181,10 @@ export function buildPacketPrompt(
   lines.push('## 要求');
   lines.push(`- 这是第 ${options.chapterNumber} 章`);
   if (options.title) lines.push(`- 标题建议: ${options.title}`);
+  if (options.detailMode) {
+    const instruction = getDetailModeInstruction(options.detailMode);
+    lines.push(`- 输出粒度: ${instruction}`);
+  }
   lines.push('- 返回严格的 JSON，使用 ```json 代码块包裹');
   lines.push('- layer1 和 layer2 中的角色 ID 使用上面提供的 id 值');
   lines.push('- layer3.narrative 控制在 80-250 字之间');
@@ -255,6 +263,7 @@ export async function generateChapterPacketFromUpstream(
   const prompt = buildPacketPrompt(upstream, {
     chapterNumber: options.chapterNumber,
     title: options.title,
+    detailMode: options.detailMode,
   });
 
   const response = await callLlm([{ role: 'user', content: prompt }], {

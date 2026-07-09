@@ -37,6 +37,7 @@ import CanvasShell from './features/pipeline-canvas/CanvasShell';
 import PremiseEntryGate from './features/canvas-01-premise/PremiseEntryGate';
 import StructureFlowView from './features/canvas-02-structure/StructureFlowView';
 import PacketComingSoon from './features/canvas-04-packet/PacketComingSoon';
+import ChapterPacketCanvas from './features/canvas-04-packet/ChapterPacketCanvas';
 import TextCanvas from './features/canvas-05-text/TextCanvas';
 import SettingCanvasV2 from './features/canvas-03-setting/SettingCanvasV2';
 import CanvasAiBar from './components/ai/CanvasAiBar';
@@ -145,6 +146,7 @@ function AppInner() {
   const storeStage = useProjectStore(s => s.currentStage);
   const storeStages = useProjectStore(s => s.canvasStages);
   const storeProjectId = useProjectStore(s => s.currentProjectId);
+  const targetPacketId = useProjectStore(s => s.targetPacketId);
   useUpstreamDetection(storeProjectId);
   useEffect(() => {
     if (storeStage && storeStage !== currentStage) {
@@ -964,7 +966,7 @@ function AppInner() {
         );
         case 'packet': return (
           <CanvasShell stage="packet" status={status}>
-            <PacketComingSoon />
+            <ChapterPacketCanvas initialPacketId={targetPacketId} />
           </CanvasShell>
         );
         case 'text': return (

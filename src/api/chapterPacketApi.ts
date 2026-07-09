@@ -69,3 +69,15 @@ export async function getPacketsUpdatedAt(projectId: string): Promise<number> {
 export async function saveRefinedContent(input: SaveRefinedContentInput): Promise<PacketDetailLevel> {
   return invoke('save_refined_content', { input });
 }
+
+/**
+ * getPacketByStructureNodeId — 根据结构节点 ID 查找对应的细纲包。
+ * 用于画板② L4 (Zhang) 双击跳转到画板④。
+ */
+export interface GetPacketByStructureNodeInput {
+  structureNodeId: string;
+}
+
+export async function getPacketByStructureNodeId(input: GetPacketByStructureNodeInput): Promise<ChapterPacket | null> {
+  return invoke<ChapterPacket | null>('get_packet_by_structure_node_id', { input });
+}

@@ -22,8 +22,10 @@ import '@xyflow/react/dist/style.css';
 import { useProjectStore } from '../../stores/projectStore';
 import { confirmStructure } from '../../stores/pipeline-helper';
 import * as structureApi from '../../api/structureApi';
+import * as chapterPacketApi from '../../api/chapterPacketApi';
 import type { Canvas2NodeRecord, LayerType } from '../../contracts/structure.contract';
 import { Button, EmptyState } from '../../components/ui';
+import { useToast } from '../../components/Toast';
 import BookNode from './nodes/BookNode';
 import ShiweiNode from './nodes/ShiweiNode';
 import HouNode from './nodes/HouNode';
@@ -77,6 +79,7 @@ function computeChildLayer(layerType: LayerType): LayerType | null {
 export default function StructureGraph() {
   const projectId = useProjectStore(s => s.currentProjectId);
   const reactFlowInstance = useReactFlow();
+  const { showToast } = useToast();
 
   // Data
   const [allNodes, setAllNodes] = useState<Canvas2NodeRecord[]>([]);
@@ -267,19 +270,33 @@ export default function StructureGraph() {
     }
   }, [currentLayer, focusNodeId, allNodes, navStack, reactFlowInstance]);
 
-  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
+  const handleNodeDoubleClick = useCallback(async (_: React.MouseEvent, node: Node) => {
     const record = allNodes.find(n => n.id === node.id);
     if (!record) return;
 
     const childLayer = computeChildLayer(record.layerType);
-    if (!childLayer) return; // Leaf node (zhang)
 
-    // Check if node has children
-    const hasChildren = allNodes.some(n => n.parentId === record.id);
-    if (!hasChildren) return;
+    if (childLayer) {
+      // Non-leaf node — navigate to child layer (existing logic)
+      const hasChildren = allNodes.some(n => n.parentId === record.id);
+      if (!hasChildren) return;
 
-    navigateToLayer(childLayer, record.id, record.title);
-  }, [allNodes, navigateToLayer]);
+      navigateToLayer(childLayer, record.id, record.title);
+    } else {
+      // L4 (Zhang) — leaf node → navigate to Canvas 4 (packet)
+      try {
+        const packet = await chapterPacketApi.getPacketByStructureNodeId({ structureNodeId: record.id });
+        if (packet) {
+          useProjectStore.getState().setStageNavigation('packet', packet.id);
+        } else {
+          showToast?.('还没有对应的细纲包，请先在画板④创建', 'info');
+        }
+      } catch (e) {
+        console.error('[StructureGraph] Failed to find packet for L4 node', e);
+        showToast?.('查找细纲包失败', 'error');
+      }
+    }
+  }, [allNodes, navigateToLayer, showToast]);
 
   const handleBreadcrumbNavigate = useCallback((segment: BreadcrumbSegment) => {
     const targetLayer = segment.type;

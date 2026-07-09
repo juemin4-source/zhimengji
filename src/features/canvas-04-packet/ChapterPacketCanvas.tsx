@@ -1,7 +1,9 @@
 /**
- * ChapterPacketCanvas — 画板④ 细纲包编辑器 (织梦机 v2 / Round C)
+ * ChapterPacketCanvas — 画板④ 细纲包编辑器 (织梦机 v2 / Round C / T-003)
  *
  * Replaces PacketComingSoon with a full ChapterPacket editor.
+ * Supports initialPacketId for canvas-2→canvas-4 navigation (T-003 Sub-A).
+ * Integrates detailMode with AI generation (T-003 Sub-B).
  *
  * Architecture:
  * - Reads projectId from projectStore
@@ -10,11 +12,12 @@
  * - Four-layer accordion editing (Layer③ default expanded)
  * - Manual create → edit → save → confirm pipeline
  * - Right sidebar with upstream summary
+ * - initialPacketId triggers auto-selection on load
  *
  * Dependencies: C1 (contract + api + pipeline-helper.confirmPacket)
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import PipelineIndicator from '../common/pipeline-indicator/PipelineIndicator';
 import * as chapterPacketApi from '../../api/chapterPacketApi';
@@ -294,7 +297,19 @@ function UpstreamSummary({ premise, chapterNodes, characters, rules, factions }:
 //  Main Component
 // ══════════════════════════════════════════
 
-export default function ChapterPacketCanvas() {
+// ══════════════════════════════════════════
+//  Props
+// ══════════════════════════════════════════
+
+interface ChapterPacketCanvasProps {
+  /**
+   * 从画板② L4 (Zhang) 双击跳转时传入的 packet ID。
+   * 组件加载后自动选中对应细纲包，并清除 store 中的 targetPacketId 防止多次跳转。
+   */
+  initialPacketId?: string | null;
+}
+
+export default function ChapterPacketCanvas({ initialPacketId }: ChapterPacketCanvasProps) {
   const projectId = useProjectStore(s => s.currentProjectId);
   const upstreamStatus = useProjectStore(s => s.upstreamStatus.packet);
   const markRefreshed = useProjectStore(s => s.markRefreshed);
@@ -444,6 +459,23 @@ export default function ChapterPacketCanvas() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // ── T-003 Sub-A: Auto-select packet from initialPacketId ──
+
+  const initialPacketProcessed = useRef(false);
+
+  useEffect(() => {
+    if (initialPacketId && packets.length > 0 && !initialPacketProcessed.current) {
+      const target = packets.find(p => p.id === initialPacketId);
+      if (target) {
+        selectPacket(target);
+      }
+      initialPacketProcessed.current = true;
+
+      // Clear targetPacketId to prevent re-navigation on re-render
+      useProjectStore.getState().setStageNavigation('packet', undefined);
+    }
+  }, [initialPacketId, packets]);
 
   // ── AI config check ──
 
@@ -654,11 +686,13 @@ export default function ChapterPacketCanvas() {
       if (!nodeId) {
         throw new Error('请先在画板②创建章节结构节点');
       }
+      // T-003 Sub-B: Pass current detailMode to AI generation for granularity control
       const result = await generateChapterPacketFromUpstream({
         projectId,
         structureNodeId: nodeId,
         chapterNumber: nextNum,
         model,
+        detailMode,
       });
       const parsed = parsePacket(result as unknown as Record<string, unknown>);
       setPackets(prev => [...prev, parsed]);

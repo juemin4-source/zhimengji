@@ -931,6 +931,70 @@ pub struct SaveProviderConfigInput {
     pub endpoint: String,
     pub models: Vec<String>,
     pub timeout_ms: i64,
+    /// [v2.1.1-AI] If true and api_key_encrypted is empty, explicitly clear the stored key.
+    /// If false/absent and api_key_encrypted is empty, keep existing key unchanged.
+    #[serde(default)]
+    pub clear_api_key: bool,
+}
+
+/// [v2.1.1-AI] Provider config summary returned in list (never exposes full apiKey).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderConfigSummary {
+    pub id: String,
+    pub provider_id: String,
+    pub provider_name: String,
+    pub has_api_key: bool,
+    pub api_key_preview: Option<String>,
+    pub endpoint: String,
+    pub models: String,
+    pub timeout_ms: i64,
+    pub is_active: bool,
+    #[serde(default)]
+    pub migrated_from_v1: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// [v2.1.1-AI] Input for resolving a provider credential.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolveProviderCredentialInput {
+    pub provider_id: String,
+}
+
+/// [v2.1.1-AI] Output from resolving a provider credential.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolveProviderCredentialOutput {
+    pub api_key: String,
+}
+
+impl AiProviderConfig {
+    /// Convert to summary for list responses (never exposes full apiKeyEncrypted).
+    pub fn to_summary(&self) -> ProviderConfigSummary {
+        let (has_api_key, api_key_preview) = if self.api_key_encrypted.is_empty() {
+            (false, None)
+        } else if self.api_key_encrypted.len() <= 4 {
+            (true, Some("****".to_string()))
+        } else {
+            (true, Some(format!("{}****", &self.api_key_encrypted[..4])))
+        };
+        ProviderConfigSummary {
+            id: self.id.clone(),
+            provider_id: self.provider_id.clone(),
+            provider_name: self.provider_name.clone(),
+            has_api_key,
+            api_key_preview,
+            endpoint: self.endpoint.clone(),
+            models: self.models.clone(),
+            timeout_ms: self.timeout_ms,
+            is_active: self.is_active,
+            migrated_from_v1: self.migrated_from_v1,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
 }
 
 /// Input for delete_provider_config command

@@ -140,12 +140,17 @@ export interface CapabilityStatus {
 
 /**
  * v2 AI provider configuration stored in the ai_provider_config table.
+ * [v2.1.1-AI] List responses never expose the full apiKeyEncrypted.
+ * Use resolveProviderCredential() to obtain the runtime API key.
  */
 export interface AiProviderConfigV2 {
   id: string;
   providerId: string;
   providerName: string;
-  apiKeyEncrypted: string;
+  /** [v2.1.1-AI] True if this provider has an API key configured (preview available via apiKeyPreview) */
+  hasApiKey: boolean;
+  /** [v2.1.1-AI] Preview of the API key (first 4 chars + "****"), undefined if no key */
+  apiKeyPreview?: string;
   endpoint: string;
   models: string;
   timeoutMs: number;
@@ -162,10 +167,20 @@ export interface AiProviderConfigV2 {
 export interface SaveProviderConfigInput {
   providerId: string;
   providerName: string;
+  /** API key to store. Leave empty to keep existing key (when editing). */
   apiKeyEncrypted: string;
   endpoint: string;
   models: string[];
   timeoutMs: number;
+  /** [v2.1.1-AI] If true and apiKeyEncrypted is empty, explicitly clear the stored key */
+  clearApiKey?: boolean;
+}
+
+/**
+ * [v2.1.1-AI] Output from resolveProviderCredential.
+ */
+export interface ResolveProviderCredentialOutput {
+  apiKey: string;
 }
 
 /**

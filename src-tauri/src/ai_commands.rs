@@ -9,6 +9,7 @@ use crate::models::{
     AiRouteInput, BuildContextInput, AiParseInput, AiSkillRecord, ListSkillsOutput,
     ListSkillsInput, GetSkillInput, SaveProviderConfigInput, DeleteProviderConfigInput,
     TestProviderConnectionInput, RunEvaluationInput, ProviderConnectionTestResult,
+    ProviderConfigSummary, ResolveProviderCredentialInput, ResolveProviderCredentialOutput,
 };
 
 // ===== AI Context Commands =====
@@ -421,25 +422,28 @@ pub fn register_skill(
 /// [v2.1.1-AI] Also reads v1 BYOK api_keys data via migration (already performed in init).
 /// Now returns all providers from the single ai_provider_config table,
 /// including any migrated from v1 (identified by migrated_from_v1 flag).
+/// Returns ProviderConfigSummary — never exposes the full api_key_encrypted.
 #[tauri::command]
 pub fn list_providers_v2(
     db: State<'_, Database>,
-) -> Result<Vec<AiProviderConfig>, String> {
+) -> Result<Vec<ProviderConfigSummary>, String> {
     let configs = db.list_ai_provider_configs()
         .map_err(|e| format!("DB_ERROR: {}", e))?;
 
-    // No dedup needed — migration ensures no duplicates between v1 and v2
-    Ok(configs)
+    // Convert each config to summary (strips full apiKeyEncrypted)
+    Ok(configs.iter().map(|c| c.to_summary()).collect())
 }
 
 /// Save or update an AI provider configuration
+/// Returns ProviderConfigSummary — never exposes the full api_key_encrypted.
 #[tauri::command]
 pub fn save_provider_config(
     db: State<'_, Database>,
     input: SaveProviderConfigInput,
-) -> Result<AiProviderConfig, String> {
-    db.save_ai_provider_config(&input)
-        .map_err(|e| format!("DB_ERROR: {}", e))
+) -> Result<ProviderConfigSummary, String> {
+    let config = db.save_ai_provider_config(&input)
+        .map_err(|e| format!("DB_ERROR: {}", e))?;
+    Ok(config.to_summary())
 }
 
 /// Delete an AI provider configuration
@@ -450,6 +454,18 @@ pub fn delete_provider_config(
 ) -> Result<(), String> {
     db.delete_ai_provider_config(&input.id)
         .map_err(|e| format!("DB_ERROR: {}", e))
+}
+
+/// [v2.1.1-AI] Resolve a provider credential for runtime API calls.
+/// This is the only way Router should obtain a provider's API key.
+/// Returns AI_PROVIDER_API_KEY_MISSING if the provider has no key configured.
+#[tauri::command]
+pub fn resolve_provider_credential(
+    db: State<'_, Database>,
+    input: ResolveProviderCredentialInput,
+) -> Result<ResolveProviderCredentialOutput, String> {
+    let api_key = db.resolve_ai_provider_credential(&input.provider_id)?;
+    Ok(ResolveProviderCredentialOutput { api_key })
 }
 
 /// Test an AI provider connection by sending a lightweight request

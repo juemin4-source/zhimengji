@@ -8,7 +8,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { SkillRecord } from '../contracts/ai-registry.contract';
 import type { ConnectionTestResult } from '../contracts/ai-registry.contract';
-import type { AiProviderConfigV2, SaveProviderConfigInput } from '../types/ai';
+import type { AiProviderConfigV2, SaveProviderConfigInput, ResolveProviderCredentialOutput } from '../types/ai';
 
 // ===== Provider Configuration =====
 
@@ -22,6 +22,18 @@ export async function saveProviderConfig(input: SaveProviderConfigInput): Promis
 
 export async function deleteProviderConfig(id: string): Promise<void> {
   await invoke('delete_provider_config', { input: { id } });
+}
+
+/**
+ * [v2.1.1-AI] Resolve a provider's API key for runtime use.
+ * This is the ONLY way components/Router should obtain a provider credential.
+ * Throws AI_PROVIDER_API_KEY_MISSING if the provider has no key configured.
+ */
+export async function resolveProviderCredential(providerId: string): Promise<string> {
+  const result = await invoke<ResolveProviderCredentialOutput>('resolve_provider_credential', {
+    input: { providerId },
+  });
+  return result.apiKey;
 }
 
 export async function testProviderConnection(

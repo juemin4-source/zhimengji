@@ -182,6 +182,7 @@ pub fn run() {
             ai_commands::list_providers_v2,
             ai_commands::save_provider_config,
             ai_commands::delete_provider_config,
+            ai_commands::resolve_provider_credential,
             ai_commands::test_provider_connection,
             ai_commands::run_evaluation,
         ])

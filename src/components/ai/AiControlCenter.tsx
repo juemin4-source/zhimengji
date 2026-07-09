@@ -24,6 +24,7 @@ import {
   listProviderConfigs,
   saveProviderConfig,
   deleteProviderConfig,
+  resolveProviderCredential,
   testProviderConnection,
   listSkills,
 } from '../../api/aiControlCenterApi';
@@ -77,6 +78,8 @@ export default function AiControlCenter() {
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // [v2.1.1-AI] Clear API Key confirmation
+  const [clearKeyConfirm, setClearKeyConfirm] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -132,11 +135,6 @@ export default function AiControlCenter() {
     return preset ? preset.icon : '⚙️';
   }
 
-  function maskKey(key: string): string {
-    if (key.length <= 8) return '****';
-    return key.slice(0, 4) + '...' + key.slice(-4);
-  }
-
   // ===== Form handlers =====
 
   function handlePresetSelect(presetId: string) {
@@ -158,6 +156,7 @@ export default function AiControlCenter() {
     setFormApiKey('');
     setFormTimeout(30);
     setFormModels('');
+    setClearKeyConfirm(false);
   }
 
   function startEdit(p: AiProviderConfigV2) {
@@ -165,28 +164,37 @@ export default function AiControlCenter() {
     setFormPreset(p.providerId);
     setFormName(p.providerName);
     setFormEndpoint(p.endpoint);
-    setFormApiKey('');
+    setFormApiKey(''); // [v2.1.1-AI] Intentional: empty = keep existing key on save
     setFormTimeout(p.timeoutMs / 1000);
     setFormModels(parseModels(p.models).join(', '));
+    setClearKeyConfirm(false);
   }
 
   async function handleSave() {
     if (!formName || !formEndpoint) return;
     const models = formModels.split(',').map((m) => m.trim()).filter(Boolean);
 
+    // [v2.1.1-AI] Key preservation: if editing & formApiKey is empty & no explicit clear,
+    // send clearApiKey: false which tells backend to keep existing key.
+    // If clearKeyConfirm is true, send clearApiKey: true to wipe the key.
+    const isEditing = !!editingProvider;
+    const shouldClearKey = isEditing && clearKeyConfirm;
+    const apiKeyValue = shouldClearKey ? '' : formApiKey;
+
     const input: SaveProviderConfigInput = {
       providerId: editingProvider
         ? (providers.find((p) => p.id === editingProvider)?.providerId ?? formPreset)
         : formPreset,
       providerName: formName,
-      apiKeyEncrypted: formApiKey,
+      apiKeyEncrypted: apiKeyValue,
       endpoint: formEndpoint,
       models,
       timeoutMs: formTimeout * 1000,
+      clearApiKey: shouldClearKey,
     };
 
     try {
-      const saved = await saveProviderConfig(input);
+      await saveProviderConfig(input);
       await loadData();
       resetForm();
     } catch (err: any) {
@@ -207,9 +215,13 @@ export default function AiControlCenter() {
   async function handleTestConnection(p: AiProviderConfigV2) {
     setTestingProvider(p.id);
     try {
-      const key = formApiKey && editingProvider === p.id
-        ? formApiKey
-        : p.apiKeyEncrypted;
+      // [v2.1.1-AI] Use resolveProviderCredential instead of reading apiKeyEncrypted directly
+      let key: string;
+      if (editingProvider === p.id && formApiKey) {
+        key = formApiKey; // Unsaved key from form
+      } else {
+        key = await resolveProviderCredential(p.providerId);
+      }
       const result = await testProviderConnection(p.providerId, p.endpoint, key, parseModels(p.models)[0] || '');
       setTestResults((prev) => ({ ...prev, [p.id]: result }));
     } catch (err: any) {
@@ -543,10 +555,10 @@ export default function AiControlCenter() {
                       <span className="ai-control-center-field-label">Endpoint:</span>
                       <span className="ai-control-center-field-value">{p.endpoint}</span>
                     </div>
-                    {p.apiKeyEncrypted && (
+                    {p.hasApiKey && p.apiKeyPreview && (
                       <div className="ai-control-center-field-row">
                         <span className="ai-control-center-field-label">API Key:</span>
-                        <span className="ai-control-center-field-value">{maskKey(p.apiKeyEncrypted)}</span>
+                        <span className="ai-control-center-field-value">{p.apiKeyPreview}</span>
                       </div>
                     )}
 

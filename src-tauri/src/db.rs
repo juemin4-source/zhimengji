@@ -2993,28 +2993,52 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp_millis();
 
-        let existing_id: Option<String> = conn.query_row(
-            "SELECT id FROM ai_provider_config WHERE provider_id = ?1",
+        let existing: Option<crate::models::AiProviderConfig> = conn.query_row(
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, migrated_from_v1, created_at, updated_at
+             FROM ai_provider_config WHERE provider_id = ?1",
             params![input.provider_id],
-            |row| row.get(0),
+            |row| {
+                Ok(crate::models::AiProviderConfig {
+                    id: row.get(0)?,
+                    provider_id: row.get(1)?,
+                    provider_name: row.get(2)?,
+                    api_key_encrypted: row.get(3)?,
+                    endpoint: row.get(4)?,
+                    models: row.get(5)?,
+                    timeout_ms: row.get(6)?,
+                    is_active: row.get(7)?,
+                    migrated_from_v1: row.get(8)?,
+                    created_at: row.get(9)?,
+                    updated_at: row.get(10)?,
+                })
+            },
         ).ok();
 
         let models_json = serde_json::to_string(&input.models).unwrap_or_else(|_| "[]".to_string());
 
-        let id = match existing_id {
-            Some(existing) => {
+        // [v2.1.1-AI] Key preservation logic:
+        // - If api_key_encrypted is non-empty: always update with new value
+        // - If api_key_encrypted is empty AND clear_api_key is true: clear the key (set to empty)
+        // - If api_key_encrypted is empty AND clear_api_key is false: keep existing key
+        let effective_key = match (&existing, input.api_key_encrypted.as_str(), input.clear_api_key) {
+            (Some(ex), "", false) => ex.api_key_encrypted.clone(), // Preserve existing key
+            (_, key, _) => key.to_string(),                        // Use provided key or clear
+        };
+
+        let id = match existing {
+            Some(ref ex) => {
                 conn.execute(
                     "UPDATE ai_provider_config SET provider_name=?1, api_key_encrypted=?2, endpoint=?3, models=?4, timeout_ms=?5, updated_at=?6 WHERE id=?7",
-                    params![input.provider_name, input.api_key_encrypted, input.endpoint, &models_json, input.timeout_ms, now, existing],
+                    params![input.provider_name, &effective_key, input.endpoint, &models_json, input.timeout_ms, now, &ex.id],
                 )?;
-                existing
+                ex.id.clone()
             }
             None => {
                 let new_id = uuid::Uuid::new_v4().to_string();
                 conn.execute(
                     "INSERT INTO ai_provider_config (id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at)
                      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8, ?9)",
-                    params![new_id, input.provider_id, input.provider_name, input.api_key_encrypted, input.endpoint, &models_json, input.timeout_ms, now, now],
+                    params![new_id, input.provider_id, input.provider_name, &effective_key, input.endpoint, &models_json, input.timeout_ms, now, now],
                 )?;
                 new_id
             }
@@ -3024,7 +3048,7 @@ impl Database {
             id,
             provider_id: input.provider_id.clone(),
             provider_name: input.provider_name.clone(),
-            api_key_encrypted: input.api_key_encrypted.clone(),
+            api_key_encrypted: effective_key,
             endpoint: input.endpoint.clone(),
             models: models_json,
             timeout_ms: input.timeout_ms,
@@ -3039,6 +3063,24 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM ai_provider_config WHERE id = ?", params![id])?;
         Ok(())
+    }
+
+    /// [v2.1.1-AI] Resolve a provider credential by provider_id.
+    /// Returns the stored api_key_encrypted as the runtime API key.
+    /// Returns error if provider not found or key is empty.
+    pub fn resolve_ai_provider_credential(&self, provider_id: &str) -> Result<String, String> {
+        let conn = self.conn.lock().unwrap();
+        let api_key: String = conn.query_row(
+            "SELECT api_key_encrypted FROM ai_provider_config WHERE provider_id = ?1",
+            params![provider_id],
+            |row| row.get(0),
+        ).map_err(|e| format!("CREDENTIAL_RESOLVE_FAILED: provider '{}' not found: {}", provider_id, e))?;
+
+        if api_key.is_empty() {
+            return Err(format!("AI_PROVIDER_API_KEY_MISSING: provider '{}' has no API key configured", provider_id));
+        }
+
+        Ok(api_key)
     }
 
     pub fn get_ai_provider_config_by_id(&self, id: &str) -> SqlResult<Option<crate::models::AiProviderConfig>> {

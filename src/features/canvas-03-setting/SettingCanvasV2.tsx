@@ -10,6 +10,7 @@ import { useState, useCallback } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { confirmSetting } from '../../stores/pipeline-helper';
 import { Tabs, Button } from '../../components/ui';
+import { useToast } from '../../components/Toast';
 import type { Tab } from '../../components/ui';
 import WorldRulePanel from './WorldRulePanel';
 import CharacterPanel from './CharacterPanel';
@@ -26,16 +27,19 @@ const TABS: Tab[] = [
 
 export default function SettingCanvasV2() {
   const projectId = useProjectStore(s => s.currentProjectId);
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<SettingTab>('world-rules');
 
   const handleConfirm = useCallback(async () => {
     if (!projectId) return;
     try {
       await confirmSetting(projectId);
+      showToast('设定已确认，细纲画板已解锁', 'success');
     } catch (e) {
       console.error('Failed to confirm setting', e);
+      showToast('确认设定失败', 'error');
     }
-  }, [projectId]);
+  }, [projectId, showToast]);
 
   return (
     <div className="setting-canvas-wrapper">

@@ -14,7 +14,7 @@ export async function confirmPremise(projectId: string): Promise<void> {
     projectId,
     currentStage: 'structure' as const,
     canvasStages: updatedStages,
-    createdAt: Date.now(),
+    createdAt: 0,
     updatedAt: Date.now(),
   });
   store.setPipelineState(ps);
@@ -33,7 +33,7 @@ export async function confirmStructure(projectId: string): Promise<void> {
     projectId,
     currentStage: 'setting' as const,
     canvasStages: updatedStages,
-    createdAt: Date.now(),
+    createdAt: 0,
     updatedAt: Date.now(),
   });
   store.setPipelineState(ps);
@@ -52,7 +52,7 @@ export async function confirmSetting(projectId: string): Promise<void> {
     projectId,
     currentStage: 'packet' as const,
     canvasStages: updatedStages,
-    createdAt: Date.now(),
+    createdAt: 0,
     updatedAt: Date.now(),
   });
   store.setPipelineState(ps);
@@ -75,7 +75,7 @@ export async function confirmPacket(projectId: string): Promise<void> {
     projectId,
     currentStage: 'text' as const,
     canvasStages: updatedStages,
-    createdAt: Date.now(),
+    createdAt: 0,
     updatedAt: Date.now(),
   });
   store.setPipelineState(ps);

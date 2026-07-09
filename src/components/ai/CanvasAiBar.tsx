@@ -1,19 +1,57 @@
 /**
  * CanvasAiBar — 画板 AI 输入壳 (织梦机 v2 / D2-UX)
  *
- * 底部固定 AI 输入栏。发送按钮连接 ChatDrawer 浮动聊天面板。
- * ChatDrawer 作为浮动面板从右侧滑出。
+ * 底部固定 AI 输入栏。支持 AI 三态真实路由：
+ * - discuss  → 只进 ChatDrawer，不写 DB
+ * - suggest  → 只出建议卡（AiSuggestionCard），采纳前不写 DB
+ * - write_preview → 只进预览（AiWritePreviewPanel），确认前不写正式数据
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { testConnection } from '../../lib/llm-client';
+import { testConnection, callLlm } from '../../lib/llm-client';
 import { Button } from '../ui';
 import ChatDrawer from './ChatDrawer';
+import AiSuggestionCard from './AiSuggestionCard';
+import AiWritePreviewPanel from './AiWritePreviewPanel';
+import { useProjectStore } from '../../stores/projectStore';
+import { useToast } from '../Toast';
+import { AI_OUTPUT_BEHAVIORS } from '../../lib/ai-output';
+import { DEFAULT_MODELS } from '../../types/ai';
+import type { AiOutputType } from '../../lib/ai-output';
+import type { AiModel } from '../../types/ai';
 import type { ChatMessage } from './ChatDrawer';
+import { appendDecisionLog } from '../../api/decisionLogApi';
+import { listPremiseCards, updatePremiseCard, createPremiseCard } from '../../api/premiseApi';
+import { createStructureNode, listStructureNodes } from '../../api/structureApi';
+import { createWorldRule } from '../../api/settingApi';
+import { createChapterPacket, updateChapterPacketLayers, listChapterPackets } from '../../api/chapterPacketApi';
+import { generateChapterPacketFromUpstream } from '../../lib/generateChapterPacket';
+import { generateDraftFromChapterPacket } from '../../lib/generateDraft';
+import type { GeneratePacketOptions } from '../../lib/generateChapterPacket';
+import type { GenerateDraftOptions } from '../../lib/generateDraft';
 import './canvas-ai-bar.css';
+
+// ─── Types ───
 
 interface CanvasAiBarProps {
   stage: string;
+}
+
+interface SuggestionItem {
+  id: string;
+  title: string;
+  content: string;
+  stage: string;
+  /** 结构化数据（如 packet 生成的 layer 对象），用于 accept 时直接写入 DB */
+  rawWriteData?: unknown;
+}
+
+interface PreviewItem {
+  content: string;
+  title: string;
+  subtitle?: string;
+  /** 结构化数据，用于 confirm 时直接写入 DB */
+  rawWriteData?: unknown;
 }
 
 const STAGE_NAMES: Record<string, string> = {
@@ -29,17 +67,144 @@ function uid(): string {
   return 'cab_msg_' + (++msgIdCounter);
 }
 
+let suggestionIdCounter = 0;
+function sugUid(): string {
+  return 'cab_sug_' + (++suggestionIdCounter);
+}
+
+// ─── Helpers ───
+
+/** 根据画板 stage 将内容写入对应实体（用于 suggest accept / write_preview confirm） */
+async function writeAIContentToCanvas(
+  stage: string,
+  projectId: string,
+  title: string,
+  content: string,
+  rawWriteData?: unknown,
+): Promise<void> {
+  switch (stage) {
+    case 'premise': {
+      const premises = await listPremiseCards(projectId);
+      if (premises.length > 0) {
+        await updatePremiseCard({
+          id: premises[0].id,
+          premiseText: content,
+          readerQuestions: premises[0].readerQuestions,
+          storyType: premises[0].storyType,
+          status: premises[0].status,
+        });
+      } else {
+        await createPremiseCard({
+          projectId,
+          premiseText: content,
+          readerQuestions: [],
+          storyType: '' as any,
+          status: 'draft',
+        });
+      }
+      break;
+    }
+    case 'structure':
+      await createStructureNode({
+        projectId,
+        parentId: null,
+        title,
+        nodeType: 'chapter',
+        narrativeFunction: '',
+        summary: content,
+        positionX: 0,
+        positionY: 0,
+        sortOrder: 0,
+      });
+      break;
+    case 'setting':
+      await createWorldRule({
+        projectId,
+        title,
+        ruleText: content,
+        cost: '',
+        enforcer: '',
+      });
+      break;
+    case 'packet': {
+      // rawWriteData 包含 AI 生成的完整 packet 结构化数据
+      const pd = rawWriteData as Record<string, unknown> | undefined;
+      const created = await createChapterPacket({
+        projectId,
+        structureNodeId: '',
+        chapterNumber: 1,
+        title: (pd?.title as string) || title,
+        line: (pd?.line as string) || '',
+        position: (pd?.position as string) || '',
+        chapterFunction: (pd?.chapterFunction as string) || '',
+      } as any);
+      await updateChapterPacketLayers({
+        packetId: created.id,
+        layer1: pd?.layer1 || {},
+        layer2: pd?.layer2 || {},
+        layer3: pd?.layer3 || {},
+        layer4: pd?.layer4 || {},
+        status: 'draft',
+      } as any);
+      break;
+    }
+    case 'text':
+      // Text canvas write API not available in this scope
+      break;
+    default:
+      break;
+  }
+}
+
+// ─── Component ───
+
 export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
+  // ── Core state ──
   const [input, setInput] = useState('');
   const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'unconfigured'>('checking');
+  const [activeModel, setActiveModel] = useState<AiModel>(DEFAULT_MODELS[0]);
+  const [outputType, setOutputType] = useState<AiOutputType>('discuss');
+
+  // ── ChatDrawer state ──
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
+
+  // ── Suggestion state ──
+  const [currentSuggestions, setCurrentSuggestions] = useState<SuggestionItem[]>([]);
+
+  // ── Preview state ──
+  const [currentPreview, setCurrentPreview] = useState<PreviewItem | null>(null);
+
+  // ── External ──
+  const projectId = useProjectStore(s => s.currentProjectId);
+  const { showToast } = useToast();
   const stageName = STAGE_NAMES[stage] || stage;
 
+  // ── Load active model on mount ──
   useEffect(() => {
     let cancelled = false;
-    const check = async () => {
+    const init = async () => {
+      // Try to find a configured model from backend
+      try {
+        const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+        if (hasTauri) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const infos: any[] = await invoke('list_providers');
+          if (infos && infos.length > 0) {
+            // Find first model from first configured provider
+            const firstProvider = infos[0].provider;
+            const matched = DEFAULT_MODELS.find(m => m.providerId === firstProvider);
+            if (matched && !cancelled) {
+              setActiveModel(matched);
+            }
+          }
+        }
+      } catch {
+        // Backend not available, keep default model
+      }
+
+      // Check connection
       const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
       if (hasTauri) {
         if (!cancelled) setAiStatus('ready');
@@ -54,10 +219,301 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         if (!cancelled) setAiStatus('unconfigured');
       }
     };
-    check();
+    init();
     return () => { cancelled = true; };
   }, []);
 
+  // ── Handler: discuss send ──
+  const sendDiscuss = useCallback(async (text: string) => {
+    setDrawerOpen(true);
+    setChatLoading(true);
+    try {
+      const response = await callLlm(
+        [{ role: 'user' as const, content: text }],
+        { model: activeModel, timeout: 30000 },
+      );
+      const aiMsg: ChatMessage = {
+        id: uid(),
+        role: 'assistant',
+        content: response.content,
+        timestamp: Date.now(),
+        outputType: 'discuss',
+      };
+      setMessages(prev => [...prev, aiMsg]);
+    } catch (err) {
+      const errorMsg = (err as Error).message || '未知错误';
+      const aiMsg: ChatMessage = {
+        id: uid(),
+        role: 'assistant',
+        content: `AI 回复出错: ${errorMsg}`,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, aiMsg]);
+      showToast(`AI 调用失败: ${errorMsg}`, 'error');
+    } finally {
+      setChatLoading(false);
+    }
+  }, [activeModel, showToast]);
+
+  // ── Handler: suggest send ──
+  const sendSuggestion = useCallback(async (text: string) => {
+    try {
+      // For packet stage, use specialized generator (without DB write)
+      if (stage === 'packet' && projectId) {
+        try {
+          const nodes = await listStructureNodes(projectId);
+          const chapterNodes = nodes.filter(n => n.nodeType === 'chapter');
+          const nodeId = chapterNodes.length > 0 ? chapterNodes[0].id : '';
+          const chapterNumber = 1; // Default for suggestions
+
+          const options: GeneratePacketOptions = {
+            projectId,
+            structureNodeId: nodeId,
+            chapterNumber,
+            model: activeModel,
+            outputType: 'suggest',
+          };
+
+          // generateChapterPacketFromUpstream returns preview result when outputType is 'suggest'
+          const result = await generateChapterPacketFromUpstream(options);
+
+          if ('packetData' in result) {
+            // Preview mode — no DB write
+            const titleText = result.packetData.title || `细纲生成建议`;
+            const contentText = JSON.stringify(result.packetData, null, 2);
+            setCurrentSuggestions(prev => [...prev, {
+              id: sugUid(),
+              title: titleText,
+              content: contentText,
+              stage: 'packet',
+              rawWriteData: result.packetData,
+            }]);
+          }
+          return;
+        } catch {
+          // Fall through to generic AI call
+        }
+      }
+
+      // For text stage, use draft generator (no DB write)
+      if (stage === 'text' && projectId) {
+        try {
+          const packets = await listChapterPackets(projectId);
+          if (packets.length > 0) {
+            const packet = packets[0];
+            const draftOptions: GenerateDraftOptions = {
+              packet,
+              model: activeModel,
+              outputType: 'suggest',
+            };
+            const draftContent = await generateDraftFromChapterPacket(draftOptions);
+            setCurrentSuggestions(prev => [...prev, {
+              id: sugUid(),
+              title: `正文建议 — ${packet.title}`,
+              content: draftContent,
+              stage: 'text',
+            }]);
+            return;
+          }
+        } catch {
+          // Fall through to generic AI call
+        }
+      }
+
+      // Generic: call LLM directly for premise/structure/setting or fallback
+      const response = await callLlm(
+        [{ role: 'user' as const, content: text }],
+        { model: activeModel, timeout: 30000 },
+      );
+      setCurrentSuggestions(prev => [...prev, {
+        id: sugUid(),
+        title: response.content.slice(0, 60) + (response.content.length > 60 ? '...' : ''),
+        content: response.content,
+        stage,
+      }]);
+    } catch (err) {
+      showToast(`AI 建议生成失败: ${(err as Error).message}`, 'error');
+    }
+  }, [stage, projectId, activeModel, showToast]);
+
+  // ── Handler: write_preview send ──
+  const sendPreview = useCallback(async (text: string) => {
+    try {
+      // For packet stage, use specialized generator (without DB write)
+      if (stage === 'packet' && projectId) {
+        try {
+          const nodes = await listStructureNodes(projectId);
+          const chapterNodes = nodes.filter(n => n.nodeType === 'chapter');
+          const nodeId = chapterNodes.length > 0 ? chapterNodes[0].id : '';
+
+          const options: GeneratePacketOptions = {
+            projectId,
+            structureNodeId: nodeId,
+            chapterNumber: 1,
+            model: activeModel,
+            outputType: 'write_preview',
+          };
+
+          const result = await generateChapterPacketFromUpstream(options);
+
+          if ('packetData' in result) {
+            const titleText = result.packetData.title || `细纲生成预览`;
+            const contentText = JSON.stringify(result.packetData, null, 2);
+            setCurrentPreview({
+              content: contentText,
+              title: titleText,
+              subtitle: `基于「${text}」生成`,
+              rawWriteData: result.packetData,
+            });
+          }
+          return;
+        } catch {
+          // Fall through to generic AI call
+        }
+      }
+
+      // For text stage, use draft generator (no DB write)
+      if (stage === 'text' && projectId) {
+        try {
+          const packets = await listChapterPackets(projectId);
+          if (packets.length > 0) {
+            const packet = packets[0];
+            const draftOptions: GenerateDraftOptions = {
+              packet,
+              model: activeModel,
+              outputType: 'write_preview',
+            };
+            const draftContent = await generateDraftFromChapterPacket(draftOptions);
+            setCurrentPreview({
+              content: draftContent,
+              title: `正文预览 — ${packet.title}`,
+              subtitle: '基于细纲包生成',
+            });
+            return;
+          }
+        } catch {
+          // Fall through to generic AI call
+        }
+      }
+
+      // Generic: call LLM directly for premise/structure/setting
+      const response = await callLlm(
+        [{ role: 'user' as const, content: text }],
+        { model: activeModel, timeout: 30000 },
+      );
+      setCurrentPreview({
+        content: response.content,
+        title: 'AI 生成预览',
+        subtitle: `基于「${text}」生成`,
+      });
+    } catch (err) {
+      showToast(`AI 生成失败: ${(err as Error).message}`, 'error');
+    }
+  }, [stage, projectId, activeModel, showToast]);
+
+  // ── Handler: Accept suggestion ──
+  const handleAcceptSuggestion = useCallback(async (suggestionId: string) => {
+    const suggestion = currentSuggestions.find(s => s.id === suggestionId);
+    if (!suggestion || !projectId) return;
+
+    try {
+      // Write to appropriate canvas with raw data if available
+      await writeAIContentToCanvas(
+        suggestion.stage,
+        projectId,
+        suggestion.title,
+        suggestion.content,
+        suggestion.rawWriteData,
+      );
+
+      // Append decision log
+      await appendDecisionLog({
+        projectId,
+        operation: 'ai_suggestion_accepted',
+        summary: `采纳 AI 建议: ${suggestion.title.slice(0, 100)}`,
+        entityType: suggestion.stage,
+        details: suggestion.content.slice(0, 500),
+      });
+
+      showToast('建议已采纳并写入画板', 'success');
+    } catch (err) {
+      showToast(`采纳失败: ${(err as Error).message}`, 'error');
+    } finally {
+      setCurrentSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+    }
+  }, [currentSuggestions, projectId, showToast]);
+
+  // ── Handler: Dismiss suggestion ──
+  const handleDismissSuggestion = useCallback(async (suggestionId: string) => {
+    const suggestion = currentSuggestions.find(s => s.id === suggestionId);
+    if (!suggestion || !projectId) return;
+
+    try {
+      await appendDecisionLog({
+        projectId,
+        operation: 'ai_suggestion_rejected',
+        summary: `驳回 AI 建议: ${suggestion.title.slice(0, 100)}`,
+        entityType: suggestion.stage,
+        details: '',
+      });
+    } catch {
+      // Silent: log is non-critical
+    } finally {
+      setCurrentSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+    }
+  }, [currentSuggestions, projectId]);
+
+  // ── Handler: Confirm preview ──
+  const handleConfirmPreview = useCallback(async () => {
+    if (!currentPreview || !projectId) return;
+
+    try {
+      // Write to canvas with raw data if available
+      await writeAIContentToCanvas(
+        stage,
+        projectId,
+        currentPreview.title,
+        currentPreview.content,
+        currentPreview.rawWriteData,
+      );
+
+      // Append decision log
+      await appendDecisionLog({
+        projectId,
+        operation: 'write_preview_confirmed',
+        summary: `确认 AI 写入: ${currentPreview.title.slice(0, 100)}`,
+        entityType: stage,
+        details: currentPreview.content.slice(0, 500),
+      });
+
+      showToast('内容已确认写入', 'success');
+    } catch (err) {
+      showToast(`确认写入失败: ${(err as Error).message}`, 'error');
+    } finally {
+      setCurrentPreview(null);
+    }
+  }, [currentPreview, projectId, stage, showToast]);
+
+  // ── Handler: Abandon preview ──
+  const handleAbandonPreview = useCallback(async () => {
+    if (!currentPreview || !projectId) return;
+
+    try {
+      await appendDecisionLog({
+        projectId,
+        operation: 'write_preview_rejected',
+        summary: `放弃 AI 写入: ${currentPreview.title.slice(0, 100)}`,
+        entityType: stage,
+        details: '',
+      });
+    } catch {
+      // Silent
+    } finally {
+      setCurrentPreview(null);
+    }
+  }, [currentPreview, projectId, stage]);
+
+  // ── Main send handler ──
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text || aiStatus !== 'ready') return;
@@ -67,26 +523,26 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
       role: 'user',
       content: text,
       timestamp: Date.now(),
+      outputType,
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setDrawerOpen(true);
 
-    // Simulate AI echo response (in production, this would call aiCommandRouter)
-    setChatLoading(true);
-    setTimeout(() => {
-      const aiMsg: ChatMessage = {
-        id: uid(),
-        role: 'assistant',
-        content: `收到您的 ${stageName} 画板指令：\n\n「${text}」\n\n> 当前为 discuss 模式，AI 回复仅显示在此面板。\n> 如需 AI 生成内容写入画板，请使用画板内的 AI 生成按钮。`,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, aiMsg]);
-      setChatLoading(false);
-    }, 800);
-  }, [input, aiStatus, stageName]);
+    switch (outputType) {
+      case 'discuss':
+        sendDiscuss(text);
+        break;
+      case 'suggest':
+        sendSuggestion(text);
+        break;
+      case 'write_preview':
+        sendPreview(text);
+        break;
+    }
+  }, [input, aiStatus, outputType, sendDiscuss, sendSuggestion, sendPreview]);
 
+  // ── Keyboard handler ──
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -94,6 +550,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
     }
   }, [handleSend]);
 
+  // ── Chat handlers ──
   const handleClearChat = useCallback(() => {
     setMessages([]);
   }, []);
@@ -101,6 +558,20 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
   const toggleDrawer = useCallback(() => {
     setDrawerOpen(prev => !prev);
   }, []);
+
+  // ── Output type selector style helper ──
+  const outputTypeStyle = (type: AiOutputType): React.CSSProperties => ({
+    padding: '3px 8px',
+    borderRadius: 4,
+    border: `1px solid ${outputType === type ? 'var(--accent, #B7FF00)' : 'var(--border-default, #2a2a2a)'}`,
+    background: outputType === type ? 'rgba(183,255,0,0.12)' : 'transparent',
+    color: outputType === type ? 'var(--accent, #B7FF00)' : 'var(--text-muted, #888)',
+    cursor: 'pointer',
+    fontSize: '0.65rem',
+    fontWeight: outputType === type ? 600 : 400,
+    transition: 'all 0.15s ease',
+    whiteSpace: 'nowrap',
+  });
 
   return (
     <>
@@ -117,6 +588,25 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
           />
           {stageName} 画板
         </div>
+
+        {/* Output type selector */}
+        <div style={{
+          display: 'flex',
+          gap: 4,
+          flexShrink: 0,
+        }}>
+          {(['discuss', 'suggest', 'write_preview'] as AiOutputType[]).map(type => (
+            <button
+              key={type}
+              onClick={() => setOutputType(type)}
+              style={outputTypeStyle(type)}
+              title={AI_OUTPUT_BEHAVIORS[type].description}
+            >
+              {AI_OUTPUT_BEHAVIORS[type].label}
+            </button>
+          ))}
+        </div>
+
         <input
           type="text"
           value={input}
@@ -124,8 +614,9 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
           onKeyDown={handleKeyDown}
           placeholder={
             aiStatus === 'checking' ? '检测 AI 连接...' :
-            aiStatus === 'ready' ? '输入指令，AI 将辅助当前画板操作' :
-            'AI 未配置，请前往设置 API Key'
+            aiStatus === 'ready'
+              ? `输入指令 (${AI_OUTPUT_BEHAVIORS[outputType].effect})`
+              : 'AI 未配置，请前往设置 API Key'
           }
           disabled={aiStatus !== 'ready'}
           className="canvas-ai-bar-input"
@@ -140,6 +631,18 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
             {drawerOpen ? '关闭聊天' : `聊天 (${messages.length})`}
           </Button>
         )}
+        {currentSuggestions.length > 0 && (
+          <span style={{
+            fontSize: '0.65rem',
+            color: 'var(--accent, #B7FF00)',
+            whiteSpace: 'nowrap',
+            background: 'rgba(183,255,0,0.08)',
+            padding: '2px 8px',
+            borderRadius: 4,
+          }}>
+            {currentSuggestions.length} 条建议
+          </span>
+        )}
         <Button
           variant="primary"
           onClick={handleSend}
@@ -150,12 +653,51 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         </Button>
       </div>
 
+      {/* ChatDrawer */}
       <ChatDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         messages={messages}
         loading={chatLoading}
         onClear={handleClearChat}
+      />
+
+      {/* AiSuggestionCards — rendered inline near the bar */}
+      {currentSuggestions.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 50,
+          width: '90%',
+          maxWidth: 560,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          {currentSuggestions.map(sug => (
+            <AiSuggestionCard
+              key={sug.id}
+              id={sug.id}
+              title={sug.title}
+              content={sug.content}
+              target={STAGE_NAMES[sug.stage] || sug.stage}
+              onAccept={handleAcceptSuggestion}
+              onDismiss={handleDismissSuggestion}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* AiWritePreviewPanel */}
+      <AiWritePreviewPanel
+        content={currentPreview?.content || ''}
+        title={currentPreview?.title || ''}
+        subtitle={currentPreview?.subtitle}
+        open={currentPreview !== null}
+        onConfirm={handleConfirmPreview}
+        onAbandon={handleAbandonPreview}
       />
     </>
   );

@@ -32,6 +32,26 @@ export interface GeneratePacketOptions {
   outputType?: AiOutputType;
 }
 
+/**
+ * 当 outputType 为 'suggest' 或 'write_preview' 时返回此结构（不写 DB）。
+ * 当 outputType 为 undefined 时直接返回 ChapterPacket（写 DB，原行为）。
+ */
+export interface GeneratePacketPreviewResult {
+  /** 解析后的 AI 数据（layers + metadata） */
+  packetData: {
+    title: string;
+    line: string;
+    position: string;
+    chapterFunction: string;
+    layer1: unknown;
+    layer2: unknown;
+    layer3: unknown;
+    layer4: unknown;
+  };
+  /** AI 原始回复文本 */
+  rawContent: string;
+}
+
 export interface UpstreamData {
   premise: PremiseCard | null;
   structureNodes: StructureNode[];
@@ -205,9 +225,14 @@ export function parsePacketResponse(content: string): Record<string, unknown> {
 // ─── Main Generator ───
 
 /**
- * 读取上游数据 → 调用 AI → 创建 ChapterPacket → 写入四层 → 返回更新后的 packet。
+ * 读取上游数据 → 调用 AI → 解析。
+ *
+ * 当 outputType 为 'suggest' 或 'write_preview' 时，仅返回解析后的数据（不写 DB）。
+ * 当 outputType 为 undefined 时保持原行为：创建并写入 ChapterPacket。
  */
-export async function generateChapterPacketFromUpstream(options: GeneratePacketOptions) {
+export async function generateChapterPacketFromUpstream(
+  options: GeneratePacketOptions,
+): Promise<ChapterPacket | GeneratePacketPreviewResult> {
   const [premises, nodes, chars, rules, factions] = await Promise.all([
     listPremiseCards(options.projectId),
     listStructureNodes(options.projectId),
@@ -237,26 +262,47 @@ export async function generateChapterPacketFromUpstream(options: GeneratePacketO
     timeout: 60000,
   });
 
-  const packetData = parsePacketResponse(response.content);
+  const parsedRaw = parsePacketResponse(response.content);
 
-  // Step 1: Create packet with metadata
+  const resolvedTitle = (parsedRaw.title as string) || options.title || `第${options.chapterNumber}章`;
+  const resolvedLine = (parsedRaw.line as string) || '';
+  const resolvedPosition = (parsedRaw.position as string) || '';
+  const resolvedChapterFunction = (parsedRaw.chapterFunction as string) || '';
+
+  // ── Routing: suggest / write_preview → 不写 DB，返回预览 ──
+  if (options.outputType === 'suggest' || options.outputType === 'write_preview') {
+    return {
+      packetData: {
+        title: resolvedTitle,
+        line: resolvedLine,
+        position: resolvedPosition,
+        chapterFunction: resolvedChapterFunction,
+        layer1: (parsedRaw.layer1 as any) || {},
+        layer2: (parsedRaw.layer2 as any) || {},
+        layer3: (parsedRaw.layer3 as any) || {},
+        layer4: (parsedRaw.layer4 as any) || {},
+      },
+      rawContent: response.content,
+    };
+  }
+
+  // ── 默认行为：写 DB ──
   const created = await createChapterPacket({
     projectId: options.projectId,
     structureNodeId: options.structureNodeId,
     chapterNumber: options.chapterNumber,
-    title: (packetData.title as string) || options.title || `第${options.chapterNumber}章`,
-    line: (packetData.line as string) || '',
-    position: (packetData.position as string) || '',
-    chapterFunction: (packetData.chapterFunction as string) || '',
+    title: resolvedTitle,
+    line: resolvedLine,
+    position: resolvedPosition,
+    chapterFunction: resolvedChapterFunction,
   } as any);
 
-  // Step 2: Update layers
   const updated = await updateChapterPacketLayers({
     packetId: created.id,
-    layer1: (packetData.layer1 as any) || {},
-    layer2: (packetData.layer2 as any) || {},
-    layer3: (packetData.layer3 as any) || {},
-    layer4: (packetData.layer4 as any) || {},
+    layer1: (parsedRaw.layer1 as any) || {},
+    layer2: (parsedRaw.layer2 as any) || {},
+    layer3: (parsedRaw.layer3 as any) || {},
+    layer4: (parsedRaw.layer4 as any) || {},
     status: 'draft',
   } as any);
 

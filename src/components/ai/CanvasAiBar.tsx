@@ -235,6 +235,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
                 setActiveModel(matched);
               }
             }
+            if (!cancelled) { setAiStatus('ready'); return; }
           }
         } catch {
           // Fall through to v1 config
@@ -262,7 +263,9 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
 
       // Check connection
       if (hasTauri) {
-        if (!cancelled) setAiStatus('ready');
+        // V2 config block above returns early with 'ready' if active config found.
+        // If we reach here, no v2 config was found. Check v1 list_providers result.
+        if (!cancelled) setAiStatus('unconfigured');
         return;
       }
       try {

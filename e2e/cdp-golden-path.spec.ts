@@ -46,11 +46,18 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
 
     // ── 画板① 前提卡 ──
     console.log('填写前提卡...');
-    await page.waitForSelector('.premise-textarea', { timeout: 10000 });
+    // Close FirstLaunchGuide if visible
+    try {
+      await page.getByRole('button', { name: '开始使用' }).click({ timeout: 2000 });
+    } catch { /* guide might not be shown */ }
+    await page.locator('.premise-textarea').first().waitFor({ state: 'visible', timeout: 10000 });
     await page.fill('.premise-textarea', '一个渴望掌控权力的王子，在政变中失去一切，必须带领乌合之众在边疆求生。');
     await page.evaluate(() => {
       const sel = document.querySelector('select');
-      if (sel) sel.value = 'character_driven';
+      if (sel) {
+        sel.value = 'character_driven';
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
     await page.waitForTimeout(500);
     await page.click('text=保存草稿');

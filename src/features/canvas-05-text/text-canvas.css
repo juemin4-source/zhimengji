@@ -69,3 +69,52 @@
   border-radius: var(--radius-full, 9999px);
   white-space: nowrap;
 }
+
+/* ── AI Control Row ── */
+
+.text-canvas-ai-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  border-bottom: 1px solid var(--border-default, #2a2a2a);
+  background: var(--bg-surface, #141416);
+  flex-shrink: 0;
+  gap: var(--space-3, 12px);
+}
+
+.text-canvas-ai-row-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex: 1;
+  min-width: 0;
+}
+
+.text-canvas-ai-row-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.text-canvas-ai-row-title {
+  font-size: var(--text-sm, 0.8125rem);
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-canvas-ai-row-meta {
+  font-size: var(--text-2xs, 0.65rem);
+  color: var(--text-muted, #666);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.text-canvas-ai-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+  flex-shrink: 0;
+}

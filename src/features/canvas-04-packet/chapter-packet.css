@@ -442,6 +442,12 @@
   margin-top: var(--space-2, 8px);
 }
 
+.packet-welcome-actions {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: center;
+}
+
 /* ── Loading / Error ── */
 
 .packet-loading {

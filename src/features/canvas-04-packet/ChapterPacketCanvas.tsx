@@ -32,6 +32,10 @@ import type { PremiseCard } from '../../contracts/premise.contract';
 import type { StructureNode } from '../../contracts/structure.contract';
 import type { CharacterCard, WorldRule, FactionCard } from '../../contracts/setting.contract';
 import { Button, Input, TextArea, Select, Badge, EmptyState } from '../../components/ui';
+import { generateChapterPacketFromUpstream } from '../../lib/generateChapterPacket';
+import { testConnection } from '../../lib/llm-client';
+import { DEFAULT_MODELS } from '../../types/ai';
+import type { AiModel } from '../../types/ai';
 import './chapter-packet.css';
 
 // ══════════════════════════════════════════
@@ -50,7 +54,8 @@ function parseLayer<T>(val: unknown, fallback: T): T {
       return fallback;
     }
   }
-  return (val ?? fallback) as T;
+  if (val && typeof val === 'object') { return { ...(fallback as object), ...(val as object) } as T; }
+  return fallback;
 }
 
 function parsePacket(data: Record<string, unknown>): ChapterPacket {
@@ -310,6 +315,13 @@ export default function ChapterPacketCanvas() {
   const [editLayer4, setEditLayer4] = useState<ExecutionLayer>(DEFAULT_EXECUTION_LAYER);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // ── AI state ──
+  const [aiModel, setAiModel] = useState<AiModel>(DEFAULT_MODELS[0]);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+
   // ── UI state ──
   const [expandedLayers, setExpandedLayers] = useState<Record<string, boolean>>({
     layer1: false,
@@ -358,6 +370,19 @@ export default function ChapterPacketCanvas() {
     loadData();
   }, [loadData]);
 
+  // ── AI config check ──
+
+  useEffect(() => {
+    const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+    if (hasTauri) {
+      setAiConfigured(true);
+      return;
+    }
+    testConnection('http://localhost:3001/v1', '')
+      .then(r => setAiConfigured(r.success))
+      .catch(() => setAiConfigured(false));
+  }, []);
+
   // ── Packet selection ──
 
   const selectPacket = (packet: ChapterPacket) => {
@@ -365,10 +390,10 @@ export default function ChapterPacketCanvas() {
     setTitle(packet.title);
     setPosition(packet.position);
     setChapterFunction(packet.chapterFunction);
-    setEditLayer1(packet.layer1 ?? DEFAULT_WRITING_CONTRACT);
-    setEditLayer2(packet.layer2 ?? DEFAULT_ACTIVE_CONTEXT);
-    setEditLayer3(packet.layer3 ?? DEFAULT_NARRATIVE_COMPRESSION);
-    setEditLayer4(packet.layer4 ?? DEFAULT_EXECUTION_LAYER);
+    setEditLayer1(parseLayer<WritingContract>(packet.layer1, DEFAULT_WRITING_CONTRACT));
+    setEditLayer2(parseLayer<ActiveContext>(packet.layer2, DEFAULT_ACTIVE_CONTEXT));
+    setEditLayer3(parseLayer<NarrativeCompression>(packet.layer3, DEFAULT_NARRATIVE_COMPRESSION));
+    setEditLayer4(parseLayer<ExecutionLayer>(packet.layer4, DEFAULT_EXECUTION_LAYER));
     setHasChanges(false);
   };
 
@@ -522,6 +547,38 @@ export default function ChapterPacketCanvas() {
       handleSave();
     }
     selectPacket(packet);
+  };
+
+  // ── AI Generation ──
+
+  const handleAiGenerate = async (model: AiModel) => {
+    if (!projectId) return;
+    setAiGenerating(true);
+    setAiError(null);
+    setShowModelPicker(false);
+    try {
+      const nextNum = packets.length + 1;
+      const nodeId = chapterNodes.length > 0 ? chapterNodes[0].id : '';
+      if (!nodeId) {
+        throw new Error('请先在画板②创建章节结构节点');
+      }
+      const result = await generateChapterPacketFromUpstream({
+        projectId,
+        structureNodeId: nodeId,
+        chapterNumber: nextNum,
+        model,
+      });
+      const parsed = parsePacket(result as unknown as Record<string, unknown>);
+      setPackets(prev => [...prev, parsed]);
+      selectPacket(parsed);
+      showToast('AI 生成细纲包成功', 'success');
+    } catch (err: any) {
+      console.error('[ChapterPacketCanvas] AI generate error', err);
+      setAiError(err?.message || 'AI 生成失败');
+      showToast('AI 生成失败: ' + (err?.message || '未知错误'), 'error');
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
   // ══════════════════════════════════════════
@@ -986,18 +1043,34 @@ export default function ChapterPacketCanvas() {
             </div>
           )}
 
-          <Button
-            variant="primary"
-            onClick={handleCreateEmpty}
-            disabled={saving}
-            loading={saving}
-          >
-            从空包开始
-          </Button>
+          <div className="packet-welcome-actions">
+            <Button
+              variant="primary"
+              onClick={handleCreateEmpty}
+              disabled={saving}
+              loading={saving}
+            >
+              从空包开始
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowModelPicker(true)}
+              disabled={aiGenerating || aiConfigured === false}
+              loading={aiGenerating}
+            >
+              {aiConfigured === null ? '检测 AI...' : aiConfigured === false ? 'AI 未配置' : 'AI 生成整包'}
+            </Button>
+          </div>
+
+          {aiError && (
+            <div className="packet-warning-box" style={{ borderColor: 'rgba(244,67,54,0.3)', background: 'rgba(244,67,54,0.08)' }}>
+              <div className="packet-warning-title">AI 生成失败</div>
+              <div className="packet-warning-desc">{aiError}</div>
+            </div>
+          )}
 
           <div className="packet-welcome-hint">
-            手动模式：点击上方按钮创建空细纲包，然后逐层填写。
-            AI 生成功能将在后续版本上线。
+            手动模式：创建空细纲包后逐层填写。或使用 AI 从上游数据自动生成完整细纲包。
           </div>
         </div>
 
@@ -1057,6 +1130,15 @@ export default function ChapterPacketCanvas() {
             )}
           </div>
           <div className="packet-topbar-right">
+            <Button
+              variant="secondary"
+              onClick={() => setShowModelPicker(true)}
+              disabled={aiGenerating || aiConfigured === false}
+              loading={aiGenerating}
+              style={{ fontSize: '0.75rem' }}
+            >
+              {aiConfigured === null ? '检测 AI...' : aiConfigured === false ? 'AI 未配置' : 'AI 生成整包'}
+            </Button>
             <Button
               variant="secondary"
               onClick={handleSave}
@@ -1144,6 +1226,57 @@ export default function ChapterPacketCanvas() {
         rules={worldRules}
         factions={factions}
       />
+
+      {/* ── AI Model Picker Modal ── */}
+      {showModelPicker && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => { if (!aiGenerating) setShowModelPicker(false); }}
+        >
+          <div
+            style={{ background: 'var(--bg-surface, #141414)', border: '1px solid var(--border-default, #2a2a2a)', borderRadius: 'var(--radius-lg, 14px)', maxWidth: 420, width: '90%', padding: 24 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 4 }}>选择 AI 模型</h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted, #666)', marginBottom: 16 }}>
+              选择一个模型来生成细纲包。上游数据将作为 prompt 上下文发送给 AI。
+            </p>
+            {DEFAULT_MODELS.map(m => (
+              <div
+                key={m.id}
+                onClick={() => handleAiGenerate(m)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                  borderRadius: 'var(--radius-sm, 6px)', cursor: aiGenerating ? 'not-allowed' : 'pointer',
+                  marginBottom: 4, opacity: aiGenerating ? 0.6 : 1,
+                  background: aiModel.id === m.id ? 'var(--accent-soft, rgba(183,255,0,0.1))' : 'transparent',
+                  border: aiModel.id === m.id ? '1px solid rgba(183,255,0,0.2)' : '1px solid transparent',
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent, #B7FF00)', opacity: aiModel.id === m.id ? 1 : 0.2 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.providerName} · {m.description}</div>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)' }}>{m.costPer1KTokens === 0 ? '免费' : `$${m.costPer1KTokens}/1K`}</div>
+              </div>
+            ))}
+            {aiGenerating && (
+              <div style={{ textAlign: 'center', padding: 16, color: 'var(--text-secondary, #a0a0a0)', fontSize: '0.8125rem' }}>
+                <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #444', borderTopColor: '#B7FF00', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginRight: 8, verticalAlign: 'middle' }} />
+                AI 正在生成细纲包...
+              </div>
+            )}
+            <button
+              onClick={() => setShowModelPicker(false)}
+              disabled={aiGenerating}
+              style={{ marginTop: 16, width: '100%', padding: '8px', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid var(--border-default, #2a2a2a)', background: 'transparent', color: aiGenerating ? 'var(--text-muted, #666)' : 'var(--text-secondary, #a0a0a0)', cursor: aiGenerating ? 'not-allowed' : 'pointer', fontSize: '0.8125rem' }}
+            >
+              {aiGenerating ? '生成中...' : '取消'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,12 @@
 /**
- * CanvasAiBar — 画板 AI 助手输入壳 (织梦机 v2)
+ * CanvasAiBar — 画板 AI 输入壳 (织梦机 v2)
  *
- * Minimal AI input shell with position: fixed bottom-0.
- * Shows placeholder text initially; on send, displays "AI 助手正在接入中..."
- * placeholder. Does NOT mock AI replies or call llm-client.
+ * 底部固定 AI 输入栏。根据连接状态显示不同提示。
+ * 实际 AI 生成功能在各画板组件内（ChapterPacketCanvas / TextCanvas）。
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { testConnection } from '../../lib/llm-client';
 import { Button } from '../ui';
 import './canvas-ai-bar.css';
 
@@ -24,56 +24,64 @@ const STAGE_NAMES: Record<string, string> = {
 
 export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
   const [input, setInput] = useState('');
-  const [status, setStatus] = useState<'idle' | 'connecting'>('idle');
+  const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'unconfigured'>('checking');
   const stageName = STAGE_NAMES[stage] || stage;
 
-  const handleSend = useCallback(() => {
-    if (!input.trim()) return;
-    setStatus('connecting');
-    // No mock AI reply — just show placeholder
-  }, [input]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+      if (hasTauri) {
+        if (!cancelled) setAiStatus('ready');
+        return;
       }
-    },
-    [handleSend]
-  );
+      try {
+        const result = await testConnection('http://localhost:3001/v1', '');
+        if (!cancelled) {
+          setAiStatus(result.success ? 'ready' : 'unconfigured');
+        }
+      } catch {
+        if (!cancelled) setAiStatus('unconfigured');
+      }
+    };
+    check();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="canvas-ai-bar">
-      {status === 'connecting' ? (
-        <div className="canvas-ai-bar-connecting">
-          AI 助手正在接入中...
-        </div>
-      ) : (
-        <>
-          <div className="canvas-ai-bar-stage">
-            <span className="canvas-ai-bar-dot" />
-            {stageName} 画板
-          </div>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="画板 AI 助手即将就绪"
-            disabled
-            className="canvas-ai-bar-input"
-          />
-          <Button
-            variant="primary"
-            onClick={handleSend}
-            disabled
-            size="sm"
-          >
-            发送
-          </Button>
-        </>
-      )}
+      <div className="canvas-ai-bar-stage">
+        <span
+          className="canvas-ai-bar-dot"
+          style={{
+            background:
+              aiStatus === 'ready' ? '#4CAF50' :
+              aiStatus === 'unconfigured' ? '#f44336' :
+              '#888',
+          }}
+        />
+        {stageName} 画板
+      </div>
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder={
+          aiStatus === 'checking' ? '检测 AI 连接...' :
+          aiStatus === 'ready' ? '输入指令，AI 将辅助当前画板操作' :
+          'AI 未配置，请前往设置 API Key'
+        }
+        disabled={aiStatus !== 'ready'}
+        className="canvas-ai-bar-input"
+      />
+      <Button
+        variant="primary"
+        onClick={() => {}}
+        disabled={aiStatus !== 'ready'}
+        size="sm"
+      >
+        发送
+      </Button>
     </div>
   );
 }

@@ -977,7 +977,7 @@ export default function ChapterPacketCanvas() {
             </div>
           )}
 
-          {characters.length === 0 && rules.length === 0 && factions.length === 0 && (
+          {characters.length === 0 && worldRules.length === 0 && factions.length === 0 && (
             <div className="packet-warning-box">
               <div className="packet-warning-title">尚未设定角色与世界观</div>
               <div className="packet-warning-desc">

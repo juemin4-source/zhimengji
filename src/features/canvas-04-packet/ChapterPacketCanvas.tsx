@@ -342,7 +342,7 @@ export default function ChapterPacketCanvas() {
         selectPacket(parsed[0]);
       }
       setPremise(premiseCards[0] || null);
-      setChapterNodes(structureNodes.filter(n => n.nodeType === 'chapter'));
+      setChapterNodes(structureNodes);
       setCharacters(chars);
       setWorldRules(wr);
       setFactions(facs);

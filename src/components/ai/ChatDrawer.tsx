@@ -11,7 +11,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { User, Bot, X, MessageSquare, CheckCircle, Info } from 'lucide-react';
 import type { AiOutputType } from '../../lib/ai-output';
-import type { ParseOutput } from '../../contracts/ai-parser.contract';
+import type { ParseResult } from '../../lib/ai/structured-parser';
 
 // ─── Types ───
 
@@ -21,8 +21,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   outputType?: AiOutputType;
-  /** Structured parser output for formatted display */
-  structuredData?: ParseOutput;
+  /** Structured parser output (ParseResult has status + data + repairLog) */
+  structuredData?: ParseResult;
 }
 
 export interface ChatDrawerProps {

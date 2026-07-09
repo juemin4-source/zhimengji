@@ -7,8 +7,9 @@
  */
 
 import { useState } from 'react';
-import { Lightbulb, Check, X } from 'lucide-react';
+import { Lightbulb, Check, X, CheckCircle, Info } from 'lucide-react';
 import type { AiOutputType } from '../../lib/ai-output';
+import type { ParseResult } from '../../lib/ai/structured-parser';
 
 export interface AiSuggestionCardProps {
   /** 唯一标识 */
@@ -21,6 +22,8 @@ export interface AiSuggestionCardProps {
   outputType?: AiOutputType;
   /** 建议的字段/目标描述 */
   target?: string;
+  /** 结构化解析输出（包含验证状态和数据字段） */
+  structuredData?: ParseResult;
   /** 采纳回调 */
   onAccept: (id: string) => void;
   /** 忽略回调 */
@@ -34,6 +37,7 @@ export default function AiSuggestionCard({
   title,
   content,
   target,
+  structuredData,
   onAccept,
   onDismiss,
   onModify,
@@ -79,9 +83,81 @@ export default function AiSuggestionCard({
         <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary, #e0e0e0)', marginBottom: 4 }}>
           {title}
         </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #a0a0a0)', lineHeight: 1.6 }}>
-          {content}
-        </div>
+
+        {/* Parser validation status */}
+        {structuredData && structuredData.status !== 'fallback' && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            marginBottom: 6, padding: '2px 8px',
+            background: structuredData.status === 'valid'
+              ? 'rgba(76,175,80,0.06)'
+              : 'rgba(255,193,7,0.06)',
+            borderRadius: 4, fontSize: '0.65rem',
+            color: structuredData.status === 'valid'
+              ? 'var(--success, #4CAF50)'
+              : '#FFC107',
+          }}>
+            {structuredData.status === 'valid'
+              ? <CheckCircle size={11} />
+              : <Info size={11} />
+            }
+            <span>解析状态: {structuredData.status === 'valid' ? '验证通过' : '已自动修复'}</span>
+          </div>
+        )}
+
+        {/* Structured data display */}
+        {structuredData && structuredData.data && Object.keys(structuredData.data).length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {Object.entries(structuredData.data).map(([key, value]) => (
+              <div key={key} style={{
+                background: 'var(--bg-raised, #1e1e1e)',
+                border: '1px solid var(--border-default, #2a2a2a)',
+                borderRadius: 6, padding: '8px 10px',
+              }}>
+                <div style={{
+                  fontSize: '0.65rem', fontWeight: 600,
+                  color: 'var(--accent, #B7FF00)',
+                  textTransform: 'uppercase', letterSpacing: 0.5,
+                  marginBottom: 4,
+                }}>
+                  {key}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem', color: 'var(--text-secondary, #a0a0a0)',
+                  lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                }}>
+                  {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                </div>
+              </div>
+            ))}
+            {/* Fallback content (title summary) */}
+            {content && !Object.values(structuredData.data).some(v =>
+              typeof v === 'string' && v.length > 0,
+            ) && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #666)', lineHeight: 1.6, marginTop: 4 }}>
+                {content}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Plain text fallback */
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #a0a0a0)', lineHeight: 1.6 }}>
+            {content}
+          </div>
+        )}
+
+        {/* Repair log */}
+        {structuredData && structuredData.repairLog && structuredData.repairLog.length > 0 && (
+          <div style={{
+            marginTop: 6, fontSize: '0.6rem', color: 'var(--text-muted, #666)',
+            fontStyle: 'italic', padding: '4px 8px', background: 'rgba(255,193,7,0.04)',
+            borderRadius: 4,
+          }}>
+            {structuredData.repairLog.map((log, i) => (
+              <div key={i}>修复提示: {log}</div>
+            ))}
+          </div>
+        )}
       </div>
       <div style={{
         display: 'flex', gap: 6, padding: '8px 12px',

@@ -1,4 +1,5 @@
 import { Key, Brain, BarChart3, DollarSign, Check, X, RefreshCw, TriangleAlert, CheckCircle } from 'lucide-react';
+// Brain already imported above — used in sidebar for AI Control Center nav
 import React, { useState, useCallback } from 'react';
 import type { ProviderConfig, AiModel, UsageStats, SettingsTab } from '../../types/ai';
 import { PRESET_PROVIDERS, DEFAULT_MODELS } from '../../types/ai';
@@ -11,6 +12,8 @@ interface AiSettingsProps {
   onSaveProviders?: (providers: ProviderConfig[]) => void;
   onChangeModel?: (modelId: string) => void;
   onSaveBudget?: (budget: number) => void;
+  /** 导航到 AI Control Center 页面 */
+  onNavigateToControlCenter?: () => void;
 }
 
 const ICONS = { api: <Key size={16} />, models: <Brain size={16} />, usage: <BarChart3 size={16} />, cost: <DollarSign size={16} /> };
@@ -22,7 +25,7 @@ const TABS: Array<{ id: SettingsTab; label: string; icon: React.ReactNode }> = [
   { id: 'cost', label: '费用', icon: ICONS.cost },
 ];
 
-export default function AiSettings({ onClose, providers: initialProviders, activeModelId, usageStats, onSaveProviders, onChangeModel, onSaveBudget }: AiSettingsProps) {
+export default function AiSettings({ onClose, providers: initialProviders, activeModelId, usageStats, onSaveProviders, onChangeModel, onSaveBudget, onNavigateToControlCenter }: AiSettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('api-keys');
   const [providers, setProviders] = useState<ProviderConfig[]>(initialProviders);
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
@@ -380,6 +383,31 @@ export default function AiSettings({ onClose, providers: initialProviders, activ
                 {tab.label}
               </div>
             ))}
+            {/* AI Control Center 导航 */}
+            {onNavigateToControlCenter && (
+              <div style={{
+                borderTop: '1px solid var(--border-default, #2a2a2a)',
+                marginTop: 8, paddingTop: 8,
+              }}>
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 16px', cursor: 'pointer',
+                    borderLeft: '2px solid transparent',
+                    fontSize: '0.8125rem',
+                    color: 'var(--text-secondary, #a0a0a0)',
+                    userSelect: 'none',
+                    transition: 'background 0.15s',
+                  }}
+                  onClick={onNavigateToControlCenter}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(183,255,0,0.08)'; e.currentTarget.style.color = 'var(--accent, #B7FF00)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary, #a0a0a0)'; }}
+                >
+                  <Brain size={16} />
+                  <span>AI Control Center</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div style={s.content}>

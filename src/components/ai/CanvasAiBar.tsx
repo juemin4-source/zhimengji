@@ -20,6 +20,7 @@ import { DEFAULT_MODELS } from '../../types/ai';
 import type { AiOutputType } from '../../lib/ai-output';
 import type { AiModel } from '../../types/ai';
 import type { ChatMessage } from './ChatDrawer';
+import type { ParseResult } from '../../lib/ai/structured-parser';
 import { appendDecisionLog } from '../../api/decisionLogApi';
 import { listPremiseCards, updatePremiseCard, createPremiseCard } from '../../api/premiseApi';
 import { createStructureNode, listStructureNodes } from '../../api/structureApi';
@@ -29,6 +30,9 @@ import { generateChapterPacketFromUpstream } from '../../lib/generateChapterPack
 import { generateDraftFromChapterPacket } from '../../lib/generateDraft';
 import type { GeneratePacketOptions } from '../../lib/generateChapterPacket';
 import type { GenerateDraftOptions } from '../../lib/generateDraft';
+import { routeAiMessage, fetchAiContext } from '../../api/aiContextApi';
+import { listProviderConfigs } from '../../api/aiControlCenterApi';
+import { parseStructuredOutput } from '../../lib/ai/structured-parser';
 import './canvas-ai-bar.css';
 
 // ─── Types ───
@@ -44,6 +48,8 @@ interface SuggestionItem {
   stage: string;
   /** 结构化数据（如 packet 生成的 layer 对象），用于 accept 时直接写入 DB */
   rawWriteData?: unknown;
+  /** 结构化解析输出，用于在 AiSuggestionCard 中显示格式化字段 */
+  structuredData?: ParseResult;
 }
 
 interface PreviewItem {
@@ -52,6 +58,8 @@ interface PreviewItem {
   subtitle?: string;
   /** 结构化数据，用于 confirm 时直接写入 DB */
   rawWriteData?: unknown;
+  /** 结构化解析输出，用于在 AiWritePreviewPanel 中显示格式化字段 */
+  structuredData?: ParseResult;
 }
 
 const STAGE_NAMES: Record<string, string> = {
@@ -185,27 +193,49 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
-      // Try to find a configured model from backend
-      try {
-        const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
-        if (hasTauri) {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const infos: any[] = await invoke('list_providers');
-          if (infos && infos.length > 0) {
-            // Find first model from first configured provider
-            const firstProvider = infos[0].provider;
-            const matched = DEFAULT_MODELS.find(m => m.providerId === firstProvider);
-            if (matched && !cancelled) {
-              setActiveModel(matched);
+      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+
+      // Try v2 AI Control Center config first
+      if (hasTauri) {
+        try {
+          const configs = await listProviderConfigs();
+          const activeConfig = configs.find(c => c.isActive) || configs[0];
+          if (activeConfig) {
+            let models: string[];
+            try { models = JSON.parse(activeConfig.models); } catch { models = []; }
+            if (models.length > 0) {
+              // Try to match against DEFAULT_MODELS by id
+              const matched = DEFAULT_MODELS.find(m => models.includes(m.id) || models.includes(m.name));
+              if (matched && !cancelled) {
+                setActiveModel(matched);
+              }
             }
           }
+        } catch {
+          // Fall through to v1 config
         }
-      } catch {
-        // Backend not available, keep default model
+      }
+
+      // Try v1 config (existing behavior)
+      if (!cancelled) {
+        try {
+          if (hasTauri) {
+            const { invoke } = await import('@tauri-apps/api/core');
+            const infos: any[] = await invoke('list_providers');
+            if (infos && infos.length > 0) {
+              const firstProvider = infos[0].provider;
+              const matched = DEFAULT_MODELS.find(m => m.providerId === firstProvider);
+              if (matched && !cancelled) {
+                setActiveModel(matched);
+              }
+            }
+          }
+        } catch {
+          // Backend not available, keep default model
+        }
       }
 
       // Check connection
-      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
       if (hasTauri) {
         if (!cancelled) setAiStatus('ready');
         return;
@@ -223,21 +253,66 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Handler: discuss send ──
+  // ── Handler: discuss send (wired through AI Command Router) ──
   const sendDiscuss = useCallback(async (text: string) => {
     setDrawerOpen(true);
     setChatLoading(true);
     try {
-      const response = await callLlm(
-        [{ role: 'user' as const, content: text }],
-        { model: activeModel, timeout: 30000 },
-      );
+      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+      const messages: Array<{ role: 'user' | 'system'; content: string }> = [];
+
+      // Try AI Router pipeline: route → context build → call LLM
+      if (hasTauri && projectId) {
+        try {
+          const routeResult = await routeAiMessage({
+            message: text,
+            canvasId: stage,
+            projectId,
+          });
+          const context = await fetchAiContext({
+            canvasId: stage,
+            projectId,
+            outputType: routeResult.intent,
+            additionalPrompt: text,
+          });
+          const systemContent = context.systemPrompt + '\n\nContext:\n' + context.contextData;
+          messages.push({ role: 'system', content: systemContent });
+        } catch {
+          // Fall through: no AI pipeline available
+        }
+      }
+
+      messages.push({ role: 'user', content: text });
+
+      const response = await callLlm(messages, { model: activeModel, timeout: 30000 });
+
+      // Try to parse as structured output
+      let structuredData: ParseResult | undefined;
+      try {
+        const schema = JSON.stringify({
+          type: 'object',
+          properties: { response: { type: 'string' } },
+          required: [],
+        });
+        const parsed = parseStructuredOutput({
+          rawContent: response.content,
+          schema,
+          strict: false,
+        });
+        if (parsed.status !== 'failed' && parsed.status !== 'fallback') {
+          structuredData = parsed;
+        }
+      } catch {
+        // Not structured — use as plain text
+      }
+
       const aiMsg: ChatMessage = {
         id: uid(),
         role: 'assistant',
         content: response.content,
         timestamp: Date.now(),
         outputType: 'discuss',
+        structuredData,
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (err) {
@@ -253,11 +328,79 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
     } finally {
       setChatLoading(false);
     }
-  }, [activeModel, showToast]);
+  }, [activeModel, projectId, stage, showToast]);
 
-  // ── Handler: suggest send ──
+  // ── Handler: suggest send (wired through AI Command Router + structured parser) ──
   const sendSuggestion = useCallback(async (text: string) => {
     try {
+      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+
+      // Try AI Router pipeline first (when Tauri available)
+      if (hasTauri && projectId) {
+        try {
+          const routeResult = await routeAiMessage({
+            message: text,
+            canvasId: stage,
+            projectId,
+          });
+          const context = await fetchAiContext({
+            canvasId: stage,
+            projectId,
+            outputType: routeResult.intent,
+            additionalPrompt: text,
+          });
+
+          const systemContent = context.systemPrompt + '\n\nContext:\n' + context.contextData;
+          const response = await callLlm(
+            [
+              { role: 'system' as const, content: systemContent },
+              { role: 'user' as const, content: text },
+            ],
+            { model: activeModel, timeout: 30000 },
+          );
+
+          // Parse output with structured parser
+          let structuredData: ParseResult | undefined;
+          try {
+            const parsed = parseStructuredOutput({
+              rawContent: response.content,
+              schema: JSON.stringify({
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  suggestion: { type: 'string' },
+                  reasoning: { type: 'string' },
+                  alternatives: { type: 'array' },
+                },
+                required: [],
+              }),
+              strict: false,
+            });
+            if (parsed.status !== 'failed' && parsed.status !== 'fallback') {
+              structuredData = parsed;
+            }
+          } catch {
+            // Not structured — display as plain text
+          }
+
+          const titleText = structuredData?.data?.title
+            ? String(structuredData.data.title)
+            : (response.content.slice(0, 60) + (response.content.length > 60 ? '...' : ''));
+
+          setCurrentSuggestions(prev => [...prev, {
+            id: sugUid(),
+            title: titleText,
+            content: response.content,
+            stage,
+            structuredData,
+          }]);
+          return;
+        } catch {
+          // Fall through to stage-specific branching
+        }
+      }
+
+      // Fallback: stage-specific branch (existing behavior)
       // For packet stage, use specialized generator (without DB write)
       if (stage === 'packet' && projectId) {
         try {
@@ -274,11 +417,9 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
             outputType: 'suggest',
           };
 
-          // generateChapterPacketFromUpstream returns preview result when outputType is 'suggest'
           const result = await generateChapterPacketFromUpstream(options);
 
           if ('packetData' in result) {
-            // Preview mode — no DB write
             const titleText = result.packetData.title || `细纲生成建议`;
             const contentText = JSON.stringify(result.packetData, null, 2);
             setCurrentSuggestions(prev => [...prev, {
@@ -320,7 +461,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         }
       }
 
-      // Generic: call LLM directly for premise/structure/setting or fallback
+      // Generic fallback: call LLM directly
       const response = await callLlm(
         [{ role: 'user' as const, content: text }],
         { model: activeModel, timeout: 30000 },
@@ -336,9 +477,75 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
     }
   }, [stage, projectId, activeModel, showToast]);
 
-  // ── Handler: write_preview send ──
+  // ── Handler: write_preview send (wired through AI Command Router + structured parser) ──
   const sendPreview = useCallback(async (text: string) => {
     try {
+      const hasTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
+
+      // Try AI Router pipeline first
+      if (hasTauri && projectId) {
+        try {
+          const routeResult = await routeAiMessage({
+            message: text,
+            canvasId: stage,
+            projectId,
+          });
+          const context = await fetchAiContext({
+            canvasId: stage,
+            projectId,
+            outputType: routeResult.intent,
+            additionalPrompt: text,
+          });
+
+          const response = await callLlm(
+            [
+              { role: 'system' as const, content: context.systemPrompt + '\n\nContext:\n' + context.contextData },
+              { role: 'user' as const, content: text },
+            ],
+            { model: activeModel, timeout: 30000 },
+          );
+
+          // Parse output with structured parser
+          let structuredData: ParseResult | undefined;
+          try {
+            const parsed = parseStructuredOutput({
+              rawContent: response.content,
+              schema: JSON.stringify({
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  content: { type: 'string' },
+                  summary: { type: 'string' },
+                  sections: { type: 'array' },
+                },
+                required: [],
+              }),
+              strict: false,
+            });
+            if (parsed.status !== 'failed' && parsed.status !== 'fallback') {
+              structuredData = parsed;
+            }
+          } catch {
+            // Not structured — use as plain text
+          }
+
+          const titleText = structuredData?.data?.title
+            ? String(structuredData.data.title)
+            : 'AI 生成预览';
+
+          setCurrentPreview({
+            content: response.content,
+            title: titleText,
+            subtitle: `基于「${text}」生成`,
+            structuredData,
+          });
+          return;
+        } catch {
+          // Fall through to stage-specific branching
+        }
+      }
+
+      // Fallback: stage-specific branch (existing behavior)
       // For packet stage, use specialized generator (without DB write)
       if (stage === 'packet' && projectId) {
         try {
@@ -396,7 +603,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         }
       }
 
-      // Generic: call LLM directly for premise/structure/setting
+      // Generic fallback: call LLM directly
       const response = await callLlm(
         [{ role: 'user' as const, content: text }],
         { model: activeModel, timeout: 30000 },
@@ -683,6 +890,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
               title={sug.title}
               content={sug.content}
               target={STAGE_NAMES[sug.stage] || sug.stage}
+              structuredData={sug.structuredData}
               onAccept={handleAcceptSuggestion}
               onDismiss={handleDismissSuggestion}
             />
@@ -695,6 +903,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
         content={currentPreview?.content || ''}
         title={currentPreview?.title || ''}
         subtitle={currentPreview?.subtitle}
+        structuredData={currentPreview?.structuredData}
         open={currentPreview !== null}
         onConfirm={handleConfirmPreview}
         onAbandon={handleAbandonPreview}

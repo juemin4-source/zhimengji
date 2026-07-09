@@ -2518,10 +2518,27 @@ mod tests {
     //  v2 ChapterPacket CRUD
     // -???????????????????????????????????????????????????????????????????????????????????
 
+    /// Helper: create a structure node for chapter_packet FK reference.
+    fn create_test_struct_node(db: &Database, proj_id: &str, label: &str) -> String {
+        let input = CreateStructureNodeInput {
+            project_id: proj_id.to_string(),
+            parent_id: None,
+            title: format!("Struct-{}", label),
+            node_type: "chapter".to_string(),
+            narrative_function: "".to_string(),
+            summary: "".to_string(),
+            position_x: 0.0,
+            position_y: 0.0,
+            sort_order: 0,
+        };
+        db.create_structure_node(&input).unwrap().id
+    }
+
     #[test]
     fn test_chapter_packet_create() {
         let db = setup_db();
         let proj = db.create_project("CP Test", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+        let struct_id = create_test_struct_node(&db, &proj.id, "1");
 
         // Initially empty
         let packets = db.list_chapter_packets(&proj.id).unwrap();
@@ -2530,7 +2547,7 @@ mod tests {
         // Create
         let input = CreateChapterPacketInput {
             project_id: proj.id.clone(),
-            structure_node_id: "test-struct-1".to_string(),
+            structure_node_id: struct_id.clone(),
             chapter_number: 1,
             title: "第一章".to_string(),
             line: None,
@@ -2542,7 +2559,7 @@ mod tests {
         assert_eq!(cp.title, "第一章");
         assert_eq!(cp.status, "empty");
         assert_eq!(cp.chapter_function, "opening");
-        assert_eq!(cp.structure_node_id, Some("test-struct-1".to_string()));
+        assert_eq!(cp.structure_node_id, Some(struct_id));
         assert!(!cp.id.is_empty());
 
         // List
@@ -2563,11 +2580,12 @@ mod tests {
         let db = setup_db();
         let proj = db.create_project("CP List", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
 
-        // Create two packets
+        // Create 3 structure nodes, then 3 packets
         for i in 1..=3 {
+            let struct_id = create_test_struct_node(&db, &proj.id, &format!("ch{}", i));
             let input = CreateChapterPacketInput {
                 project_id: proj.id.clone(),
-                structure_node_id: format!("struct-{}", i),
+                structure_node_id: struct_id,
                 chapter_number: i,
                 title: format!("第{}章", i),
                 line: None,
@@ -2593,10 +2611,11 @@ mod tests {
     fn test_chapter_packet_update_layers() {
         let db = setup_db();
         let proj = db.create_project("CP Update", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+        let struct_id = create_test_struct_node(&db, &proj.id, "1");
 
         let input = CreateChapterPacketInput {
             project_id: proj.id.clone(),
-            structure_node_id: "struct-1".to_string(),
+            structure_node_id: struct_id,
             chapter_number: 1,
             title: "第一章".to_string(),
             line: None,
@@ -2642,10 +2661,11 @@ mod tests {
     fn test_chapter_packet_confirm() {
         let db = setup_db();
         let proj = db.create_project("CP Confirm", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+        let struct_id = create_test_struct_node(&db, &proj.id, "1");
 
         let input = CreateChapterPacketInput {
             project_id: proj.id.clone(),
-            structure_node_id: "struct-1".to_string(),
+            structure_node_id: struct_id,
             chapter_number: 1,
             title: "第一章".to_string(),
             line: None,
@@ -2668,10 +2688,11 @@ mod tests {
     fn test_chapter_packet_delete() {
         let db = setup_db();
         let proj = db.create_project("CP Delete", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+        let struct_id = create_test_struct_node(&db, &proj.id, "1");
 
         let input = CreateChapterPacketInput {
             project_id: proj.id.clone(),
-            structure_node_id: "struct-1".to_string(),
+            structure_node_id: struct_id,
             chapter_number: 1,
             title: "第一章".to_string(),
             line: None,
@@ -2684,5 +2705,30 @@ mod tests {
         db.delete_chapter_packet(&cp.id).unwrap();
         assert!(db.get_chapter_packet(&cp.id).unwrap().is_none());
         assert_eq!(db.list_chapter_packets(&proj.id).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_chapter_packet_confirm_fk_set_null() {
+        // Verify ON DELETE SET NULL behavior
+        let db = setup_db();
+        let proj = db.create_project("CP FK", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+        let struct_id = create_test_struct_node(&db, &proj.id, "fk-test");
+
+        let input = CreateChapterPacketInput {
+            project_id: proj.id.clone(),
+            structure_node_id: struct_id.clone(),
+            chapter_number: 1,
+            title: "FK Test".to_string(),
+            line: None,
+            position: "动".to_string(),
+            chapter_function: "opening".to_string(),
+        };
+        let cp = db.create_chapter_packet(&input).unwrap();
+        assert_eq!(cp.structure_node_id, Some(struct_id.clone()));
+
+        // Delete reference structure node -> should SET NULL
+        db.delete_structure_node(&struct_id).unwrap();
+        let after_delete = db.get_chapter_packet(&cp.id).unwrap().expect("packet should still exist");
+        assert!(after_delete.structure_node_id.is_none());
     }
 }

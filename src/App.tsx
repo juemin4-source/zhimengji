@@ -36,6 +36,7 @@ import CanvasShell from './features/pipeline-canvas/CanvasShell';
 import PremiseEntryGate from './features/canvas-01-premise/PremiseEntryGate';
 import StructureFlowView from './features/canvas-02-structure/StructureFlowView';
 import PacketComingSoon from './features/canvas-04-packet/PacketComingSoon';
+import TextCanvas from './features/canvas-05-text/TextCanvas';
 import SettingCanvasV2 from './features/canvas-03-setting/SettingCanvasV2';
 import CanvasAiBar from './components/ai/CanvasAiBar';
 
@@ -891,7 +892,7 @@ function AppInner() {
         );
         case 'text': return (
           <CanvasShell stage="text" status={status}>
-            <DocumentView
+            <TextCanvas
               currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs}
               onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard}
               onLockObject={onLockObject} onDiscardObject={onDiscardObject}

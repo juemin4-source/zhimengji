@@ -18,6 +18,7 @@ import { TEMPLATES } from '../data/seed';
 import { markdownToHtml, ensureEditorContent, htmlToMarkdown, isHtmlContent, countWords } from '../utils/markdown';
 import DocOutline from './DocOutline';
 import { Check, RefreshCw, X, Eye } from 'lucide-react';
+import type { ChapterPacket } from '../contracts/chapter-packet.contract';
 
 type EditMode = 'source' | 'wysiwyg' | 'preview';
 
@@ -36,6 +37,10 @@ interface DocumentViewProps {
   onTriggerSave?: () => void;
   editMode?: 'source' | 'preview' | 'wysiwyg';
   onEditorModeChange?: (mode: 'source' | 'preview' | 'wysiwyg') => void;
+  /** C3: 关联的 ChapterPacket，传入时在编辑器上方显示标识 */
+  chapterPacket?: ChapterPacket;
+  /** C3: 基于 packet 生成正文的回调（C5 集成时启用） */
+  onGenerateFromPacket?: (packetId: string) => void;
 }
 
 export default function DocumentView({
@@ -43,7 +48,9 @@ export default function DocumentView({
   onUpdateObject, onNavigate, onCreateObject, onCreateNamedObject,
   saveStatus, onTriggerSave,
   editMode: externalEditorMode,
-  onEditorModeChange
+  onEditorModeChange,
+  chapterPacket,
+  onGenerateFromPacket,
 }: DocumentViewProps) {
   const [localEditMode, setLocalEditMode] = useState<EditMode>('source');
   // Use external editMode when provided by parent (nav-bar controlled)
@@ -428,6 +435,45 @@ export default function DocumentView({
       <div className="doc-editor-area">
         {renderToolbar()}
         {renderProperties()}
+        {chapterPacket && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 16px',
+            fontSize: 11,
+            color: 'var(--accent-text, #B7FF00)',
+            background: 'var(--accent-soft, rgba(183, 255, 0, 0.06))',
+            borderBottom: '1px solid var(--border-subtle, #222)',
+          }}>
+            <span>📄</span>
+            <span>基于 ChapterPacket: <strong>{chapterPacket.title || `第${chapterPacket.chapterNumber}章`}</strong></span>
+            {chapterPacket.position && (
+              <span style={{ color: 'var(--text-muted, #666)', marginLeft: 4 }}>| {chapterPacket.position}</span>
+            )}
+            {chapterPacket.chapterFunction && (
+              <span style={{
+                marginLeft: 'auto',
+                padding: '0 8px',
+                fontSize: 10,
+                background: 'var(--bg-raised, #1e1e1e)',
+                borderRadius: 4,
+                color: 'var(--text-secondary, #a0a0a0)',
+              }}>
+                {chapterPacket.chapterFunction}
+              </span>
+            )}
+            {onGenerateFromPacket && (
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ marginLeft: 8 }}
+                onClick={() => onGenerateFromPacket(chapterPacket.id)}
+              >
+                AI 写本章
+              </button>
+            )}
+          </div>
+        )}
         {renderEditorContent()}
 
         <div className="word-count">

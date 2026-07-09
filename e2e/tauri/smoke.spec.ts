@@ -11,6 +11,9 @@ import { test, expect, chromium } from "@playwright/test";
  * 本测试验证 Tauri 桌面窗口能正常启动并展示织梦机 UI。
  * 与 e2e/*.spec.ts (纯浏览器、mock Tauri IPC) 不同，
  * 这是真正走 tauri-driver WebDriver/CDP 路径的桌面端 E2E。
+ *
+ * 注意: 完整的 10 步 Golden Path E2E 在 real-app.spec.ts 中。
+ * 本文件只保留快速烟雾测试（窗口加载 + 基础 UI），不与 real-app 重复。
  */
 
 test.describe("tauri-driver: 织梦机桌面窗口", () => {

@@ -1,10 +1,15 @@
 /**
  * v2-golden-path.spec.ts — 织梦机 v2.0 Golden Path 完整五画板管线验收
  *
+ * @deprecated 此测试依赖 addInitScript mock，不是真实 Tauri 后端验收。
+ * 请使用 e2e/tauri/real-app.spec.ts 代替（通过 tauri-driver CDP 连接真实 Tauri 窗口）。
+ *
  * 测试从书架 → 创建作品 → 五画板闭环 → 刷新持久化的完整黄金路径。
  *
  * 所有 Tauri IPC 调用通过 addInitScript mock，使 React 应用可在纯浏览器中运行。
  * 不需要 Tauri 后端或原生窗口。
+ *
+ * 保留目的：验证 mock 层和浏览器内基本管线逻辑，不作为正式验收依据。
  */
 
 import { test, expect, type Page } from "@playwright/test";

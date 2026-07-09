@@ -27,5 +27,18 @@ export default defineConfig({
       name: 'chromium',
       use: { browserName: 'chromium' },
     },
+    /**
+     * Tauri project — connects to tauri-driver CDP endpoint.
+     * No webServer because Tauri is started externally (by e2e-tauri.ps1 or manually).
+     * Tests use chromium.connectOverCDP('http://127.0.0.1:4444') to attach.
+     */
+    {
+      name: 'tauri',
+      use: {
+        browserName: 'chromium',
+        // No baseURL — tests connect via CDP directly
+        baseURL: undefined,
+      },
+    },
   ],
 });

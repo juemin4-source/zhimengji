@@ -28,6 +28,7 @@ import type { ProviderConfig, UsageStats } from './types/ai';
 import './styles/global.css';
 import './styles/variables.css';
 import './styles/ai.css';
+import './components/ui/design-tokens.css';
 import { useProjectStore } from './stores/projectStore';
 import { getPipelineState, savePipelineState } from './api/projectApi';
 import PipelineNav from './features/pipeline-nav/PipelineNav';

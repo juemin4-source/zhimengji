@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { Button } from '../ui';
 import './canvas-ai-bar.css';
 
 interface CanvasAiBarProps {
@@ -63,13 +64,14 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
             disabled
             className="canvas-ai-bar-input"
           />
-          <button
+          <Button
+            variant="primary"
             onClick={handleSend}
             disabled
-            className="canvas-ai-bar-send-btn"
+            size="sm"
           >
             发送
-          </button>
+          </Button>
         </>
       )}
     </div>

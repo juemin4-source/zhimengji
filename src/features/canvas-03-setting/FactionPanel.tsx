@@ -11,54 +11,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import * as settingApi from '../../api/settingApi';
 import type { FactionCard, CharacterCard } from '../../contracts/setting.contract';
-
-const s: Record<string, React.CSSProperties> = {
-  wrapper: { display: 'flex', flexDirection: 'column', height: '100%', gap: 12, padding: 16 },
-  list: { display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflowY: 'auto' },
-  card: {
-    display: 'flex', flexDirection: 'column', gap: 4, padding: '10px 14px', borderRadius: 8,
-    background: '#1a1a2e', border: '1px solid #2a2a3a', cursor: 'pointer',
-    transition: 'border-color 0.15s ease',
-  },
-  cardSelected: { border: '1px solid #CE93D8' },
-  cardTitle: { fontSize: '0.88rem', fontWeight: 600, color: '#e0e0e0' },
-  cardSub: { fontSize: '0.75rem', color: '#888', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' },
-  cardMeta: { fontSize: '0.7rem', color: '#555', display: 'flex', gap: 8, flexWrap: 'wrap' as const },
-  label: { fontSize: '0.75rem', color: '#888', marginBottom: 4 },
-  input: {
-    width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #333',
-    background: '#1a1a2e', color: '#e0e0e0', fontSize: '0.82rem', outline: 'none',
-    boxSizing: 'border-box' as const, fontFamily: 'inherit',
-  },
-  textarea: {
-    width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #333',
-    background: '#1a1a2e', color: '#e0e0e0', fontSize: '0.82rem', outline: 'none',
-    resize: 'vertical' as const, minHeight: 60, boxSizing: 'border-box' as const, fontFamily: 'inherit',
-  },
-  editor: {
-    display: 'flex', flexDirection: 'column', gap: 10, padding: 16, borderRadius: 8,
-    background: '#16162a', border: '1px solid #2a2a2a',
-  },
-  btn: {
-    padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
-    fontWeight: 600, fontSize: '0.8rem', fontFamily: 'inherit',
-  },
-  btnPrimary: { background: '#4A9EFF', color: '#fff' },
-  btnDanger: { background: '#E74C3C', color: '#fff' },
-  btnSecondary: { background: '#2a2a3e', color: '#aaa', border: '1px solid #3a3a4e' },
-  empty: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    height: '100%', gap: 12, color: '#666', fontSize: '0.85rem',
-  },
-  chip: {
-    display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4,
-    background: 'rgba(206, 147, 216, 0.15)', color: '#CE93D8', fontSize: '0.72rem', fontWeight: 500,
-  },
-  checkbox: {
-    display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 4,
-    cursor: 'pointer', fontSize: '0.82rem', color: '#ccc',
-  },
-};
+import { Button, Input, TextArea, EmptyState } from '../../components/ui';
+import './faction-panel.css';
 
 export default function FactionPanel() {
   const projectId = useProjectStore(s => s.currentProjectId);
@@ -160,33 +114,33 @@ export default function FactionPanel() {
   const handleAdd = useCallback(() => resetEdit(), [resetEdit]);
 
   if (loading) {
-    return <div style={s.empty}><div className="spinner" /><p>加载中...</p></div>;
+    return <EmptyState title="加载中..." />;
   }
 
   return (
-    <div style={s.wrapper}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button style={{ ...s.btn, ...s.btnPrimary }} onClick={handleAdd}>
+    <div className="faction-wrapper">
+      <div className="faction-toolbar">
+        <Button variant="primary" size="sm" onClick={handleAdd}>
           + 添加势力
-        </button>
+        </Button>
       </div>
 
-      <div style={s.list}>
+      <div className="faction-list">
         {factions.length === 0 && !selected ? (
-          <div style={s.empty}>
-            <p>还没有势力</p>
-            <p style={{ fontSize: '0.78rem' }}>点击上方按钮添加第一个势力</p>
-          </div>
+          <EmptyState
+            title="还没有势力"
+            description="点击上方按钮添加第一个势力"
+          />
         ) : (
           factions.map(f => (
             <div
               key={f.id}
-              style={{ ...s.card, ...(selected?.id === f.id ? s.cardSelected : {}) }}
+              className={`faction-card${selected?.id === f.id ? ' faction-card-selected' : ''}`}
               onClick={() => selectFaction(f)}
             >
-              <div style={s.cardTitle}>{f.name || '未命名势力'}</div>
-              {f.publicSlogan && <div style={s.cardSub}>{f.publicSlogan}</div>}
-              <div style={s.cardMeta}>
+              <div className="faction-card-title">{f.name || '未命名势力'}</div>
+              {f.publicSlogan && <div className="faction-card-sub">{f.publicSlogan}</div>}
+              <div className="faction-card-meta">
                 {f.representativeCharacterIds.length > 0 && (
                   <span>代表角色: {f.representativeCharacterIds.length}人</span>
                 )}
@@ -201,33 +155,33 @@ export default function FactionPanel() {
 
       {/* Editor */}
       {(selected || (!selected && editName !== '')) && (
-        <div style={s.editor}>
+        <div className="faction-editor">
           <div>
-            <div style={s.label}>势力名称</div>
-            <input style={s.input} value={editName} onChange={e => setEditName(e.target.value)} placeholder="势力名称" />
+            <div className="faction-label">势力名称</div>
+            <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="势力名称" />
           </div>
           <div>
-            <div style={s.label}>真实目标 (True Goal)</div>
-            <input style={s.input} value={editTrueGoal} onChange={e => setEditTrueGoal(e.target.value)} placeholder="势力真正想要达到的目的" />
+            <div className="faction-label">真实目标 (True Goal)</div>
+            <Input value={editTrueGoal} onChange={e => setEditTrueGoal(e.target.value)} placeholder="势力真正想要达到的目的" />
           </div>
           <div>
-            <div style={s.label}>公开口号 (Public Slogan)</div>
-            <input style={s.input} value={editPublicSlogan} onChange={e => setEditPublicSlogan(e.target.value)} placeholder="对外的宣传口号" />
+            <div className="faction-label">公开口号 (Public Slogan)</div>
+            <Input value={editPublicSlogan} onChange={e => setEditPublicSlogan(e.target.value)} placeholder="对外的宣传口号" />
           </div>
           <div>
-            <div style={s.label}>资源 (每行一项)</div>
-            <textarea style={s.textarea} value={editResources} onChange={e => setEditResources(e.target.value)} placeholder="资源列表，每行一项" rows={3} />
+            <div className="faction-label">资源 (每行一项)</div>
+            <TextArea value={editResources} onChange={e => setEditResources(e.target.value)} placeholder="资源列表，每行一项" rows={3} />
           </div>
           <div>
-            <div style={s.label}>代表角色</div>
+            <div className="faction-label">代表角色</div>
             {characters.length === 0 ? (
-              <div style={{ fontSize: '0.78rem', color: '#666', padding: '4px 0' }}>
+              <div className="faction-no-chars">
                 暂无角色，请先在「角色」Tab 中添加
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 150, overflowY: 'auto', background: '#1a1a2e', borderRadius: 6, padding: 4 }}>
+              <div className="faction-checkbox-list">
                 {characters.map(ch => (
-                  <label key={ch.id} style={s.checkbox}>
+                  <label key={ch.id} className="faction-checkbox">
                     <input
                       type="checkbox"
                       checked={editCharIds.includes(ch.id)}
@@ -240,30 +194,30 @@ export default function FactionPanel() {
               </div>
             )}
             {editCharIds.length > 0 && (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+              <div className="faction-chips">
                 {editCharIds.map(id => {
                   const ch = characters.find(c => c.id === id);
-                  return ch ? <span key={id} style={s.chip}>{ch.name}</span> : null;
+                  return ch ? <span key={id} className="faction-chip">{ch.name}</span> : null;
                 })}
               </div>
             )}
           </div>
           <div>
-            <div style={s.label}>日常面貌 (Daily Interface)</div>
-            <textarea style={s.textarea} value={editDailyInterface} onChange={e => setEditDailyInterface(e.target.value)} placeholder="势力的日常外在表现" rows={2} />
+            <div className="faction-label">日常面貌 (Daily Interface)</div>
+            <TextArea value={editDailyInterface} onChange={e => setEditDailyInterface(e.target.value)} placeholder="势力的日常外在表现" rows={2} />
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button style={{ ...s.btn, ...s.btnPrimary, flex: 1 }} onClick={handleSave}>
+          <div className="faction-editor-actions">
+            <Button variant="primary" style={{ flex: 1 }} onClick={handleSave}>
               {selected ? '保存' : '创建'}
-            </button>
+            </Button>
             {selected && (
-              <button style={{ ...s.btn, ...s.btnDanger }} onClick={handleDelete}>
+              <Button variant="danger" onClick={handleDelete}>
                 删除
-              </button>
+              </Button>
             )}
-            <button style={{ ...s.btn, ...s.btnSecondary }} onClick={resetEdit}>
+            <Button variant="secondary" onClick={resetEdit}>
               取消
-            </button>
+            </Button>
           </div>
         </div>
       )}

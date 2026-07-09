@@ -9,6 +9,8 @@
 import { useState, useCallback } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { confirmSetting } from '../../stores/pipeline-helper';
+import { Tabs, Button } from '../../components/ui';
+import type { Tab } from '../../components/ui';
 import WorldRulePanel from './WorldRulePanel';
 import CharacterPanel from './CharacterPanel';
 import FactionPanel from './FactionPanel';
@@ -16,7 +18,7 @@ import './setting-canvas.css';
 
 type SettingTab = 'world-rules' | 'characters' | 'factions';
 
-const TABS: { id: SettingTab; label: string }[] = [
+const TABS: Tab[] = [
   { id: 'world-rules', label: '世界观' },
   { id: 'characters', label: '角色' },
   { id: 'factions', label: '势力' },
@@ -39,15 +41,7 @@ export default function SettingCanvasV2() {
     <div className="setting-canvas-wrapper">
       {/* Tab Bar */}
       <div className="setting-canvas-tab-bar">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            className={`setting-canvas-tab${activeTab === t.id ? ' setting-canvas-tab-active' : ''}`}
-            onClick={() => setActiveTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+        <Tabs tabs={TABS} activeTab={activeTab} onChange={(id) => setActiveTab(id as SettingTab)} />
       </div>
 
       {/* Content */}
@@ -59,9 +53,9 @@ export default function SettingCanvasV2() {
 
       {/* Footer with Confirm Button */}
       <div className="setting-canvas-footer">
-        <button className="setting-canvas-btn-confirm" onClick={handleConfirm}>
+        <Button variant="primary" onClick={handleConfirm}>
           确认设定 ✓
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import * as premiseApi from '../../api/premiseApi';
 import { confirmPremise } from '../../stores/pipeline-helper';
 import type { PremiseCard } from '../../contracts/premise.contract';
+import { Button, TextArea, Select, EmptyState } from '../../components/ui';
 import './premise-entry.css';
 
 // ── Constants ──
@@ -169,13 +170,13 @@ export default function PremiseEntryGate() {
 
   if (!projectId) {
     return (
-      <div className="premise-loading">请先创建一个项目</div>
+      <EmptyState title="请先创建一个项目" />
     );
   }
 
   if (loading) {
     return (
-      <div className="premise-loading">加载前提卡...</div>
+      <EmptyState title="加载前提卡..." />
     );
   }
 
@@ -188,16 +189,11 @@ export default function PremiseEntryGate() {
           <div className="premise-title">前提卡</div>
           <div className="premise-subtitle">前提已确认，故事核心已经锁定。</div>
         </div>
-        <div className="premise-success-banner">
-          <div className="premise-success-icon">✅</div>
-          <div className="premise-success-title">前提已确认，前往结构图</div>
-          <div className="premise-success-desc">
-            你的故事前提已经保存并确认，接下来可以进入结构图搭建故事大纲。
-          </div>
-          <div className="premise-nav-hint">
-            点击上方导航栏「大纲」开始构建结构 →
-          </div>
-        </div>
+        <EmptyState
+          title="前提已确认，前往结构图"
+          description="你的故事前提已经保存并确认，接下来可以进入结构图搭建故事大纲。"
+          action={<div className="premise-nav-hint">点击上方导航栏「大纲」开始构建结构 →</div>}
+        />
         {/* Show read-only summary */}
         {card && (
           <div className="premise-hint-box" style={{ marginTop: 20 }}>
@@ -247,11 +243,12 @@ export default function PremiseEntryGate() {
             如果一个__遇到了____，会发生什么？
           </span>
         </label>
-        <textarea
-          className="premise-textarea"
+        <TextArea
           placeholder="如果一个被遗弃在火星上的宇航员遇到了地球不再派遣救援的困境，会发生什么？"
           value={premiseText}
           onChange={(e) => setPremiseText(e.target.value)}
+          className="premise-textarea"
+          style={{ minHeight: 100 }}
         />
       </div>
 
@@ -261,23 +258,16 @@ export default function PremiseEntryGate() {
           故事类型
           <span className="premise-label-hint">选择故事的核心驱动</span>
         </label>
-        <div className="premise-select-wrapper">
-          <select
-            className="premise-select"
-            value={storyType}
-            onChange={(e) =>
-              setStoryType(e.target.value as PremiseCard['storyType'])
-            }
-          >
-            <option value="">选择类型</option>
-            {STORY_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          <span className="premise-select-arrow">▾</span>
-        </div>
+        <Select
+          value={storyType}
+          onChange={(e) =>
+            setStoryType(e.target.value as PremiseCard['storyType'])
+          }
+          options={[
+            { value: '', label: '选择类型' },
+            ...STORY_TYPES.map(t => ({ value: t.value, label: t.label })),
+          ]}
+        />
       </div>
 
       {/* Reader Questions */}
@@ -288,11 +278,12 @@ export default function PremiseEntryGate() {
             每行一条，读者在阅读中想解答的问题（换行分隔）
           </span>
         </label>
-        <textarea
-          className="premise-textarea premise-textarea-short"
+        <TextArea
           placeholder={'这个世界的规则是什么？\n主角为什么要冒险？\n最大的悬念是什么？'}
           value={readerQuestionsText}
           onChange={(e) => setReaderQuestionsText(e.target.value)}
+          className="premise-textarea-short"
+          style={{ minHeight: 80 }}
         />
         {readerQuestionsText.trim().length > 0 && (
           <div className="premise-question-count">
@@ -306,20 +297,12 @@ export default function PremiseEntryGate() {
 
       {/* Actions */}
       <div className="premise-button-row">
-        <button
-          className="premise-btn-secondary"
-          onClick={handleSave}
-          disabled={saving || !hasContent}
-        >
+        <Button variant="secondary" onClick={handleSave} disabled={saving || !hasContent}>
           {saving ? '保存中...' : '保存草稿'}
-        </button>
-        <button
-          className={`premise-btn-primary${saving || !hasContent ? ' premise-btn-disabled' : ''}`}
-          onClick={handleConfirm}
-          disabled={saving || !hasContent}
-        >
+        </Button>
+        <Button variant="primary" onClick={handleConfirm} disabled={saving || !hasContent}>
           {saving ? '确认中...' : '确认前提'}
-        </button>
+        </Button>
       </div>
       {card && (
         <div className="premise-draft-notice">

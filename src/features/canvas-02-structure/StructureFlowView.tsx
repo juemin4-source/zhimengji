@@ -23,6 +23,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import * as structureApi from '../../api/structureApi';
 import type { StructureNode, StructureNodeType } from '../../contracts/structure.contract';
 import { confirmStructure } from '../../stores/pipeline-helper';
+import { Button, EmptyState, InspectorPanel } from '../../components/ui';
 import './structure-flow.css';
 
 // ===== Constants =====
@@ -310,42 +311,33 @@ export default function StructureFlowView() {
   // ── Render ──
 
   if (loading) {
-    return (
-      <div className="structure-flow-empty">
-        <div className="spinner" />
-        <p>加载结构节点...</p>
-      </div>
-    );
+    return <EmptyState title="加载结构节点..." />;
   }
 
   if (nodes.length === 0) {
     return (
-      <div className="structure-flow-empty">
-        <p className="structure-flow-empty-text">还没有结构节点</p>
-        <p className="structure-flow-empty-hint">
-          点击下方按钮创建包含作品 + 三阶段（开端/发展/高潮）的默认骨架
-        </p>
-        <button
-          className="structure-flow-btn structure-flow-btn-primary"
-          style={{ padding: '10px 28px', fontSize: '0.85rem' }}
-          onClick={handleCreateDefault}
-        >
-          创建默认结构
-        </button>
-      </div>
+      <EmptyState
+        title="还没有结构节点"
+        description="点击下方按钮创建包含作品 + 三阶段（开端/发展/高潮）的默认骨架"
+        action={
+          <Button variant="primary" size="lg" onClick={handleCreateDefault}>
+            创建默认结构
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <div className="structure-flow-wrapper">
       <div className="structure-flow-toolbar">
-        <button className="structure-flow-btn structure-flow-btn-secondary" onClick={handleCreateDefault}>
+        <Button variant="secondary" size="sm" onClick={handleCreateDefault}>
           重建默认结构
-        </button>
+        </Button>
         <div className="structure-flow-toolbar-spacer" />
-        <button className="structure-flow-btn structure-flow-btn-success" onClick={handleConfirm}>
+        <Button variant="primary" size="sm" onClick={handleConfirm}>
           确认结构 ✓
-        </button>
+        </Button>
       </div>
 
       <div className="structure-flow-flex">
@@ -371,11 +363,7 @@ export default function StructureFlowView() {
 
         {/* Inspector Panel */}
         {selectedNode && (
-          <div className="structure-flow-inspector">
-            <div className="structure-flow-insp-title">
-              编辑 {NODE_LABELS[selectedNode.nodeType as StructureNodeType] || '节点'}
-            </div>
-
+          <InspectorPanel title={`编辑 ${NODE_LABELS[selectedNode.nodeType as StructureNodeType] || '节点'}`}>
             <div>
               <div className="structure-flow-label">标题</div>
               <input
@@ -409,35 +397,39 @@ export default function StructureFlowView() {
             </div>
 
             <div className="structure-flow-btn-row">
-              <button
-                className="structure-flow-btn structure-flow-btn-primary"
+              <Button
+                variant="primary"
                 style={{ flex: 1 }}
+                size="sm"
                 onClick={handleSaveEdit}
               >
                 保存
-              </button>
-              <button
-                className="structure-flow-btn structure-flow-btn-secondary"
+              </Button>
+              <Button
+                variant="secondary"
                 style={{ flex: 1 }}
+                size="sm"
                 onClick={handleAddChild}
               >
                 + 添加子节点
-              </button>
+              </Button>
             </div>
 
             <div style={{ marginTop: 4 }}>
-              <button
-                className="structure-flow-btn structure-flow-btn-danger structure-flow-btn-full"
+              <Button
+                variant="danger"
+                size="sm"
+                style={{ width: '100%' }}
                 onClick={handleDelete}
               >
                 删除节点（含子节点）
-              </button>
+              </Button>
             </div>
 
             <div className="structure-flow-node-id">
               ID: {selectedNode.id.slice(0, 10)}...
             </div>
-          </div>
+          </InspectorPanel>
         )}
       </div>
     </div>

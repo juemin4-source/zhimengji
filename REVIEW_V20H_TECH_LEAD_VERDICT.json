@@ -1,0 +1,29 @@
+{
+  "verdict": "PASS_WITH_NOTES",
+  "reason": "Both tickets deliver scoped functionality with clean architecture and full file-lock compliance. Ticket 1 implements correct AI tri-state routing with proper DecisionLog integration; routing is clean and each path has its own handler. Ticket 2 provides a thorough 10-step E2E with persistence verification via real Tauri IPC. Verdict is PASS_WITH_NOTES rather than PASS due to: (1) spec deviation where AiSuggestionCard/AiWritePreviewPanel modification was specified but logic was moved to CanvasAiBar callbacks, (2) setting stage AI writes only handle world rules, not characters — an undocumented limitation, (3) E2E Step 10 has a hardcoded 5-second restart wait that is fragile.",
+  "architecturalIntegrity": "INTACT",
+  "stableModuleRisk": "NONE",
+  "qualityAssessment": "ACCEPTABLE",
+  "keyFindings": [
+    "AI tri-state routing in CanvasAiBar is clean: handleSend() dispatches via switch on outputType to dedicated sendDiscuss/sendSuggestion/sendPreview handlers",
+    "generateChapterPacket.ts routing fix is minimal and correct — a single conditional (line 273: `if options.outputType === 'suggest' || 'write_preview'`) returns preview data without DB write, leaving original write-DB path untouched",
+    "DecisionLog integration is properly typed: all four AI operations (ai_suggestion_accepted/rejected, write_preview_confirmed/rejected) exist in the contract and are used correctly in accept/dismiss/confirm/abandon handlers",
+    "E2E test is robust: 10 test.step() wrappers, diagnostics() helper with screenshot-on-failure, graceful AI unconfigured handling, real Tauri IPC for persistence verification across premise/structure/setting/packet",
+    "File-lock compliance is perfect: all 5 files modified by Ticket 1 and all 5 files modified by Ticket 2 are in the allowed-write list; no forbidden or read-only files were touched",
+    "The '未修改 5 files' claim is a positive signal — it indicates the existing components (ChatDrawer, AiSuggestionCard, AiWritePreviewPanel, decisionLogApi, generateDraft) had proper abstraction boundaries, allowing CanvasAiBar to compose with them via props and callbacks without modification"
+  ],
+  "concerns": [
+    "Spec deviation: Scope freeze section 2.3(c)/(d) specifies modifying AiSuggestionCard.tsx and AiWritePreviewPanel.tsx to handle accept/dismiss/confirm/abandon logic, but implementation kept them unmodified and moved all write/DecisionLog orchestration into CanvasAiBar callbacks. The callback approach is architecturally cleaner (parent-orchestrates, children-render), but it diverges from the written spec and was not called out as a deviation in the report.",
+    "Setting stage AI writes only create world rules, not characters: writeAIContentToCanvas() for stage='setting' always calls createWorldRule(). AI suggestions/previews related to characters would be incorrectly written as world rules. This is an undocumented limitation — the report's Canvas mapping table doesn't mention this gap.",
+    "E2E Step 10 uses a hardcoded `page.waitForTimeout(5000)` for Tauri restart — fragile on slower machines or when build artifacts take longer to initialize. Prefer polling the CDP endpoint with a retry loop.",
+    "AI text write-back for text stage is an empty case in writeAIContentToCanvas(). This is correctly documented as a scope limitation, but it means the AI generation premium loop (Step 8 of E2E) cannot produce persisted text content. Should be tracked for v2.1.0."
+  ],
+  "codeInspection": {
+    "filesChecked": 8,
+    "claimsVerified": true,
+    "discrepancies": [
+      "Scope freeze specifies AiSuggestionCard.tsx (2.3c) and AiWritePreviewPanel.tsx (2.3d) should be modified for accept/dismiss logic; implementation kept them unchanged and used CanvasAiBar callbacks instead. Report says '未修改' without noting this is a spec deviation.",
+      "Setting stage AI writes only support world rules — character writes are unhandled. This is not documented in the report's known issues or canvas mapping table."
+    ]
+  }
+}

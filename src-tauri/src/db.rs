@@ -104,6 +104,8 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_jr_object ON judgment_records(object_id);
             "
         )?;
+
+        init_pipeline_states_table(&conn)?;
         Ok(())
     }
 
@@ -868,6 +870,120 @@ fn parse_wiki_links(content: &str) -> Vec<String> {
     }
     links
 }
+
+// ===== v2 PipelineState =====
+
+pub fn init_pipeline_states_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS pipeline_states (
+          project_id TEXT PRIMARY KEY,
+          current_stage TEXT NOT NULL DEFAULT 'premise',
+          canvas_stages TEXT NOT NULL DEFAULT '[]',
+          created_at INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as integer) * 1000),
+          updated_at INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as integer) * 1000),
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
+/// 获取 PipelineState，如果不存在则创建并返回默认状态
+pub fn get_or_default_pipeline_state(conn: &Connection, project_id: &str) -> Result<PipelineState, String> {
+    let mut stmt = conn.prepare_cached(
+        "SELECT project_id, current_stage, canvas_stages, created_at, updated_at FROM pipeline_states WHERE project_id = ?1"
+    ).map_err(|e| e.to_string())?;
+
+    let result = stmt.query_row(params![project_id], |row| {
+        let canvas_stages_str: String = row.get(2)?;
+        Ok(PipelineState {
+            project_id: row.get(0)?,
+            current_stage: row.get(1)?,
+            canvas_stages: serde_json::from_str(&canvas_stages_str).unwrap_or_default(),
+            created_at: row.get(3)?,
+            updated_at: row.get(4)?,
+        })
+    });
+
+    match result {
+        Ok(mut state) => {
+            // 保证 canvas_stages 不为空——如果数据库记录缺失或空数组，补全默认值
+            if state.canvas_stages.is_empty() {
+                state.canvas_stages = vec![
+                    CanvasStageState { stage: "premise".to_string(), status: "active".to_string() },
+                    CanvasStageState { stage: "structure".to_string(), status: "locked".to_string() },
+                    CanvasStageState { stage: "setting".to_string(), status: "locked".to_string() },
+                    CanvasStageState { stage: "packet".to_string(), status: "locked".to_string() },
+                    CanvasStageState { stage: "text".to_string(), status: "locked".to_string() },
+                ];
+                // 写回数据库确保一致
+                let json = serde_json::to_string(&state.canvas_stages).map_err(|e| e.to_string())?;
+                conn.execute(
+                    "UPDATE pipeline_states SET canvas_stages = ?1, updated_at = ?2 WHERE project_id = ?3",
+                    params![json, state.updated_at, project_id],
+                ).map_err(|e| e.to_string())?;
+            }
+            Ok(state)
+        }
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            // 创建默认状态
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as i64;
+            let default_stages = vec![
+                CanvasStageState { stage: "premise".to_string(), status: "active".to_string() },
+                CanvasStageState { stage: "structure".to_string(), status: "locked".to_string() },
+                CanvasStageState { stage: "setting".to_string(), status: "locked".to_string() },
+                CanvasStageState { stage: "packet".to_string(), status: "locked".to_string() },
+                CanvasStageState { stage: "text".to_string(), status: "locked".to_string() },
+            ];
+            let json = serde_json::to_string(&default_stages).map_err(|e| e.to_string())?;
+            conn.execute(
+                "INSERT INTO pipeline_states (project_id, current_stage, canvas_stages, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![project_id, "premise", &json, now, now],
+            ).map_err(|e| e.to_string())?;
+            Ok(PipelineState {
+                project_id: project_id.to_string(),
+                current_stage: "premise".to_string(),
+                canvas_stages: default_stages,
+                created_at: now,
+                updated_at: now,
+            })
+        }
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// 保存 PipelineState
+pub fn save_pipeline_state(conn: &Connection, state: &PipelineState) -> Result<PipelineState, String> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as i64;
+    let json = serde_json::to_string(&state.canvas_stages).map_err(|e| e.to_string())?;
+    let rows = conn.execute(
+        "UPDATE pipeline_states SET current_stage = ?1, canvas_stages = ?2, updated_at = ?3 WHERE project_id = ?4",
+        params![state.current_stage, &json, now, state.project_id],
+    ).map_err(|e| e.to_string())?;
+
+    if rows == 0 {
+        // 不存在则插入
+        conn.execute(
+            "INSERT INTO pipeline_states (project_id, current_stage, canvas_stages, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![state.project_id, state.current_stage, &json, now, now],
+        ).map_err(|e| e.to_string())?;
+    }
+
+    // 返回保存后的完整 PipelineState
+    Ok(PipelineState {
+        project_id: state.project_id.clone(),
+        current_stage: state.current_stage.clone(),
+        canvas_stages: state.canvas_stages.clone(),
+        created_at: if rows == 0 { now } else { state.created_at },
+        updated_at: now,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -28,6 +28,14 @@ import type { ProviderConfig, UsageStats } from './types/ai';
 import './styles/global.css';
 import './styles/variables.css';
 import './styles/ai.css';
+import { useProjectStore } from './stores/projectStore';
+import { getPipelineState } from './api/projectApi';
+import PipelineNav from './features/pipeline-nav/PipelineNav';
+import CanvasShell from './features/pipeline-canvas/CanvasShell';
+import PremiseEntryGate from './features/canvas-01-premise/PremiseEntryGate';
+import StructureFlowPlaceholder from './features/canvas-02-structure/StructureFlowPlaceholder';
+import PacketComingSoon from './features/canvas-04-packet/PacketComingSoon';
+import CanvasAiBar from './components/ai/CanvasAiBar';
 
 // ===== ID Generators =====
 let _nextId = 1000;
@@ -81,6 +89,7 @@ export default function App() {
 
 function AppInner() {
   const { showToast } = useToast();
+  const { setProjectId, setPipelineState } = useProjectStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [activeBookId, setActiveBookId] = useState<string | null>(null);
@@ -116,6 +125,10 @@ function AppInner() {
   const [aiProviders, setAiProviders] = useState<ProviderConfig[]>([]);
   const [aiActiveModelId, setAiActiveModelId] = useState('gpt-4o');
   const [changelogEntries, setChangelogEntries] = useState<ChangelogEntry[]>([]);
+
+  // v2: Pipeline state
+  const [currentStage, setCurrentStage] = useState<string | null>(null);
+  const [canvasStages, setCanvasStages] = useState<{stage: string; status: string}[]>([]);
 
   const [aiUsageStats, setAiUsageStats] = useState<UsageStats>({
     todayTokens: 0, maxTokens: 0,
@@ -364,11 +377,29 @@ function AppInner() {
     setActiveBookId(project.id);
     setActiveNavTab('文档');
     await loadProjectData(project.id);
+    // Load pipeline state
+    setProjectId(project.id);
+    try {
+      const ps = await getPipelineState(project.id);
+      setPipelineState(ps);
+      setCurrentStage(ps.currentStage);
+      setCanvasStages(ps.canvasStages);
+    } catch (e) {
+      console.error('Failed to load pipeline state', e);
+    }
     // Show first launch guide if needed
     if (shouldShowGuide(project.id)) {
       setShowGuide(true);
     }
   }, [loadProjectData]);
+
+  const handleStageChange = useCallback((stage: string) => {
+    const target = canvasStages.find(s => s.stage === stage);
+    if (target && (target.status === 'active' || target.status === 'ready' || target.status === 'done')) {
+      setCurrentStage(stage);
+      setActiveNavTab('文档');
+    }
+  }, [canvasStages]);
 
   const handleBackToBookshelf = useCallback(() => {
     setActiveBookId(null);
@@ -761,7 +792,7 @@ function AppInner() {
     }
   }
 
-  const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录', 'AI'];
+  // const NAV_TABS: NavTab[] = ['文档', '画板', '设定集', '判断记录', 'AI'];
   // Compute total word count for status bar
   const totalWordCount = useMemo(() => {
     return objects.reduce((sum, o) => sum + countWords(o.content || ''), 0);
@@ -785,6 +816,48 @@ function AppInner() {
   }, [canvasStates]);
 
   const renderMainContent = () => {
+    if (currentStage) {
+      const stageInfo = canvasStages.find(s => s.stage === currentStage);
+      const status = (stageInfo?.status || 'active') as 'locked' | 'ready' | 'active' | 'done';
+      switch (currentStage) {
+        case 'premise': return (
+          <CanvasShell stage="premise" status={status}>
+            <PremiseEntryGate />
+          </CanvasShell>
+        );
+        case 'structure': return (
+          <CanvasShell stage="structure" status={status}>
+            <StructureFlowPlaceholder />
+          </CanvasShell>
+        );
+        case 'setting': return (
+          <CanvasShell stage="setting" status={status}>
+            <SettingCollection
+              allObjects={objects} onSelectObject={onSelectObject}
+              onNavigate={onNavigate} onUpdateObject={onUpdateObject}
+              onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected}
+            />
+          </CanvasShell>
+        );
+        case 'packet': return (
+          <CanvasShell stage="packet" status={status}>
+            <PacketComingSoon />
+          </CanvasShell>
+        );
+        case 'text': return (
+          <CanvasShell stage="text" status={status}>
+            <DocumentView
+              currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs}
+              onUpdateObject={onUpdateObject} onNavigate={onNavigate} onAddToBoard={onAddToBoard}
+              onLockObject={onLockObject} onDiscardObject={onDiscardObject}
+              onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject}
+              saveStatus={saveStatus} onTriggerSave={triggerAutoSave}
+            />
+          </CanvasShell>
+        );
+        default: return null;
+      }
+    }
     switch (activeNavTab) {
       case '文档': return <DocumentView
         currentObject={currentObject} allObjects={objects} allBoardTabs={allBoardTabs}
@@ -792,7 +865,7 @@ function AppInner() {
         onLockObject={onLockObject} onDiscardObject={onDiscardObject}
         onCreateObject={onCreateObject} onCreateNamedObject={onCreateNamedObject}
         saveStatus={saveStatus} onTriggerSave={triggerAutoSave}
-        
+
       />;
       case '画板': return <CanvasView
         allObjects={objects} connections={connections} canvasStates={canvasStates}
@@ -801,7 +874,7 @@ function AppInner() {
         onAddConnection={onAddConnection} onAddSticky={onAddSticky}
         onAddToBoard={onAddToBoard} onCreateObject={onCreateObject}
         onCreateCanvasObject={onCreateCanvasObject}
-        
+
       />;
       case '设定集': return <SettingCollection
         allObjects={objects} onSelectObject={onSelectObject}
@@ -841,34 +914,18 @@ function AppInner() {
           {isOffline && (
             <div className="offline-banner">离线 ● 当前处于离线状态，编辑内容将在恢复连接后自动同步。</div>
           )}
-          <nav className="nav-bar">
-            <button onClick={handleBackToBookshelf} className="nav-back-btn" title="返回书架" style={{ background: "transparent", color: "var(--text-secondary)" }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-              书架
-            </button>
-            <div className="nav-divider" />
-            <span className="nav-project">{activeBook?.title ?? '设定管理器'}</span>
-            {NAV_TABS.map(tab => (
-              <button key={tab} className={`nav-tab ${activeNavTab === tab ? 'active' : ''}`} onClick={() => setActiveNavTab(tab)}>{tab}</button>
-            ))}
-            <div style={{ flex: 1 }} />
-            {/* Search button */}
-            {currentObject && (
-              <div className="nav-badges">
-                <span className="nav-badge">{renderTypeIcon(currentObject.type)} {currentObject.type}</span>
-                <span className="nav-badge"><span className="dot" style={{ background: CANON_COLORS[currentObject.canonLevel] }}></span>{currentObject.canonLevel}</span>
-              </div>
-            )}
-            <button className="tb-btn" onClick={() => setShowGlobalSearch(true)} title="全局搜索 (Ctrl+K)" style={{ fontSize: 13, gap: 4 }}>
-              <Search size={16} /><kbd style={{ fontSize: 10, color: '#666', background: '#222', padding: '1px 4px', borderRadius: 2 }}>Ctrl+K</kbd>
-            </button>
-            <button className="tb-btn" onClick={() => setShowAiSettings(true)} title="AI 设置" style={{ fontSize: 13 }}
-            ><Settings size={16} /></button>
-          </nav>
+          <PipelineNav
+            stages={canvasStages.map(s => ({ stage: s.stage, status: s.status })) as any}
+            currentStage={currentStage || 'premise'}
+            onStageClick={handleStageChange}
+            onBack={handleBackToBookshelf}
+            projectTitle={activeBook?.title ?? '设定管理器'}
+          />
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>
             <Inspector object={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onNavigate={onNavigate} onAction={onInspectorAction} />
           </div>
+          <CanvasAiBar stage={currentStage || 'premise'} />
           {/* Bottom StatusBar */}
           <StatusBar
             saveStatus={saveStatus}

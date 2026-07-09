@@ -8,6 +8,7 @@ import type {
   ImportResult,
   CanvasTabStateResponse,
 } from './types/world';
+import type { PipelineState } from './contracts/project.contract';
 
 // ══════════════════════════════════════════
 //  Project API
@@ -136,4 +137,16 @@ export function exportProject(projectId: string, outputPath: string): Promise<Ex
 
 export function importProject(inputPath: string): Promise<ImportResult> {
   return invoke('import_project', { inputPath });
+}
+
+// ══════════════════════════════════════════
+//  v2 PipelineState API
+// ══════════════════════════════════════════
+
+export function getPipelineState(projectId: string): Promise<PipelineState> {
+  return invoke('get_pipeline_state', { input: { projectId } });
+}
+
+export function savePipelineState(state: PipelineState): Promise<PipelineState> {
+  return invoke('save_pipeline_state', { input: { state } });
 }

@@ -3,6 +3,7 @@ mod byok_commands;
 mod commands;
 mod db;
 mod models;
+mod pipeline_commands;
 
 use db::Database;
 use std::fs;
@@ -67,6 +68,9 @@ pub fn run() {
             byok_commands::call_llm,
             byok_commands::get_usage_stats,
             byok_commands::set_budget_limit,
+            // v2 PipelineState commands
+            pipeline_commands::get_pipeline_state,
+            pipeline_commands::save_pipeline_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

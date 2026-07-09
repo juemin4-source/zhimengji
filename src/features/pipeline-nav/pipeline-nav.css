@@ -1,0 +1,51 @@
+/* PipelineNav — 五画板管道导航栏 (织梦机 v2) */
+
+.pipeline-nav {
+  display: flex;
+  align-items: center;
+  height: var(--header-height, 44px);
+  padding: 0 12px;
+  background: var(--bg-header, #0e0e0e);
+  border-bottom: 1px solid var(--border-default, #2a2a2a);
+  gap: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pipeline-back-btn:hover {
+  color: var(--accent, #B7FF00) !important;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pipeline-project-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary, #e8e8e8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+  letter-spacing: 0.01em;
+}
+
+.pipeline-stage-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.pipeline-stage-btn.active:hover {
+  background: rgba(183, 255, 0, 0.12);
+  border-color: rgba(183, 255, 0, 0.35);
+}
+
+/* Scrollable stages container on narrow screens */
+@media (max-width: 768px) {
+  .pipeline-stages {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .pipeline-stages::-webkit-scrollbar {
+    display: none;
+  }
+}

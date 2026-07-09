@@ -148,7 +148,7 @@ export default function TextCanvas(props: TextCanvasProps) {
       : (chapterPacket ? [chapterPacket] : []);
 
     if (!projectName || packets.length === 0) {
-      showToast('没有可导出的正文内容', 'warning');
+      showToast('没有可导出的正文内容', 'info');
       return;
     }
     setIsExporting(true);

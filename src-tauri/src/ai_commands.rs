@@ -120,14 +120,14 @@ fn extract_parameters(message: &str, intent: &str) -> serde_json::Value {
 
     match intent {
         "generateDraft" | "generatePacket" => {
-            let chapter = extract_chapter_ref(msg_lower);
+            let chapter = extract_chapter_ref(&msg_lower);
             serde_json::json!({
                 "extractedChapter": chapter,
                 "sourceMessage": message.chars().take(100).collect::<String>(),
             })
         }
         "assumption_flow" => {
-            let entity_type = extract_entity_type(msg_lower);
+            let entity_type = extract_entity_type(&msg_lower);
             serde_json::json!({
                 "suggestedEntityType": entity_type,
                 "sourceMessage": message.chars().take(100).collect::<String>(),

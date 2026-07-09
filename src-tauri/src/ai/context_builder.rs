@@ -7,10 +7,7 @@
 // Missing upstream data is handled gracefully: available data only, no panic.
 
 use crate::db::Database;
-use crate::models::{
-    AiBuiltContext, BuildContextInput,
-    ChapterPacket, CharacterCard, PremiseCard, StructureNode, WorldRule,
-};
+use crate::models::{AiBuiltContext, BuildContextInput};
 use serde_json::json;
 
 /// Main entry: build an AI context from the given input.

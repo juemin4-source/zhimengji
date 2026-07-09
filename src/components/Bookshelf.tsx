@@ -1,11 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import type { Project } from '../types/world';
+import QuickDraftButton from '../features/quick-draft/QuickDraftButton';
+import { QuickDraftPanel } from '../features/quick-draft/QuickDraftPanel';
+import { seedDemoProject, isDemoSeeded } from '../api/demoApi';
+import * as api from '../tauri-api';
 
 interface BookshelfProps {
   projects: Project[];
   onEnterProject: (project: Project) => void;
   onCreateProject?: () => void;
+  onTransferred?: (projectId: string) => void;
+  onRefreshProjects?: () => Promise<void>;
 }
 
 const STATUS_LABEL: Record<Project['status'], string> = {
@@ -13,6 +19,7 @@ const STATUS_LABEL: Record<Project['status'], string> = {
   conceiving: '构思中',
   editing: '修改中',
   done: '已完成',
+  demo: '示例作品',
 };
 
 const STATUS_COLOR: Record<Project['status'], string> = {
@@ -20,6 +27,7 @@ const STATUS_COLOR: Record<Project['status'], string> = {
   conceiving: '#666666',
   editing: '#CE93D8',
   done: '#4CAF50',
+  demo: '#B7FF00',
 };
 
 const GENRE_GRADIENT_BG: Record<string, string> = {
@@ -225,6 +233,30 @@ function BookCard({ project, onEnter }: { project: Project; onEnter: (p: Project
         <span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', background: '#666', display: 'inline-block' }} title="未分类" />
       </div>
 
+      {/* Demo badge */}
+      {project.status === 'demo' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '0.75rem',
+            left: '0.75rem',
+            zIndex: 5,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            padding: '0.2rem 0.55rem',
+            borderRadius: 20,
+            background: '#B7FF00',
+            color: '#0a0a0a',
+            fontSize: '0.65rem',
+            fontWeight: 600,
+            letterSpacing: '0.03em',
+          }}
+        >
+          示例
+        </div>
+      )}
+
       {/* Card content overlay (gradient fade at bottom) */}
       <div
         style={{
@@ -426,14 +458,63 @@ function EmptyState({ onCreate }: { onCreate?: () => void }) {
   );
 }
 
-export default function Bookshelf({ projects, onEnterProject, onCreateProject }: BookshelfProps) {
+export default function Bookshelf({ projects, onEnterProject, onCreateProject, onTransferred, onRefreshProjects }: BookshelfProps) {
+  const [showQuickDraft, setShowQuickDraft] = useState(false);
+  const [demoSeeding, setDemoSeeding] = useState(false);
   const isEmpty = !projects || projects.length === 0;
+
+  // Seed Demo project on first mount if it doesn't exist
+  useEffect(() => {
+    const attemptSeed = async () => {
+      try {
+        const seeded = await isDemoSeeded();
+        if (!seeded) {
+          setDemoSeeding(true);
+          await seedDemoProject();
+          if (onRefreshProjects) {
+            await onRefreshProjects();
+          }
+        }
+      } catch (err) {
+        console.error('Demo seeding failed:', err);
+      } finally {
+        setDemoSeeding(false);
+      }
+    };
+    attemptSeed();
+  }, []);
 
   const totalWordCount = useMemo(() => {
     return projects.reduce((sum, p) => sum + p.wordCount, 0);
   }, [projects]);
 
   const maxCanonCount = 5;
+
+  const handleTransferred = useCallback(async (projectId: string) => {
+    setShowQuickDraft(false);
+    // Fetch project from backend and navigate directly
+    try {
+      const dto = await api.getProject(projectId);
+      if (dto) {
+        let gradient: [string, string] = ['#6366f1', '#8b5cf6'];
+        try {
+          const g = JSON.parse(dto.gradient);
+          if (Array.isArray(g) && g.length >= 2) gradient = [g[0], g[1]];
+        } catch { /* keep default */ }
+        const project: Project = {
+          id: dto.id,
+          title: dto.name,
+          genre: dto.genre || '未分类',
+          status: (dto.status as Project['status']) || 'conceiving',
+          wordCount: dto.wordCount ?? 0,
+          gradient,
+        };
+        onEnterProject(project);
+      }
+    } catch (err) {
+      console.error('Failed to navigate to transferred project:', err);
+    }
+  }, [onEnterProject]);
 
   return (
     <div
@@ -504,6 +585,7 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
               <span>+</span> 新建作品
             </button>
           )}
+          <QuickDraftButton onClick={() => setShowQuickDraft(true)} />
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <select
               aria-label="排序方式"
@@ -587,6 +669,33 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
         </div>
       </div>
 
+      {/* Demo seeding indicator */}
+      {demoSeeding && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.4rem 0',
+            fontSize: '0.75rem',
+            color: '#666',
+          }}
+        >
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              border: '2px solid #2a2a2a',
+              borderTopColor: '#B7FF00',
+              borderRadius: '50%',
+              display: 'inline-block',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          准备示例作品...
+        </div>
+      )}
+
       {/* ===== Statistics Bar ===== */}
       <div
         style={{
@@ -632,6 +741,14 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
             <BookCard key={project.id} project={project} onEnter={onEnterProject} />
           ))}
         </div>
+      )}
+
+      {/* QuickDraft Panel Overlay */}
+      {showQuickDraft && (
+        <QuickDraftPanel
+          onClose={() => setShowQuickDraft(false)}
+          onTransferred={handleTransferred}
+        />
       )}
     </div>
   );

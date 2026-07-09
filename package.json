@@ -20,7 +20,8 @@
         "accept": "npm run accept:static && npm run accept:css && npm run accept:contracts && npm run accept:persistence",
         "accept:quickdraft": "node scripts/acceptance/accept-quickdraft.mjs",
         "accept:export": "node scripts/acceptance/accept-export.mjs",
-        "accept:feedback": "node scripts/acceptance/accept-feedback.mjs"
+        "accept:feedback": "node scripts/acceptance/accept-feedback.mjs",
+        "accept:demo": "node scripts/acceptance/accept-demo.mjs"
     },
     "dependencies": {
         "@tauri-apps/api": "^2",

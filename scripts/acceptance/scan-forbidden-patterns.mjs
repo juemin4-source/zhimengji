@@ -78,8 +78,8 @@ function fail(pattern, file, line, msg) {
 // 1. Direct @tauri-apps/api/core invoke outside src/api/
 function checkDirectInvoke(files) {
   for (const file of files) {
-    const rel = relative(ROOT, file);
-    const isApi = rel.startsWith('src/api');
+    const rel = normRel(file);
+    const isApi = rel.startsWith('src/api/');
     if (isApi) continue; // Allowed in api layer
 
     const content = readFile(file);
@@ -99,10 +99,14 @@ function checkDirectInvoke(files) {
   }
 }
 
+function normRel(filePath) {
+  return relative(ROOT, filePath).replace(/\\/g, '/');
+}
+
 // 2. Large inline style objects
 function checkInlineStyles(files) {
   for (const file of files) {
-    const rel = relative(ROOT, file);
+    const rel = normRel(file);
     if (!rel.endsWith('.tsx') && !rel.endsWith('.ts')) continue;
 
     const content = readFile(file);
@@ -128,7 +132,7 @@ function checkMockKeyword(files) {
   // Skip test files explicitly
   const skipPatterns = ['__tests__', '.test.', '.spec.', 'e2e', '__mocks__'];
   for (const file of files) {
-    const rel = relative(ROOT, file);
+    const rel = normRel(file);
     if (skipPatterns.some(p => rel.includes(p))) continue;
     if (!rel.endsWith('.ts') && !rel.endsWith('.tsx') && !rel.endsWith('.rs')) continue;
 

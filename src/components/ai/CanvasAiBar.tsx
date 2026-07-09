@@ -196,6 +196,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
   const [input, setInput] = useState('');
   const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'unconfigured'>('checking');
   const [activeModel, setActiveModel] = useState<AiModel>(DEFAULT_MODELS[0]);
+  const [activeApiKey, setActiveApiKey] = useState('');
   const [outputType, setOutputType] = useState<AiOutputType>('discuss');
 
   // ── ChatDrawer state ──
@@ -234,6 +235,9 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
               if (matched && !cancelled) {
                 setActiveModel(matched);
               }
+            }
+            if (activeConfig.apiKeyEncrypted && !cancelled) {
+              setActiveApiKey(activeConfig.apiKeyEncrypted);
             }
             if (!cancelled) { setAiStatus('ready'); return; }
           }
@@ -312,7 +316,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
 
       messages.push({ role: 'user', content: text });
 
-      const response = await callLlm(messages, { model: activeModel, timeout: 30000 });
+      const response = await callLlm(messages, { model: activeModel, apiKey: activeApiKey, timeout: 30000 });
 
       // Try to parse as structured output
       let structuredData: ParseResult | undefined;
@@ -384,7 +388,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
               { role: 'system' as const, content: systemContent },
               { role: 'user' as const, content: text },
             ],
-            { model: activeModel, timeout: 30000 },
+            { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
           );
 
           // Parse output with structured parser
@@ -492,7 +496,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
       // Generic fallback: call LLM directly
       const response = await callLlm(
         [{ role: 'user' as const, content: text }],
-        { model: activeModel, timeout: 30000 },
+        { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
       );
       setCurrentSuggestions(prev => [...prev, {
         id: sugUid(),
@@ -530,7 +534,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
               { role: 'system' as const, content: context.systemPrompt + '\n\nContext:\n' + context.contextData },
               { role: 'user' as const, content: text },
             ],
-            { model: activeModel, timeout: 30000 },
+            { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
           );
 
           // Parse output with structured parser
@@ -634,7 +638,7 @@ export default function CanvasAiBar({ stage }: CanvasAiBarProps) {
       // Generic fallback: call LLM directly
       const response = await callLlm(
         [{ role: 'user' as const, content: text }],
-        { model: activeModel, timeout: 30000 },
+        { model: activeModel, apiKey: activeApiKey, timeout: 30000 },
       );
       setCurrentPreview({
         content: response.content,

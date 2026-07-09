@@ -250,3 +250,34 @@ pub struct ProjectExportData {
     pub connections: Vec<Connection>,
     pub canvas_states: Vec<CanvasTabState>,
 }
+
+// ===== v2 PipelineState =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PipelineState {
+    pub project_id: String,
+    pub current_stage: String,
+    pub canvas_stages: Vec<CanvasStageState>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CanvasStageState {
+    pub stage: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetPipelineStateInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SavePipelineStateInput {
+    pub state: PipelineState,
+}

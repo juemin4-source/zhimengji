@@ -2,8 +2,9 @@ use rusqlite::{params, Connection, Result as SqlResult};
 use std::sync::Mutex;
 
 use crate::models::{
-    CanvasTabState, CanvasTabStateRow, ImportResult, JudgmentRecord, Project,
-    ProjectExportData, SaveCanvasTabStateResponse, WorldObject, WorldObjectRow,
+    CanvasStageState, CanvasTabState, CanvasTabStateRow, ImportResult, JudgmentRecord,
+    PipelineState, Project, ProjectExportData, SaveCanvasTabStateResponse, WorldObject,
+    WorldObjectRow,
 };
 use crate::models::Connection as ObjConnection;
 

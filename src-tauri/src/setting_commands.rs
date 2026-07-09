@@ -169,7 +169,7 @@ pub fn mark_step_usable(
 
 #[tauri::command]
 pub fn generate_sparrow_ai(
-    db: State<'_, Database>,
+    _db: State<'_, Database>,
     input: GenerateSparrowAiInput,
 ) -> Result<GenerateSparrowAiOutput, String> {
     // v2.0.2: AI generation stub — returns placeholder content

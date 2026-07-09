@@ -15,14 +15,16 @@ import type { Tab } from '../../components/ui';
 import WorldRulePanel from './WorldRulePanel';
 import CharacterPanel from './CharacterPanel';
 import FactionPanel from './FactionPanel';
+import SparrowStepList from './SparrowStepList';
 import './setting-canvas.css';
 
-type SettingTab = 'world-rules' | 'characters' | 'factions';
+type SettingTab = 'world-rules' | 'characters' | 'factions' | 'sparrow';
 
 const TABS: Tab[] = [
   { id: 'world-rules', label: '世界观' },
   { id: 'characters', label: '角色' },
   { id: 'factions', label: '势力' },
+  { id: 'sparrow', label: 'Sparrow 模式' },
 ];
 
 export default function SettingCanvasV2() {
@@ -51,6 +53,7 @@ export default function SettingCanvasV2() {
         {activeTab === 'world-rules' && <WorldRulePanel />}
         {activeTab === 'characters' && <CharacterPanel />}
         {activeTab === 'factions' && <FactionPanel />}
+        {activeTab === 'sparrow' && <SparrowStepList />}
       </div>
 
       {/* Footer with Confirm Button */}

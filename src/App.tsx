@@ -133,6 +133,9 @@ function AppInner() {
   const [currentStage, setCurrentStage] = useState<string | null>(null);
   const [canvasStages, setCanvasStages] = useState<{stage: string; status: string}[]>([]);
 
+  // D3: Legacy view override
+  const [legacyView, setLegacyView] = useState<string | null>(null);
+
   // Sync local state when pipeline-helper updates the store (e.g. confirmPremise)
   const storeStage = useProjectStore(s => s.currentStage);
   const storeStages = useProjectStore(s => s.canvasStages);
@@ -410,6 +413,9 @@ function AppInner() {
     const target = canvasStages.find(s => s.stage === stage);
     if (!target || !(target.status === 'active' || target.status === 'ready' || target.status === 'done')) return;
     if (!activeBookId) return;
+
+    // Clear legacy view when navigating via pipeline
+    setLegacyView(null);
 
     // Update local stage
     setCurrentStage(stage);

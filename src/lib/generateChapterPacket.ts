@@ -18,6 +18,7 @@ import type { PremiseCard } from '../contracts/premise.contract';
 import type { StructureNode } from '../contracts/structure.contract';
 import type { CharacterCard, WorldRule, FactionCard } from '../contracts/setting.contract';
 import type { AiModel } from '../types/ai';
+import type { AiOutputType } from './ai-output';
 
 // ─── Types ───
 
@@ -27,6 +28,8 @@ export interface GeneratePacketOptions {
   chapterNumber: number;
   title?: string;
   model: AiModel;
+  /** AI 输出三态：discuss | suggest | write_preview。默认 write_preview */
+  outputType?: AiOutputType;
 }
 
 export interface UpstreamData {

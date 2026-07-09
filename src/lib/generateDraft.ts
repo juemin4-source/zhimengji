@@ -10,12 +10,15 @@
 import { callLlm } from './llm-client';
 import type { ChapterPacket } from '../contracts/chapter-packet.contract';
 import type { AiModel } from '../types/ai';
+import type { AiOutputType } from './ai-output';
 
 // ─── Types ───
 
 export interface GenerateDraftOptions {
   packet: ChapterPacket;
   model: AiModel;
+  /** AI 输出三态：discuss | suggest | write_preview。默认 write_preview */
+  outputType?: AiOutputType;
 }
 
 // ─── Layer resolver (handles both string and parsed object layers) ───

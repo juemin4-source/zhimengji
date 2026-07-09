@@ -691,3 +691,70 @@ impl ChapterPacketRow {
         }
     }
 }
+
+// ===== v2 DecisionLog =====
+
+/// DecisionLogEntry — 追加型审计记录（D 轮新建）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DecisionLogEntry {
+    pub id: String,
+    pub project_id: String,
+    pub operation: String,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub summary: String,
+    pub details: String,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppendDecisionLogInput {
+    pub project_id: String,
+    pub operation: String,
+    pub summary: String,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+    pub details: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListDecisionLogsInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetDecisionLogInput {
+    pub id: String,
+}
+
+/// DB Row representation of DecisionLogEntry for SQLite storage.
+#[derive(Debug, Clone)]
+pub struct DecisionLogRow {
+    pub id: String,
+    pub project_id: String,
+    pub operation: String,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub summary: String,
+    pub details: String,
+    pub created_at: i64,
+}
+
+impl DecisionLogRow {
+    pub fn to_api(self) -> DecisionLogEntry {
+        DecisionLogEntry {
+            id: self.id,
+            project_id: self.project_id,
+            operation: self.operation,
+            entity_type: self.entity_type,
+            entity_id: self.entity_id,
+            summary: self.summary,
+            details: self.details,
+            created_at: self.created_at,
+        }
+    }
+}

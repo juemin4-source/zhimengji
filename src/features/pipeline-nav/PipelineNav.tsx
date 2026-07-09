@@ -7,8 +7,8 @@
  * Top-left "← 书架" back button.
  */
 
-import React from 'react';
-import { Cog } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Cog, Monitor, MessageSquare, Database, MoreHorizontal } from 'lucide-react';
 import './pipeline-nav.css';
 
 export interface StageItem {
@@ -23,7 +23,14 @@ interface PipelineNavProps {
   onBack: () => void;
   projectTitle: string;
   onSettingsClick?: () => void;
+  onLegacySelect?: (type: 'canvas' | 'ai-chat' | 'setting-collection') => void;
 }
+
+const LEGACY_ITEMS: { type: 'canvas' | 'ai-chat' | 'setting-collection'; label: string; icon: React.ReactNode }[] = [
+  { type: 'canvas', label: 'CanvasView', icon: <Monitor size={14} /> },
+  { type: 'ai-chat', label: 'AI 独立页', icon: <MessageSquare size={14} /> },
+  { type: 'setting-collection', label: '设定集旧版', icon: <Database size={14} /> },
+];
 
 const STAGE_LABELS: Record<string, string> = {
   premise: '前提',
@@ -54,7 +61,28 @@ export default function PipelineNav({
   onBack,
   projectTitle,
   onSettingsClick,
+  onLegacySelect,
 }: PipelineNavProps) {
+  const [legacyOpen, setLegacyOpen] = useState(false);
+  const legacyRef = useRef<HTMLDivElement>(null);
+
+  // Close legacy dropdown on click outside
+  useEffect(() => {
+    if (!legacyOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (legacyRef.current && !legacyRef.current.contains(e.target as Node)) {
+        setLegacyOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [legacyOpen]);
+
+  const handleLegacyClick = useCallback((type: 'canvas' | 'ai-chat' | 'setting-collection') => {
+    setLegacyOpen(false);
+    onLegacySelect?.(type);
+  }, [onLegacySelect]);
+
   return (
     <nav className="pipeline-nav">
       <button
@@ -163,15 +191,39 @@ export default function PipelineNav({
           );
         })}
       </div>
-      {onSettingsClick && (
+      <div className="pipeline-right-group">
         <button
-          onClick={onSettingsClick}
-          style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm, 4px)', display: 'flex', alignItems: 'center', flexShrink: 0 }}
-          title="AI 设置"
+          className={'pipeline-legacy-btn' + (legacyOpen ? ' open' : '')}
+          onClick={() => setLegacyOpen(o => !o)}
+          title="旧版工具"
         >
-          <Cog size={16} />
+          <MoreHorizontal size={16} />
         </button>
-      )}
+        {legacyOpen && (
+          <div className="pipeline-legacy-menu" ref={legacyRef}>
+            <div className="pipeline-legacy-menu-label" style={{ padding: '6px 12px', fontSize: '0.7rem', color: 'var(--text-muted, #6b6b6b)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legacy</div>
+            {LEGACY_ITEMS.map(item => (
+              <button
+                key={item.type}
+                className="pipeline-legacy-menu-item"
+                onClick={() => handleLegacyClick(item.type)}
+              >
+                <span className="menu-item-icon">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {onSettingsClick && (
+          <button
+            onClick={onSettingsClick}
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #a0a0a0)', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm, 4px)', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+            title="AI 设置"
+          >
+            <Cog size={16} />
+          </button>
+        )}
+      </div>
     </nav>
   );
 }

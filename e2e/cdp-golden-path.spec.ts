@@ -64,7 +64,17 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
     await page.getByRole('button', { name: '下一步' }).click({ force: true });
     await page.waitForTimeout(300);
     await page.getByRole('button', { name: '开始创作' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1500);
+
+    // Dismiss guide again — it reappears when entering a new project
+    try {
+      const guide = page.getByRole('button', { name: '开始使用' });
+      if (await guide.isVisible({ timeout: 2000 })) {
+        await guide.click();
+        await page.getByRole('button', { name: '跳过' }).click();
+        await page.waitForTimeout(500);
+      }
+    } catch { /* no guide */ }
 
     // ── 画板① 前提卡 ──
     console.log('填写前提卡...');
@@ -93,11 +103,10 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
 
     // ── 画板② 结构图 ──
     console.log('创建结构...');
-    await page.waitForSelector('.react-flow', { timeout: 10000 });
-    if (await page.getByText('创建默认结构').isVisible()) {
-      await page.click('text=创建默认结构');
-      await page.waitForTimeout(2000);
-    }
+    // Wait for "创建默认结构" button (empty state) — .react-flow only appears after creation
+    await page.locator('button').filter({ hasText: '创建默认结构' }).first().waitFor({ state: 'visible', timeout: 10000 });
+    await page.click('text=创建默认结构');
+    await page.waitForTimeout(2000);
     await page.waitForTimeout(1000);
     await page.click('text=确认结构');
     await page.waitForTimeout(2000);

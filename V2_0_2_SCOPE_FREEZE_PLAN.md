@@ -1,248 +1,295 @@
-# V2_0_2_SCOPE_FREEZE_PLAN
+# v2.0.2 Scope Freeze Plan
 
-> 状态：正式冻结。前置文档：zhimengji-v2-prd-v0.3.1.md 第 7 节
-> 编码开始前必须通过 Chancellor 签字。
+## 1. Verdict
 
-## 1. 战役定义
+Status: DRAFT
+Target Version: v2.0.2
+Version Type: AI Capability Foundation (infrastructure layer)
+Previous Version: v2.0-H (Round D baseline)
+Next Version: v2.1.0 (Method Backbone MVP)
 
-建立稳定、可测、可扩展的 AI 能力底座，为 v2.1.0 方法论骨架提供支撑。
+Parallel Execution: v2.0.2 runs in parallel with v2.0.1 (Usability Probe). Both branch from v2.0-H baseline. File conflict risk between branches: CanvasAiBar.tsx, types/ai.ts. Must be resolved at merge time; v2.0.2 does not wait for v2.0.1.
 
-**完成后状态：** Context Builder 为所有画板构建统一上下文；Command Router 正确路由 6 种 AI 路径；Structured Output Parser 通过 schema 校验 + 有 fallback；Skill Registry 注册 5 个技能且可检索；Evaluation Harness ≥ 10 fixture 全 PASS；Control Center UI 支持 provider 增删改查 + 模型选择 + 连接测试。
+## 2. Target Outcome
 
-**硬规则：** 不修改画板组件内核逻辑（canvas-01-premise / canvas-02-structure / canvas-03-setting / canvas-04-packet / canvas-05-text 下的已有组件只读）。不触碰旧 AIChat 独立页（保留 Legacy，不增强，不重构）。所有新功能端到端可用（非 mock）。
+This version completes:
 
-## 2. In Scope
+1. AI Context Builder v2 -- unified context construction for all canvases, eliminating per-canvas AI fragmentation.
+2. AI Command Router v2 -- intent recognition routing to 7 paths (discuss/suggest/write_preview/generatePacket/generateDraft/assumption_flow/unrecognized).
+3. Structured Output Parser -- JSON schema validation, auto-repair, field completion, illegal field stripping, fallback to plain text.
+4. Prompt/Skill Registry -- 5 registered skills (premise.five_step, structure.l1_l4, setting.sparrow_9_3, packet.three_detail_modes, draft.chapter_writer).
+5. AI Evaluation Harness -- >= 10 fixture tests, all PASS.
+6. AI Control Center v2 -- Provider/Model/API Key management UI with connection testing and status display.
 
-| # | 模块 | 优先级 | 说明 |
-|---|------|-------|------|
-| 1 | **AI Context Builder v2** | P0 | 统一构建当前画板、上游数据、可写目标、禁止写目标、outputType。为所有 AI 调用提供标准化上下文入口 |
-| 2 | **AI Command Router v2** | P0 | 识别用户意图并路由到 discuss / suggest / write_preview / generatePacket / generateDraft / assumption flow。Router 识别意图后分派到具体执行模块 |
-| 3 | **Structured Output Parser** | P0 | JSON schema 校验 + 解析失败修复 + 字段缺失补全 + 非法字段剔除 + fallback 到纯文本建议 |
-| 4 | **Prompt / Skill Registry** | P0 | 注册 premise.five_step / structure.l1_l4 / setting.sparrow_9_3 / packet.three_detail_modes / draft.chapter_writer。统一管理 prompt 版本、输入 schema、输出 schema |
-| 5 | **AI Evaluation Harness + AI Control Center v2** | P0 | 测试基底：fixture 输入 → schema 验证 → outputType 行为测试 → DB 不误写测试。UI 控制台：Provider 管理 / Model 管理 / API Key 状态 / AI 能力状态展示 |
+This version does NOT attempt:
+- Complete Method UI for any canvas (v2.1.0).
+- Old AIChat enhancement or removal (remains Legacy, not modified).
 
-### 2.1 AI Control Center v2 功能清单
+## 3. In Scope
 
-| 模块 | 功能 | 读取来源 |
-|------|------|---------|
-| Provider 管理 | OpenAI / DeepSeek / Gemini / Custom 四种 provider 的添加/修改/删除 | 现有 `api_keys` 表 + BYOK 模块 |
-| Model 管理 | 默认聊天模型 / 结构化输出模型 / 正文生成模型 / 检测模型的分类配置和切换 | 新增 `model_configs` 表 |
-| API Key 状态 | Key 存在性检查 / 连接测试 / 错误提示 / 可用性展示 | 现有 `api_keys` 表 |
-| AI 能力状态展示 | 三态路由 / Structured Output / Skill Registry / Evaluation Harness 的运行状态 | runtime 自检 |
+| # | Item | Priority | Notes |
+|---|------|----------|-------|
+| 1 | AI Context Builder v2 | P0 | Single entry point: current canvas data + upstream data + writable/forbidden targets + outputType. premise->no upstream; structure->premise; setting->premise+structure; packet->premise+structure+setting; draft (text)->packet+setting. |
+| 2 | AI Command Router v2 | P0 | Intent recognition routes to 7 paths. CanvasAiBar sends messages through router (not direct stage-switch). Router reads provider config from AI Control Center. |
+| 3 | Structured Output Parser | P0 | Schema validation + auto-repair (defaults for missing fields) + illegal field stripping + fallback to plain text. Every AI structured output passes through this layer. |
+| 4 | Prompt/Skill Registry | P0 | 5 skills registered in ai_prompt_registry table. Versioned prompt templates with input/output schemas. |
+| 5 | AI Evaluation Harness | P0 | Fixture input -> schema validate -> outputType behavior test -> DB non-write test -> failure record. |
+| 6 | AI Control Center v2 | P0 | Provider add/modify/delete (OpenAI/DeepSeek/Gemini/Custom). Model role selection (chat/structured/generation/detection). API Key connection test. Capability status. CanvasAiBar reads default model from Control Center. |
 
-旧 AIChat 独立页（Legacy）：保留不删除，不进入 v2 主路径，不增强，不重构。
+## 4. Out of Scope
 
-## 3. Out of Scope（此版本不做）
+- Seven Diagnostics / knowledge boundary detection / text diagnosis (v2.2).
+- Eight Styles / style system (v2.2).
+- Reverse pipeline / import analysis (v2.3).
+- Cost Meter / point calculation (v2.4).
+- Complete Method UI for any canvas (v2.1.0).
+- Old AIChat enhancement or refactor (remains Legacy).
+- Commercial features.
 
-- 七诊（知识边界检测 / 文本诊断）→ v2.2
-- 八体（风格系统）→ v2.2
-- 知识边界检测器 → v2.2
-- 反向管道 → v2.3
-- Cost Meter / 点数计算 → v2.4
-- 完整方法论 UI（画板①五步/②四层/③麻雀/④三档/⑤正文）→ v2.1.0
-- 商业化功能
-- 旧 AIChat 独立页增强或重构
+## 5. Stable Boundaries
 
-## 4. 文件锁
+Must Not Break:
+- Existing project creation and five-canvas pipeline navigation.
+- Existing SQLite persistence for all 8 entities.
+- Existing contracts (premise.contract, structure.contract, setting.contract, chapter-packet.contract, decision-log.contract) -- LOCKED.
+- Existing CanvasAiBar props interface (stage prop) -- may add props, must not break App.tsx consumer.
+- Existing acceptance paths (accept:static 42/42, accept:contracts 42/42, accept:persistence).
 
-### 4.1 Allowed Write（worker-fe — 前端文件）
+Legacy: CanvasView, AIChat, old SettingCollection remain Legacy access only via PipelineNav "..." menu. Not modified.
 
-```
-Allowed Write:
-  src/contracts/ai.contract.ts                 # 新：AI 共享类型（ContextBuilderInput, RouterInput, StructuredOutputConfig, SkillManifest, EvalFixture）
-  src/api/aiControlCenterApi.ts                # 新：Control Center API client
-  src/api/aiRouterApi.ts                       # 新：Command Router API client
-  src/api/contextBuilderApi.ts                 # 新：Context Builder API client
-  src/components/ai/AiControlCenter.tsx        # 新：AI Control Center UI 主组件
-  src/components/ai/AiControlCenter.css        # 新：样式
-  src/stores/aiControlCenterStore.ts           # 新：Control Center 状态管理
-  src/__tests__/evaluation-harness/            # 新目录：Evaluation Harness 前端 fixture 和测试
-  src/lib/llm-client.ts                        # 改：新增 provider 感知和 model 分类路由
-  src/types/ai.ts                              # 改：新增 AiOutputType 枚举扩展、RouterConfig 类型
+## 6. File Locks
 
-Modify with caution (must not break existing contract):
-  src/tauri-api.ts                             # 改：新增 Control Center / Context Builder / Router 命令封装
-```
+### Allowed Write
 
-### 4.2 Allowed Write（worker-be — 后端 Rust 文件）
+New files (unrestricted creation):
+- `src/contracts/ai-context.contract.ts`
+- `src/contracts/ai-router.contract.ts`
+- `src/contracts/ai-parser.contract.ts`
+- `src/contracts/ai-registry.contract.ts`
+- `src/lib/ai/context-builder.ts`
+- `src/lib/ai/command-router.ts`
+- `src/lib/ai/structured-parser.ts`
+- `src/lib/ai/prompt-registry.ts`
+- `src/lib/ai/evaluation-harness.ts`
+- `src/lib/ai/index.ts`
+- `src/components/ai/AiControlCenter.tsx`
+- `src/components/ai/ai-control-center.css`
+- `src/api/aiContextApi.ts`
+- `src/api/aiControlCenterApi.ts`
+- `src-tauri/src/ai/mod.rs`, `src-tauri/src/ai/context_builder.rs`, `src-tauri/src/ai/structured_parser.rs`, `src-tauri/src/ai/skill_registry.rs`
+- `src-tauri/src/ai_commands.rs`
+- `scripts/acceptance/ai-evaluation.mjs`
 
-```
-Allowed Write:
-  src-tauri/src/context_builder.rs             # 新：AI Context Builder v2
-  src-tauri/src/command_router.rs              # 新：AI Command Router v2
-  src-tauri/src/structured_output.rs           # 新：Structured Output Parser
-  src-tauri/src/skill_registry.rs              # 新：Prompt / Skill Registry
-  src-tauri/src/evaluation_harness.rs          # 新：AI Evaluation Harness（Rust 端）
-  src-tauri/src/control_center_commands.rs     # 新：AI Control Center 后端命令组
-  src-tauri/src/control_center.rs              # 新：AI Control Center 后端逻辑
+Existing files (modifications allowed):
+| File | Reason |
+|------|--------|
+| `src/types/ai.ts` | Extend: AiOutputType enum with generatePacket/generateDraft/assumption_flow; add RouterConfig, ProviderRoleModels, CapabilityStatus types. |
+| `src/lib/ai-output.ts` | Extend AiOutputType enum with generatePacket, generateDraft, assumption_flow. |
+| `src/lib/llm-client.ts` | Upgrade: accept schema hints for structured output parsing; provider-aware model routing. |
+| `src/components/ai/CanvasAiBar.tsx` | Connect to AI Command Router for intent dispatch; read default model from Control Center; wire outputType selector to router. |
+| `src/components/ai/ChatDrawer.tsx` | Connect to AI router for discuss responses (replace inline llm call). |
+| `src/components/ai/AiSuggestionCard.tsx` | Accept structured parser output for suggest responses. |
+| `src/components/ai/AiWritePreviewPanel.tsx` | Accept structured parser output for write_preview responses. |
+| `src/components/ai/AiSettings.tsx` | Add navigation link to AI Control Center; may deprecate tabs in favor of new UI. |
+| `src-tauri/src/lib.rs` | Register ai_commands and ai module. |
+| `src-tauri/src/models.rs` | Add new structs for AI entities (additive only). |
+| `src-tauri/src/db.rs` | Add new tables: ai_prompt_registry, ai_provider_config, ai_evaluation_results (additive, CREATE TABLE IF NOT EXISTS). |
+| `scripts/acceptance/scan-contract-chain.mjs` | Add AI entity entries to contract chain scanner. |
+| `scripts/acceptance/persistence.mjs` | Add persistence tests for new AI tables. |
 
-  src-tauri/src/lib.rs                         # 改：注册新模块 + 新 command
-  src-tauri/src/models.rs                      # 改：新增 input/output struct（累加式）
-  src-tauri/src/db.rs                          # 改：新增 skill_registry / model_configs 表（累加式）
-  src-tauri/src/commands.rs                    # 改：注册 command_router 入口 command
+### Read Only
 
-Modify with caution:
-  src-tauri/src/byok/                          # 改：Control Center 需读取 api_keys 表，可扩展 key_manager 接口
-```
+- `src/contracts/premise.contract.ts`, `structure.contract.ts`, `setting.contract.ts`, `chapter-packet.contract.ts`, `decision-log.contract.ts`
+- `src/api/premiseApi.ts`, `structureApi.ts`, `settingApi.ts`, `chapterPacketApi.ts`, `decisionLogApi.ts`, `projectApi.ts`
+- `src/App.tsx`, `src/stores/projectStore.ts`
+- `src/features/canvas-01-premise/`, `02-structure/`, `03-setting/`, `04-packet/`, `05-text/`
+- `src/features/pipeline-canvas/`, `pipeline-nav/`
+- `src/components/ai/AIChat.tsx` (Legacy)
+- `src-tauri/src/premise_commands.rs`, `structure_commands.rs`, `setting_commands.rs`, `chapter_packet_commands.rs`, `decision_log_commands.rs`, `pipeline_commands.rs`
+- `src-tauri/src/byok/` (unless explicit extension needed; if changed, explain in report)
 
-### 4.3 Read Only（可读不可改）
+### Forbidden
 
-```
-read_only:
-  - docs/**                                   # 所有产品/设计/执行文档
-  - src/features/canvas-01-premise/**         # 画板①组件 — 不动
-  - src/features/canvas-02-structure/**       # 画板②组件 — 不动
-  - src/features/canvas-03-setting/**         # 画板③组件 — 不动
-  - src/features/canvas-04-packet/**          # 画板④组件 — 不动
-  - src/features/canvas-05-text/**            # 画板⑤组件 — 不动
-  - src/features/pipeline-nav/**              # 管线导航 — 不动
-  - src/features/pipeline-canvas/**           # 管线画布容器 — 不动
-  - src/components/ai/AIChat.tsx              # 旧 AIChat 独立页 — Legacy，不动
-  - src/components/ai/AiSuggestionCard.tsx    # 旧组件 — 维持不动（v2.0-H 交付）
-  - src/components/ai/AiWritePreviewPanel.tsx # 旧组件 — 维持不动（v2.0-H 交付）
-  - src/components/ai/CanvasAiBar.tsx         # 旧组件 — 维持不动（v2.0-H 交付）
-  - src/components/ai/ChatDrawer.tsx          # 旧组件 — 维持不动（v2.0-H 交付）
-  - src/components/ai/canvas-ai-bar.css       # 旧样式 — 不动
-```
+- `src/components/ai/AIChat.tsx` -- Legacy, not referenced from new AI infrastructure.
+- `src/components/CanvasView.tsx`, `SettingCollection.tsx` -- Legacy, not modified.
+- Any file not listed in Allowed Write or Read Only.
+- Target root outside `projects/zhimengji/`.
 
-### 4.4 Forbidden（不可读不可改）
+## 7. Data Rules
 
-```
-forbidden:
-  - docs/v1.2/                                # v1.2 遗留文档 — 不看，不改
-  - e2e/                                       # E2E 测试 — 此版本不涉及（v2.0-H 已交付）
-  - playwright.config.ts                       # Playwright 配置 — 不变
-```
+DB schema changes: Allowed (additive only, CREATE TABLE IF NOT EXISTS appended to init_schema, no ALTER TABLE, no migration).
 
-## 5. DB 规则
+New tables:
 
-| 规则 | 内容 |
-|------|------|
-| **累加式** | 只加新表 / 新字段，不改 SQLite 已有表结构或字段类型 |
-| **新表 1: skill_registry** | `id TEXT PK, skill_key TEXT UNIQUE, name TEXT, version TEXT, input_schema TEXT(JSON), output_schema TEXT(JSON), prompt_template TEXT, enabled INTEGER DEFAULT 1, created_at INTEGER, updated_at INTEGER` |
-| **新表 2: model_configs** | `id TEXT PK, project_id TEXT, model_type TEXT(chat/structured/writing/detection), model_id TEXT, provider_id TEXT, updated_at INTEGER, UNIQUE(project_id, model_type)` |
-| **已有表** | 不改 `api_keys`（BYOK 管理）、`projects`、`world_objects`、`premise_cards`、`structure_nodes`、`character_cards`、`chapter_packets`、`decision_logs` 等。Control Center 通过已有 `api_keys` 表 + `key_manager.rs` 接口管理 provider 配置 |
-| **禁止** | 不使用数据库迁移（versioned migration）。新增 `CREATE TABLE IF NOT EXISTS` 仅追加到 `db.rs` 的 `create_tables` 末尾 |
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| ai_prompt_registry | Registered skill prompts | id TEXT PK, skill_id TEXT UNIQUE, name TEXT, description TEXT, prompt_template TEXT, input_schema TEXT(JSON), output_schema TEXT(JSON), version TEXT, created_at INTEGER, updated_at INTEGER |
+| ai_provider_config | Extended provider config | id TEXT PK, provider_id TEXT, name TEXT, api_key_exists INTEGER, endpoint TEXT, timeout INTEGER, default_models TEXT(JSON), status TEXT, created_at INTEGER, updated_at INTEGER |
+| ai_evaluation_results | Evaluation harness results | id TEXT PK, fixture_id TEXT, test_name TEXT, output_type TEXT, input_summary TEXT, schema_validated INTEGER, passed INTEGER, result_summary TEXT, failure_sample TEXT, created_at INTEGER |
 
-## 6. Contract 规则
+Existing BYOK api_keys table: Not modified. ai_provider_config is a complementary table.
+Existing project/canvas tables: Not modified.
 
-| 规则 | 内容 |
-|------|------|
-| **新 contract** | 此版本新增 5 个 contract（见下表），追加到 `contracts.json` |
-| **已有 contract 禁止修改** | v2.0-H 交付的全部 contract（P0-01 ~ P0-07 等）字段、签名、行为定义不得改动 |
-| **新 contract 命名空间** | ID 前缀 `AI-`（如 `AI-01 Context Builder`, `AI-02 Command Router`） |
+Formal persistence path: UI -> API layer -> Tauri command -> SQLite -> refresh/readback.
+No localStorage for formal canvas data.
 
-### 6.1 新 Contract 清单
+## 8. Contract Rules
 
-```
-AI-01: Context Builder — buildContext(input: ContextBuildInput) → ContextBuildOutput
-  - 输入: canvasId, projectId, upstreamData, outputType, additionalPrompt?
-  - 输出: { systemPrompt, contextData, writableTargets, forbiddenTargets, outputFormat }
+New contracts allowed (additive only):
 
-AI-02: Command Router — routeMessage(input: RouteInput) → RouteOutput
-  - 输入: message, canvasId, projectId, history?
-  - 输出: { intent: AiOutputType, confidence, parameters, fallbackReason? }
+| File | Contracts |
+|------|-----------|
+| ai-context.contract.ts | ContextBuildInput (canvasId, projectId, outputType, additionalPrompt?), AiBuiltContext (systemPrompt, contextData, writableTargets, forbiddenTargets, outputFormat, skillId?) |
+| ai-router.contract.ts | AiRoute enum (discuss/suggest/write_preview/generatePacket/generateDraft/assumption_flow/unrecognized), RouteInput (message, canvasId, projectId, history?), RouteOutput (intent, confidence, parameters, fallbackReason?) |
+| ai-parser.contract.ts | ParserStatus enum (valid/repaired/fallback/failed), ParseInput (rawContent, schema, strict), ParseOutput (data, validationErrors[], repairLog[], fallbackText?) |
+| ai-registry.contract.ts | SkillRecord (id, skillId, name, promptTemplate, inputSchema, outputSchema, version), RegisterInput, ListSkillsOutput |
 
-AI-03: Structured Output Parser — parseAndValidate<T>(input: ParseInput<T>) → ParseOutput<T>
-  - 输入: rawContent, schema, strict: boolean
-  - 输出: { data: T | null, validationErrors, repairAttempted, fallbackText }
+Existing contracts LOCKED: premise, structure, setting, chapter-packet, decision-log. New contracts must not depend on internal fields of locked contracts beyond exported types.
 
-AI-04: Skill Registry — registerSkill / getSkill / listSkills / getSkillByCanvas
-  - 5 个预注册技能（premise.five_step / structure.l1_l4 / setting.sparrow_9_3 / packet.three_detail_modes / draft.chapter_writer）
+## 9. AI Rules
 
-AI-05: Control Center — listProviders / testConnection / saveModelConfig / getModelConfigs / getCapabilityStatus
-```
+### Output Protocol
 
-## 7. AI 规则
+| Output Type | DB Write | Guard |
+|-------------|----------|-------|
+| discuss | NEVER | Acceptance test: 0 new rows in any canvas table |
+| suggest | Only after user ACCEPT | Test: after accept -> 1 new row in target table |
+| write_preview | Only after user CONFIRM | Test: confirm writes, reject writes nothing |
+| generatePacket | Only after user CONFIRM | Same as write_preview |
+| generateDraft | Only after user CONFIRM | Same as write_preview |
+| assumption_flow | Creates assumption record (temporary) | Must be adopted before formal canvas write |
 
-```
-# 硬规则 — 所有 AI 模块必须遵守
+### Parser Rules
 
-1. 前端禁止直接调用 invoke() — 必须通过 api 层（src/api/*Api.ts）
-2. 所有 Tauri command 参数统一包在 { input } 下
-3. 所有 Tauri command 返回 Result<T, String>
-4. 共享类型放在 src/contracts/ 目录（本版本创建 ai.contract.ts）
-5. 前后端字段名必须完全一致（禁止前端驼峰/后端蛇形不对称）
-6. 禁止 mock 数据 — 所有 AI 调用必须走真实 provider（llm-client 或 Rust 端真实 LLM 调用）
-7. AI discuss 永不写 DB
-8. AI suggest 采纳前不写 DB
-9. AI write_preview 确认前不写正式数据
-10. 无 provider 配置时 AI 功能显示明确错误，不静默失败，不崩溃
-11. Structured Output Parser 报告 validationErrors 时，工具返回带标记数据而非抛出异常
-12. Skill Registry 查询不到 skill 时返回明确 None，不 panic
-13. Context Builder 在缺少上游数据时只包含可用数据，不抛异常
-14. Command Router 无法识别意图时默认 fallback 到 discuss
-15. Evaluation Harness fixture 不含真实 API Key
-16. 所有新 command 写 DecisionLog 时使用约定格式（详见已有 decision-log.contract.ts）
-```
+- Status = VALID: data safe for user preview.
+- Status = REPAIRED: auto-repair applied with defaults, repairLog recorded.
+- Status = FALLBACK: schema unrecoverable, output demoted to plain text discuss. No crash.
+- Status = FAILED: parsing failed catastrophically, error returned to user. No crash.
+- All states are non-crashing.
 
-## 8. 执行顺序
+### Strict Prohibitions
 
-```
-Phase A — 后端基础设施层（worker-be 优先，独立可测）
-  Step A1: Structured Output Parser（无外部依赖，最先做）
-  Step A2: Context Builder v2（依赖 A1 schema 校验能力）
-  Step A3: Command Router v2（依赖 A2 上下文构建）
-  Step A4: Skill Registry（依赖 A3 路由能力）
-  Step A5: Control Center 后端命令（依赖已有 BYOK + 新 model_configs 表）
+- No AI silently writes formal canvas data.
+- No mock AI responses in release acceptance paths (fixtures use recorded real AI outputs or schema-validated test vectors).
+- No localStorage for AI-generated formal data.
+- No direct invoke() in AI components -- all through api client layer.
+- No provider config = AI functions show clear error, no crash, no undefined behavior.
+- Structured Output Parser must return status-tagged data on validationErrors (not throw).
+- Command Router unrecognized intent -> fallback to discuss.
+- Context Builder on missing upstream data -> include available data only, no exception.
+- Skill Registry on skill not found -> return None, not panic.
 
-Phase B — 测试基础设施（worker-be，与 Phase A 并行）
-  Step B1: Evaluation Harness Rust 端（fixture + runner）
-  Step B2: Evaluation Harness 前端端（fixture 加载 + 结果展示）
-
-Phase C — 前端 UI 层（worker-fe，Phase A 就绪后开始）
-  Step C1: ai.contract.ts + api client 层（ContextBuilderApi / RouterApi / ControlCenterApi）
-  Step C2: AI Control Center UI 组件
-  Step C3: aiControlCenterStore 状态管理
-  Step C4: 前端 Evaluation Harness 集成
-```
-
-## 9. 验收命令
-
-### 9.1 机器验收
+## 10. Acceptance Commands
 
 ```bash
-# 1. Rust 编译
-cd projects/zhimengji && cargo check
-
-# 2. TypeScript 类型检查
-tsc --noEmit
-
-# 3. 静态扫描
+cargo check
+npm run tsc -- --noEmit
 npm run accept:static
-
-# 4. Contract chain 扫描
-npm run accept:contracts
-
-# 5. AI Evaluation Harness（≥ 10 fixture）
-cargo test -- eval_harness
-npm run test -- --testPathPattern=evaluation-harness
-
-# 6. 常规单元测试
-npm run test
+npm run accept:contracts    # scanner updated with AI entities
+npm run accept:persistence  # new AI tables tested
+npm run accept:ai           # NEW: runs AI evaluation harness (>= 10 fixtures)
 ```
 
-### 9.2 手动验收
+### AI Evaluation Harness Fixtures (minimum 17)
 
-```
-[ ] AI Control Center — provider 添加/修改/删除 可用
-[ ] AI Control Center — 模型选择 UI 交互正常
-[ ] AI Control Center — API Key 连接测试通过
-[ ] AI Control Center — 空 provider 状态显示明确错误
-[ ] Structured Output Parser — 合法 JSON 正确解析
-[ ] Structured Output Parser — 非法 JSON 触发 fallback（纯文本建议）
-[ ] Structured Output Parser — 缺失字段被补全
-[ ] Context Builder — 每个画板的上下文构建正确
-[ ] Command Router — discuss 路径不写 DB（打开 DevTools 确认无 DB 写入）
-[ ] Command Router — suggest 路径采纳后才写入
-[ ] Command Router — write_preview 路径确认后才写入
-[ ] Skill Registry — 5 个技能均可按 key 检索
-[ ] v2.0-H E2E 验收路径未被破坏
-```
+| # | Fixture ID | Type | Validates |
+|---|------------|------|-----------|
+| 1 | premise.discuss | discuss | Context Builder loads premise data, routes to discuss, 0 DB writes |
+| 2 | premise.suggest | suggest | Router routes premise intent to suggest, parser validates output |
+| 3 | structure.discuss | discuss | Context Builder loads structure data, routes to discuss |
+| 4 | structure.suggest | suggest | Router routes structure intent to suggest |
+| 5 | setting.discuss | discuss | Context Builder loads world rules + characters |
+| 6 | setting.suggest | suggest | Router routes setting intent to suggest |
+| 7 | packet.write_preview | write_preview | Context: premise+structure+setting, router generates packet, parser validates packet JSON, 0 DB writes before confirm |
+| 8 | draft.write_preview | write_preview | Context: packet+setting, router generates draft, parser validates, 0 DB writes before confirm |
+| 9 | packet.suggest | suggest | Router routes packet intent to suggest (preview before confirm) |
+| 10 | parser.invalid_schema | parser | Malformed JSON -> FALLBACK, not crash |
+| 11 | parser.missing_field | parser | Missing required fields -> REPAIRED (auto-completed) |
+| 12 | parser.illegal_field | parser | Extra fields -> stripped, VALID |
+| 13 | router.unrecognized | router | Gibberish input -> discuss fallback |
+| 14 | router.assumption_flow | assumption | "we need a character" -> assumption handler |
+| 15 | db.no_write_on_discuss | persistence | After discuss: 0 new rows in any canvas table |
+| 16 | db.no_write_before_accept | persistence | After suggest (before accept): 0 new canvas rows |
+| 17 | registry.all_five | registry | All 5 skills return correct prompt_template + schemas |
 
-### 9.3 回归保障
+### Manual Acceptance Paths
 
-```bash
-# v2.0-H 回归验收
-npm run accept:e2e    # 主路径端到端
+Path A -- Control Center: Open app -> AI Control Center -> Add OpenAI provider -> Connection test pass -> Add DeepSeek -> Modify -> Delete -> Verify list. Switch to Model tab -> Select default chat model -> Select generation model -> Verify persistence on restart.
+
+Path B -- Canvas Routing: Open project premise canvas -> CanvasAiBar shows selected model -> Send discuss -> Response in ChatDrawer, 0 DB writes. Switch to suggest -> Suggestion card appears -> Accept -> 1 row in DB. Switch to write_preview -> Preview shows -> Confirm -> Data written.
+
+Path C -- Structured Output Fallback: Packet canvas -> Send write_preview with valid data -> Structured preview. Simulate malformed AI output (via test script if needed) -> Parser falls back to plain text, no crash.
+
+Path D -- No Provider: Fresh app, no provider configured -> CanvasAiBar shows "unconfigured" error -> Send AI message -> Error displayed, no crash, no undefined behavior.
+
+Path E -- v2.0-H Regression: Create project -> Navigate all 5 canvases -> Save data -> Refresh -> Data persists -> Legacy menu accessible.
+
+## 11. PASS / FAIL Criteria
+
+PASS:
+- All 6 P0 items completed.
+- All acceptance commands pass (cargo check, tsc, accept:static, accept:contracts, accept:persistence, accept:ai).
+- No forbidden scope entered.
+- No stable contract broken.
+- No silent write (discuss=0 DB writes, suggest/write_preview=0 writes before user action).
+- No mock AI in acceptance paths.
+- AI Evaluation Harness >= 10 fixtures all PASS.
+- All 5 manual acceptance paths pass.
+- v2.0-H E2E acceptance path not broken.
+
+PASS_WITH_NOTES: All PASS criteria met; non-blocking P1 issues (minor CSS, labels) permitted.
+
+PASS_WITH_REQUIRED_PATCHES: Version mostly correct; specific listed patches required (specific provider flow, specific parser edge case). Cannot progress to v2.1.0 until patches applied.
+
+FAIL: Any P0 missing, acceptance command fails, stable contract broken, silent write detected, mock data in acceptance, forbidden scope entered.
+
+## 12. Gate Checklist (10 Steps)
+
+| # | Check | Pass? |
+|---|-------|-------|
+| 1 | Can a worker execute this plan without reading the full PRD v0.3.1? | |
+| 2 | In Scope <= 5 items + AI Control Center v2 (6 total, per PRD section 7.3+7.4 grouping)? | |
+| 3 | Out of Scope explicit and complete (all v2.1+ items listed)? | |
+| 4 | File locks clear per exact path (Allowed Write new files + modifications, Read Only, Forbidden)? | |
+| 5 | DB rules clear (additive tables only, no migration, no existing table changes, formal persistence path)? | |
+| 6 | Contract rules clear (new AI contracts allowed, 5 existing contracts locked)? | |
+| 7 | Acceptance commands enumerable (accept:ai added, 17 fixtures defined with IDs and validation targets)? | |
+| 8 | Real user paths defined (5 manual acceptance paths A through E)? | |
+| 9 | Mock / localStorage / silent write explicitly banned in AI Rules section? | |
+| 10 | Next version (v2.1.0) excluded from this scope? | |
+
+If any check fails, return to chancellor for clarification before dispatch. Do not begin implementation until all 10 pass.
+
+## 13. Required Handoff Report
+
+```md
+# v2.0.2 Report
+
+## Verdict
+PASS / PASS_WITH_NOTES / PASS_WITH_REQUIRED_PATCHES / FAIL
+
+## Files Changed
+- New: (list)
+- Modified: (list)
+
+## What Was Implemented
+- [x] AI Context Builder v2
+- [x] AI Command Router v2
+- [x] Structured Output Parser
+- [x] Prompt/Skill Registry (5 skills)
+- [x] AI Evaluation Harness (N/17+ fixtures PASS)
+- [x] AI Control Center v2
+
+## Acceptance Results
+| Command | Result | Notes |
+|---------|--------|-------|
+| cargo check | | |
+| tsc --noEmit | | |
+| accept:static | | |
+| accept:contracts | | |
+| accept:persistence | | |
+| accept:ai (fixtures) | | N/17+ PASS |
+
+## Known Issues
+## Next Recommended Step
 ```

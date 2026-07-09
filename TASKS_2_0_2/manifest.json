@@ -1,0 +1,23 @@
+{
+  "tickets": [
+    "T1-AI-Foundation.md",
+    "T2-Prompt-Registry.md",
+    "T3-Context-Builder.md",
+    "T4-Command-Router.md",
+    "T5-Evaluation-Harness.md"
+  ],
+  "executionOrder": [
+    { "order": 1, "file": "T1-AI-Foundation.md", "label": "AI Foundation -- Parser + Control Center" },
+    { "order": 2, "file": "T2-Prompt-Registry.md", "label": "Prompt/Skill Registry" },
+    { "order": 3, "file": "T3-Context-Builder.md", "label": "AI Context Builder v2" },
+    { "order": 4, "file": "T4-Command-Router.md", "label": "AI Command Router v2 + Canvas Integration" },
+    { "order": 5, "file": "T5-Evaluation-Harness.md", "label": "AI Evaluation Harness + Acceptance" }
+  ],
+  "dependencyGraph": {
+    "T1": [],
+    "T2": ["T1"],
+    "T3": ["T2"],
+    "T4": ["T1", "T3"],
+    "T5": ["T1", "T2", "T3", "T4"]
+  }
+}

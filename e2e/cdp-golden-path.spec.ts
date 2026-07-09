@@ -97,7 +97,9 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
     const stage2 = page.getByTitle('大纲 — 进行中').or(page.getByTitle('大纲'));
     if (await stage2.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stage2.click({ force: true });
-      await page.waitForTimeout(1500);
+      // Wait for the structure canvas to render (not just a fixed timeout)
+      await page.locator('.outline-canvas, .structure-view, [class*="structure"]').first()
+        .waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     }
 
     // ── 画板② 结构图 ──
@@ -118,24 +120,58 @@ test.describe('v2.0 Golden Path (真实 Tauri 后端)', () => {
     const stage3 = page.getByTitle('设定 — 进行中').or(page.getByTitle('设定'));
     if (await stage3.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stage3.click({ force: true });
-      await page.waitForTimeout(1500);
+      // Wait for the setting canvas to render instead of a fixed timeout
+      await page.locator('.setting-canvas-footer').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     }
 
     // ── 画板③ 设定 ──
     console.log('确认设定...');
-    // The settings page has tabs (世界观/角色/势力); just confirm to advance
-    const confirmSetting = page.locator('button').filter({ hasText: '确认设定' }).first();
-    if (await confirmSetting.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await confirmSetting.click({ force: true });
-      await page.waitForTimeout(2000);
+
+    // Check current pipeline stage for diagnostics
+    const currentStageInfo = await page.evaluate(() => {
+      const activeBtn = document.querySelector('.pipeline-stage-btn.active');
+      return activeBtn ? activeBtn.textContent : 'no active stage';
+    });
+    console.log('当前 active stage:', currentStageInfo);
+
+    // List all buttons for diagnostics
+    const allButtons = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('button')).map(b => ({
+        text: b.textContent?.trim()?.substring(0, 80),
+        visible: b.offsetParent !== null,
+        rect: b.getBoundingClientRect().toJSON(),
+      }));
+    });
+    if (process.env.DEBUG) console.log('所有按钮:', JSON.stringify(allButtons, null, 2));
+
+    // Use a specific footer selector to avoid ambiguity with other buttons.
+    const confirmSetting = page.locator('.setting-canvas-footer button').filter({ hasText: '确认设定' });
+    try {
+      await confirmSetting.waitFor({ state: 'attached', timeout: 10000 });
+      console.log('确认设定 button found, scrolling into view...');
+    } catch (e) {
+      console.log('确认设定 button not found. active stage:', currentStageInfo);
+      console.log('所有按钮:', JSON.stringify(allButtons, null, 2));
+      throw new Error('确认设定 button not found — SettingCanvasV2 may not be rendered');
     }
+
+    // Scroll footer into view before clicking — CanvasAiBar (fixed z-index:40) may cover it
+    await page.evaluate(() => {
+      const footer = document.querySelector('.setting-canvas-footer');
+      if (footer) footer.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    });
+    await page.waitForTimeout(300);
+
+    await confirmSetting.click({ force: true });
+    await page.waitForTimeout(2000);
     console.log('设定已确认 ✅');
 
     // 导航到画板④ 细纲
     const stage4 = page.getByTitle('细纲 — 进行中').or(page.getByTitle('细纲'));
     if (await stage4.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stage4.click({ force: true });
-      await page.waitForTimeout(1500);
+      // Wait for chapter pack UI to render
+      await page.waitForTimeout(2000);
     }
 
     // ── 画板④ 章节包 ──

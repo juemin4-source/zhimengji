@@ -88,6 +88,13 @@ pub fn run() {
             premise_commands::get_premise_card,
             premise_commands::update_premise_card,
             premise_commands::delete_premise_card,
+            // v2.1.0 CN-MET-01 Premise Five-Step commands
+            premise_commands::save_wishlist,
+            premise_commands::generate_variants,
+            premise_commands::save_variant_selection,
+            premise_commands::generate_reader_qa,
+            premise_commands::save_genre_judgment,
+            premise_commands::get_premise_step_state,
             // v2 StructureNode commands
             structure_commands::create_structure_node,
             structure_commands::list_structure_nodes,

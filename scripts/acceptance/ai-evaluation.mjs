@@ -153,6 +153,10 @@ console.log('\n[5/5] Fixture count validation');
     'db.no_write_on_discuss',
     'db.no_write_before_accept',
     'registry.all_five',
+    'premise.five_step_suggest',
+    'sparrow.nine_three_suggest',
+    'packet.detail_mode_suggest',
+    'structure.l1_l4_suggest',
   ];
 
   let presentCount = 0;
@@ -162,8 +166,8 @@ console.log('\n[5/5] Fixture count validation');
     }
   }
 
-  if (presentCount >= 17) {
-    pass(`fixtures: ${presentCount}/17+ defined in harness`);
+  if (presentCount >= 21) {
+    pass(`fixtures: ${presentCount}/21+ defined in harness`);
   } else {
     fail(`fixtures count`, `Expected >= 17, found ${presentCount}`);
   }

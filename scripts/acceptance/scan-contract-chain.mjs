@@ -153,6 +153,63 @@ const ENTITIES = [
     apiMethods: ['listSkills', 'getSkill'],
     dbMethods: [], // registry uses invoke, not direct DB methods
   },
+  // ===== v2.1.0 Method Entities (PENDING — to be implemented) =====
+  {
+    name: 'CN-MET-01-PremiseMethod',
+    contractFile: 'src/contracts/premise.contract.ts',
+    apiFile: 'src/api/premiseApi.ts',
+    commandsFile: 'src-tauri/src/premise_commands.rs',
+    modelsStruct: 'PremiseCard',
+    dbPrefix: 'premise_method',
+    uiFiles: ['src/features/canvas-01-premise/PremiseEntryGate.tsx'],
+    commands: [],
+    apiMethods: [],
+    dbMethods: [],
+    status: 'PENDING',
+    batch: 'T-002',
+  },
+  {
+    name: 'CN-MET-02-StructureMethod',
+    contractFile: 'src/contracts/structure.contract.ts',
+    apiFile: 'src/api/structureApi.ts',
+    commandsFile: 'src-tauri/src/structure_commands.rs',
+    modelsStruct: 'StructureNode',
+    dbPrefix: 'structure_method',
+    uiFiles: ['src/features/canvas-02-structure/StructureFlowView.tsx', 'src/features/canvas-02-structure/StructureFlowPlaceholder.tsx'],
+    commands: [],
+    apiMethods: [],
+    dbMethods: [],
+    status: 'PENDING',
+    batch: 'T-005',
+  },
+  {
+    name: 'CN-MET-03-SparrowMethod',
+    contractFile: 'src/contracts/setting.contract.ts',
+    apiFile: 'src/api/settingApi.ts',
+    commandsFile: 'src-tauri/src/setting_commands.rs',
+    modelsStruct: 'WorldRule',
+    dbPrefix: 'sparrow_method',
+    uiFiles: ['src/features/canvas-03-setting/WorldRulePanel.tsx'],
+    commands: [],
+    apiMethods: [],
+    dbMethods: [],
+    status: 'PENDING',
+    batch: 'T-003',
+  },
+  {
+    name: 'CN-MET-04-PacketDetail',
+    contractFile: 'src/contracts/chapter-packet.contract.ts',
+    apiFile: 'src/api/chapterPacketApi.ts',
+    commandsFile: 'src-tauri/src/chapter_packet_commands.rs',
+    modelsStruct: 'ChapterPacket',
+    dbPrefix: 'packet_detail',
+    uiFiles: [],
+    commands: [],
+    apiMethods: [],
+    dbMethods: [],
+    status: 'PENDING',
+    batch: 'T-004',
+  },
 ];
 
 // ---- Helpers ----
@@ -196,7 +253,15 @@ console.log('Entity chain verification:\n');
 
 for (const entity of ENTITIES) {
   const { name } = entity;
-  console.log(`--- ${name} ---`);
+  const isPending = entity.status === 'PENDING';
+  console.log(`--- ${name} ---${isPending ? ' [PENDING - v2.1.0]' : ''}`);
+
+  // PENDING entities are registered but not yet implemented.
+  // They will be verified in the final gate (T-007).
+  if (isPending) {
+    pass('status', `PENDING (batch: ${entity.batch}) — will be verified by T-007`);
+    continue;
+  }
 
   // 1. Contract definition exists
   if (checkFileExists(entity.contractFile)) {

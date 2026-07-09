@@ -1057,6 +1057,111 @@ pub struct ExportInput {
     pub default_name: String,
 }
 
+// ===== CN-MET-01: Premise Five-Step Methods =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PremiseStepRecord {
+    pub id: String,
+    pub project_id: String,
+    pub current_step: String,
+    pub wishlist: String,          // JSON array
+    pub intern_extern: String,     // JSON object
+    pub variants: String,          // JSON array
+    pub qa: String,               // JSON array
+    pub genre_judgment: String,   // JSON object or null
+    pub completed_steps: String,  // JSON array of step strings
+    pub skipped_steps: String,    // JSON array of step strings
+    pub do_not_ask_again: String, // JSON array of step strings
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveWishlistInput {
+    pub project_id: String,
+    pub wishlist: String, // JSON array
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveWishlistOutput {
+    pub project_id: String,
+    pub step: String,
+    pub saved: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateVariantsInput {
+    pub project_id: String,
+    pub wishlist: String,        // JSON array
+    pub internal_drive: String,
+    pub external_drive: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateVariantsOutput {
+    pub variants: String, // JSON array
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveVariantSelectionInput {
+    pub project_id: String,
+    pub variant_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveVariantSelectionOutput {
+    pub step: String,
+    pub selected_variant_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateReaderQAInput {
+    pub project_id: String,
+    pub variants: String, // JSON array
+    pub selected_variant_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateReaderQAOutput {
+    pub questions: String, // JSON array
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveGenreJudgmentInput {
+    pub project_id: String,
+    pub genre_judgment: String, // JSON object
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveGenreJudgmentOutput {
+    pub step: String,
+    pub genre_judgment: String, // JSON object
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetPremiseStepStateInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PremiseStepStateResponse {
+    pub exists: bool,
+    pub state: Option<PremiseStepRecord>,
+}
+
 // ===== v2.0.1 Feedback =====
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

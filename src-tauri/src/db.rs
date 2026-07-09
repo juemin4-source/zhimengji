@@ -126,6 +126,7 @@ impl Database {
         init_decision_logs_table(&conn)?;
         init_quick_drafts_table(&conn)?;
         init_ai_tables(&conn)?;
+        init_premise_steps_table(&conn)?;
         Ok(())
     }
 
@@ -1749,6 +1750,30 @@ pub fn init_quick_drafts_table(conn: &Connection) -> SqlResult<()> {
     Ok(())
 }
 
+// ===== CN-MET-01: Premise Five-Step Steps =====
+
+pub fn init_premise_steps_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS canvas1_premise_steps (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL UNIQUE,
+          current_step TEXT NOT NULL DEFAULT 'wishlist',
+          wishlist TEXT NOT NULL DEFAULT '[]',
+          intern_extern TEXT NOT NULL DEFAULT '{\"internalDrive\":\"\",\"externalDrive\":\"\"}',
+          variants TEXT NOT NULL DEFAULT '[]',
+          qa TEXT NOT NULL DEFAULT '[]',
+          genre_judgment TEXT NOT NULL DEFAULT 'null',
+          completed_steps TEXT NOT NULL DEFAULT '[]',
+          skipped_steps TEXT NOT NULL DEFAULT '[]',
+          do_not_ask_again TEXT NOT NULL DEFAULT '[]',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
 // ===== v2.0.2 AI Foundation =====
 
 pub fn init_ai_tables(conn: &Connection) -> SqlResult<()> {
@@ -2491,6 +2516,160 @@ impl Database {
             Some(r) => Ok(Some(r?)),
             None => Ok(None),
         }
+    }
+
+    // ===== CN-MET-01: Premise Step State CRUD =====
+
+    pub fn get_premise_step_state(&self, project_id: &str) -> SqlResult<Option<crate::models::PremiseStepRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, current_step, wishlist, intern_extern, variants, qa,
+                    genre_judgment, completed_steps, skipped_steps, do_not_ask_again,
+                    created_at, updated_at
+             FROM canvas1_premise_steps WHERE project_id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![project_id], |row| {
+            Ok(crate::models::PremiseStepRecord {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                current_step: row.get(2)?,
+                wishlist: row.get(3)?,
+                intern_extern: row.get(4)?,
+                variants: row.get(5)?,
+                qa: row.get(6)?,
+                genre_judgment: row.get(7)?,
+                completed_steps: row.get(8)?,
+                skipped_steps: row.get(9)?,
+                do_not_ask_again: row.get(10)?,
+                created_at: row.get(11)?,
+                updated_at: row.get(12)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn upsert_premise_step_state(&self, record: &crate::models::PremiseStepRecord) -> SqlResult<crate::models::PremiseStepRecord> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT OR REPLACE INTO canvas1_premise_steps
+             (id, project_id, current_step, wishlist, intern_extern, variants, qa,
+              genre_judgment, completed_steps, skipped_steps, do_not_ask_again,
+              created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
+                     COALESCE((SELECT created_at FROM canvas1_premise_steps WHERE project_id=?2), ?12),
+                     ?13)",
+            params![
+                record.id, record.project_id, record.current_step,
+                record.wishlist, record.intern_extern, record.variants,
+                record.qa, record.genre_judgment,
+                record.completed_steps, record.skipped_steps, record.do_not_ask_again,
+                now, now,
+            ],
+        )?;
+        Ok(crate::models::PremiseStepRecord {
+            id: record.id.clone(),
+            project_id: record.project_id.clone(),
+            current_step: record.current_step.clone(),
+            wishlist: record.wishlist.clone(),
+            intern_extern: record.intern_extern.clone(),
+            variants: record.variants.clone(),
+            qa: record.qa.clone(),
+            genre_judgment: record.genre_judgment.clone(),
+            completed_steps: record.completed_steps.clone(),
+            skipped_steps: record.skipped_steps.clone(),
+            do_not_ask_again: record.do_not_ask_again.clone(),
+            created_at: record.created_at,
+            updated_at: now,
+        })
+    }
+
+    pub fn save_wishlist(&self, input: &crate::models::SaveWishlistInput) -> SqlResult<crate::models::SaveWishlistOutput> {
+        // Load or create step state, update wishlist
+        let existing = self.get_premise_step_state(&input.project_id)?;
+        let (record, is_new) = match existing {
+            Some(r) => (r, false),
+            None => {
+                let now = chrono::Utc::now().timestamp_millis();
+                (crate::models::PremiseStepRecord {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    project_id: input.project_id.clone(),
+                    current_step: "wishlist".to_string(),
+                    wishlist: input.wishlist.clone(),
+                    intern_extern: "{\"internalDrive\":\"\",\"externalDrive\":\"\"}".to_string(),
+                    variants: "[]".to_string(),
+                    qa: "[]".to_string(),
+                    genre_judgment: "null".to_string(),
+                    completed_steps: "[]".to_string(),
+                    skipped_steps: "[]".to_string(),
+                    do_not_ask_again: "[]".to_string(),
+                    created_at: now,
+                    updated_at: now,
+                }, true)
+            }
+        };
+
+        let mut updated = record;
+        updated.wishlist = input.wishlist.clone();
+        if is_new {
+            // Keep as-is (already set from constructor)
+        } else {
+            // Ensure we don't lose project_id on upsert
+        }
+
+        self.upsert_premise_step_state(&updated)?;
+
+        Ok(crate::models::SaveWishlistOutput {
+            project_id: input.project_id.clone(),
+            step: "wishlist".to_string(),
+            saved: true,
+        })
+    }
+
+    pub fn save_variant_selection(&self, input: &crate::models::SaveVariantSelectionInput) -> SqlResult<crate::models::SaveVariantSelectionOutput> {
+        let existing = self.get_premise_step_state(&input.project_id)?
+            .ok_or_else(|| rusqlite::Error::QueryReturnedNoRows)?;
+
+        // Parse variants, mark selected
+        let mut variants: Vec<serde_json::Value> = serde_json::from_str(&existing.variants)
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+
+        for v in &mut variants {
+            if let Some(id) = v.get("id").and_then(|i| i.as_str()) {
+                v["selected"] = serde_json::Value::Bool(id == input.variant_id);
+            }
+        }
+
+        let variants_json = serde_json::to_string(&variants)
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+
+        let mut updated = existing;
+        updated.variants = variants_json;
+
+        self.upsert_premise_step_state(&updated)?;
+
+        Ok(crate::models::SaveVariantSelectionOutput {
+            step: "variants".to_string(),
+            selected_variant_id: input.variant_id.clone(),
+        })
+    }
+
+    pub fn save_genre_judgment(&self, input: &crate::models::SaveGenreJudgmentInput) -> SqlResult<crate::models::SaveGenreJudgmentOutput> {
+        let existing = self.get_premise_step_state(&input.project_id)?
+            .ok_or_else(|| rusqlite::Error::QueryReturnedNoRows)?;
+
+        let mut updated = existing;
+        updated.genre_judgment = input.genre_judgment.clone();
+
+        self.upsert_premise_step_state(&updated)?;
+
+        Ok(crate::models::SaveGenreJudgmentOutput {
+            step: "genreJudgment".to_string(),
+            genre_judgment: input.genre_judgment.clone(),
+        })
     }
 }
 

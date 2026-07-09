@@ -622,6 +622,7 @@ export default function Bookshelf({ projects, onEnterProject, onCreateProject }:
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '1.25rem',
             padding: '1.5rem 0',
+            width: '100%',
           }}
         >
           {projects.map((project) => (

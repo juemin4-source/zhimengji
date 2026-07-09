@@ -70,7 +70,8 @@ pub fn run() {
             commands::ping,
             commands::export_project,
             commands::import_project,
-            // v1.3 BYOK commands
+            // [DEPRECATED v2.1.1-AI] v1 BYOK commands — Will be removed in v2.2.
+            // Use v2 equivalents: list_providers_v2, save_provider_config, etc.
             byok_commands::store_api_key,
             byok_commands::get_api_key,
             byok_commands::remove_api_key,
@@ -171,6 +172,10 @@ pub fn run() {
             ai_commands::build_context,
             ai_commands::route_intent,
             ai_commands::parse_output,
+            // v2.1.1-AI: Structured output parsers
+            ai_commands::parse_chapter_packet,
+            ai_commands::parse_writing_contract,
+            ai_commands::parse_tiandiren_output,
             ai_commands::list_skills,
             ai_commands::get_skill,
             ai_commands::register_skill,

@@ -7,9 +7,16 @@
  * is impossible.
  *
  * NEVER throws for recoverable issues — always returns status-tagged output.
+ *
+ * [v2.1.1-AI] Added convenience parsers for ChapterPacket, WritingContract, TianDiRen.
  */
 
 import type { ParseInput, ParseOutput, ParserStatus } from '../../contracts/ai-parser.contract';
+import {
+  CHAPTER_PACKET_SCHEMA,
+  WRITING_CONTRACT_SCHEMA,
+  TIAN_DI_REN_SCHEMA,
+} from '../../contracts/ai-parser.contract';
 
 /**
  * ParseResult extends ParseOutput with a status field for discrimination.
@@ -174,4 +181,77 @@ export function parseStructuredOutput(input: ParseInput): ParseResult {
     validationErrors,
     repairLog,
   };
+}
+
+// ===== v2.1.1-AI: Convenience Parsers =====
+
+/**
+ * Parse AI output as a ChapterPacket.
+ * Validates against the ChapterPacket JSON schema.
+ */
+export function parseChapterPacket(
+  rawContent: string,
+  strict: boolean = false,
+): ParseResult {
+  return parseStructuredOutput({
+    rawContent,
+    schema: CHAPTER_PACKET_SCHEMA,
+    strict,
+  });
+}
+
+/**
+ * Parse AI output as a WritingContract.
+ * Validates against the WritingContract JSON schema.
+ */
+export function parseWritingContract(
+  rawContent: string,
+  strict: boolean = false,
+): ParseResult {
+  return parseStructuredOutput({
+    rawContent,
+    schema: WRITING_CONTRACT_SCHEMA,
+    strict,
+  });
+}
+
+/**
+ * Parse AI output as TianDiRen (Heaven/Earth/Human) layers.
+ * Validates against the TianDiRen JSON schema.
+ */
+export function parseTianDiRen(
+  rawContent: string,
+  strict: boolean = false,
+): ParseResult {
+  return parseStructuredOutput({
+    rawContent,
+    schema: TIAN_DI_REN_SCHEMA,
+    strict,
+  });
+}
+
+/**
+ * Get a human-readable error message for a ParseResult.
+ * Returns Chinese error messages for user-facing display.
+ */
+export function getParseErrorMessage(result: ParseResult): string {
+  switch (result.status) {
+    case 'valid':
+      return '';
+    case 'repaired':
+      return `AI 返回的 JSON 已自动修复：${result.repairLog.join('；')}`;
+    case 'fallback':
+      return 'AI 返回的 JSON 无法解析，已使用原文模式展示。';
+    case 'failed':
+      return `AI 返回的 JSON 解析失败：${result.validationErrors.join('；')}`;
+    default:
+      return '未知解析状态。';
+  }
+}
+
+/**
+ * Check if a ParseResult represents parseable data (valid or repaired).
+ */
+export function isParseable(result: ParseResult): boolean {
+  return result.status === 'valid' || result.status === 'repaired';
 }

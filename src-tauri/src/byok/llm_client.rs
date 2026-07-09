@@ -1,4 +1,7 @@
-﻿use futures_util::StreamExt;
+﻿// [DEPRECATED v2.1.1-AI] v1 BYOK LLM client — Will be removed in v2.2.
+// AI calls now go through the Router (command-router.ts) which selects provider
+// and model from the consolidated ai_provider_config table.
+use futures_util::StreamExt;
 use reqwest::Client;
 use serde_json::json;
 use std::time::Instant;

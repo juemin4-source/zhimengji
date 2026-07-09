@@ -1,0 +1,44 @@
+{
+  "manifestVersion": "1.0.0",
+  "version": "v2.1.1-AI",
+  "title": "AI Runtime Rewrite",
+  "gateStatus": "PASS",
+  "gateReport": "../V2_1_1_AI_GATE_REPORT.md",
+  "ticketCount": 4,
+  "tickets": [
+    {
+      "id": "T-001",
+      "title": "Provider Registry Rebuild — Merge v1 BYOK + v2 AI Control Center",
+      "priority": "P0",
+      "scopeItem": 1,
+      "dependency": null
+    },
+    {
+      "id": "T-002",
+      "title": "Structured Output Parser Baseline — ChapterPacket/WritingContract/TianDiRen",
+      "priority": "P1",
+      "scopeItem": 4,
+      "dependency": null
+    },
+    {
+      "id": "T-003",
+      "title": "Router v2 + Tri-state Write Guard — Mandatory Single Entry Point",
+      "priority": "P0",
+      "scopeItem": [2, 3],
+      "dependency": "T-001"
+    },
+    {
+      "id": "T-004",
+      "title": "Canvas AI Call Migration + TianDiRen Rewire + accept:ai-runtime + Audit",
+      "priority": "P0",
+      "scopeItem": [5, 0],
+      "dependency": "T-003"
+    }
+  ],
+  "executionOrder": ["T-001", "T-002", "T-003", "T-004"],
+  "contractTarget": {
+    "existing": 4,
+    "expanded": 4,
+    "new": 0
+  }
+}

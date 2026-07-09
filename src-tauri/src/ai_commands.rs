@@ -236,6 +236,155 @@ pub fn parse_output(
     })
 }
 
+/// [v2.1.1-AI] Parse AI output as a ChapterPacket.
+/// Uses the ChapterPacket JSON schema for validation.
+#[tauri::command]
+pub fn parse_chapter_packet(
+    _db: State<'_, Database>,
+    input: AiParseInput,
+) -> Result<AiParseOutput, String> {
+    use crate::ai::structured_parser;
+
+    let chapter_packet_schema = r#"{
+        "type": "object",
+        "properties": {
+            "title": { "type": "string", "default": "" },
+            "line": { "type": "string", "default": "" },
+            "position": { "type": "string", "default": "" },
+            "chapterFunction": { "type": "string", "default": "" },
+            "layer1": { "type": "string", "default": "" },
+            "layer2": { "type": "string", "default": "" },
+            "layer3": { "type": "string", "default": "" },
+            "layer4": { "type": "string", "default": "" },
+            "status": { "type": "string", "default": "pending" }
+        },
+        "required": ["title", "line", "position", "chapterFunction"]
+    }"#;
+
+    let result = structured_parser::parse_structured_output(
+        &input.raw_content,
+        chapter_packet_schema,
+        input.strict,
+    );
+
+    let status_str = match result.status {
+        structured_parser::ParserStatus::Valid => "valid",
+        structured_parser::ParserStatus::Repaired => "repaired",
+        structured_parser::ParserStatus::Fallback => "fallback",
+        structured_parser::ParserStatus::Failed => "failed",
+    };
+
+    let mut data_obj = serde_json::Map::new();
+    data_obj.insert("status".to_string(), serde_json::Value::String(status_str.to_string()));
+    if let Some(obj) = result.data.as_object() {
+        for (k, v) in obj.iter() {
+            data_obj.insert(k.clone(), v.clone());
+        }
+    }
+
+    Ok(AiParseOutput {
+        data: serde_json::Value::Object(data_obj),
+        validation_errors: result.validation_errors,
+        repair_log: result.repair_log,
+        fallback_text: result.fallback_text,
+    })
+}
+
+/// [v2.1.1-AI] Parse AI output as a WritingContract.
+#[tauri::command]
+pub fn parse_writing_contract(
+    _db: State<'_, Database>,
+    input: AiParseInput,
+) -> Result<AiParseOutput, String> {
+    use crate::ai::structured_parser;
+
+    let writing_contract_schema = r#"{
+        "type": "object",
+        "properties": {
+            "narrativeDistance": { "type": "string", "default": "medium" },
+            "expositionStrategy": { "type": "string", "default": "balanced" },
+            "taboos": { "type": "array", "default": [] },
+            "reasoning": { "type": "string", "default": "" }
+        },
+        "required": ["narrativeDistance", "expositionStrategy", "taboos", "reasoning"]
+    }"#;
+
+    let result = structured_parser::parse_structured_output(
+        &input.raw_content,
+        writing_contract_schema,
+        input.strict,
+    );
+
+    let status_str = match result.status {
+        structured_parser::ParserStatus::Valid => "valid",
+        structured_parser::ParserStatus::Repaired => "repaired",
+        structured_parser::ParserStatus::Fallback => "fallback",
+        structured_parser::ParserStatus::Failed => "failed",
+    };
+
+    let mut data_obj = serde_json::Map::new();
+    data_obj.insert("status".to_string(), serde_json::Value::String(status_str.to_string()));
+    if let Some(obj) = result.data.as_object() {
+        for (k, v) in obj.iter() {
+            data_obj.insert(k.clone(), v.clone());
+        }
+    }
+
+    Ok(AiParseOutput {
+        data: serde_json::Value::Object(data_obj),
+        validation_errors: result.validation_errors,
+        repair_log: result.repair_log,
+        fallback_text: result.fallback_text,
+    })
+}
+
+/// [v2.1.1-AI] Parse AI output as TianDiRen (Heaven/Earth/Human) layers.
+#[tauri::command]
+pub fn parse_tiandiren_output(
+    _db: State<'_, Database>,
+    input: AiParseInput,
+) -> Result<AiParseOutput, String> {
+    use crate::ai::structured_parser;
+
+    let tiandiren_schema = r#"{
+        "type": "object",
+        "properties": {
+            "tian": { "type": "string", "default": "" },
+            "di": { "type": "string", "default": "" },
+            "ren": { "type": "string", "default": "" }
+        },
+        "required": ["tian", "di", "ren"]
+    }"#;
+
+    let result = structured_parser::parse_structured_output(
+        &input.raw_content,
+        tiandiren_schema,
+        input.strict,
+    );
+
+    let status_str = match result.status {
+        structured_parser::ParserStatus::Valid => "valid",
+        structured_parser::ParserStatus::Repaired => "repaired",
+        structured_parser::ParserStatus::Fallback => "fallback",
+        structured_parser::ParserStatus::Failed => "failed",
+    };
+
+    let mut data_obj = serde_json::Map::new();
+    data_obj.insert("status".to_string(), serde_json::Value::String(status_str.to_string()));
+    if let Some(obj) = result.data.as_object() {
+        for (k, v) in obj.iter() {
+            data_obj.insert(k.clone(), v.clone());
+        }
+    }
+
+    Ok(AiParseOutput {
+        data: serde_json::Value::Object(data_obj),
+        validation_errors: result.validation_errors,
+        repair_log: result.repair_log,
+        fallback_text: result.fallback_text,
+    })
+}
+
 // ===== AI Skill Registry Commands =====
 
 /// List all registered AI skills
@@ -268,13 +417,19 @@ pub fn register_skill(
 
 // ===== AI Provider Commands =====
 
-/// List all configured AI providers (v2)
+/// List all configured AI providers (v2 — consolidated with v1 BYOK)
+/// [v2.1.1-AI] Also reads v1 BYOK api_keys data via migration (already performed in init).
+/// Now returns all providers from the single ai_provider_config table,
+/// including any migrated from v1 (identified by migrated_from_v1 flag).
 #[tauri::command]
 pub fn list_providers_v2(
     db: State<'_, Database>,
 ) -> Result<Vec<AiProviderConfig>, String> {
-    db.list_ai_provider_configs()
-        .map_err(|e| format!("DB_ERROR: {}", e))
+    let configs = db.list_ai_provider_configs()
+        .map_err(|e| format!("DB_ERROR: {}", e))?;
+
+    // No dedup needed — migration ensures no duplicates between v1 and v2
+    Ok(configs)
 }
 
 /// Save or update an AI provider configuration

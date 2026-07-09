@@ -7,3 +7,11 @@
 
 export { buildContext } from './context-builder';
 export { route } from './command-router';
+export {
+  parseStructuredOutput,
+  parseChapterPacket,
+  parseWritingContract,
+  parseTianDiRen,
+  getParseErrorMessage,
+  isParseable,
+} from './structured-parser';

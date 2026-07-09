@@ -1,4 +1,6 @@
-﻿use chrono::Datelike;
+﻿// [DEPRECATED v2.1.1-AI] v1 BYOK usage tracker — Will be removed in v2.2.
+// Usage tracking will be consolidated in v2.2 AI Infra.
+use chrono::Datelike;
 use rusqlite::{params, Connection};
 
 use crate::byok::{ModelUsage, UsageStats};

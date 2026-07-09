@@ -150,6 +150,8 @@ export interface AiProviderConfigV2 {
   models: string;
   timeoutMs: number;
   isActive: boolean;
+  /** [v2.1.1-AI] True if this config was migrated from v1 BYOK api_keys table */
+  migratedFromV1?: boolean;
   createdAt: number;
   updatedAt: number;
 }

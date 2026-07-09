@@ -788,6 +788,9 @@ pub struct AiProviderConfig {
     pub models: String,          // JSON array of model IDs
     pub timeout_ms: i64,
     pub is_active: bool,
+    /// [v2.1.1-AI] True if this config was migrated from v1 BYOK api_keys table
+    #[serde(default)]
+    pub migrated_from_v1: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }

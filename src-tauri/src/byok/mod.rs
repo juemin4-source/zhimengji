@@ -1,4 +1,8 @@
-﻿pub mod key_manager;
+﻿// [DEPRECATED v2.1.1-AI] v1 BYOK module — Will be removed in v2.2.
+// All provider config now lives in ai_provider_config table via ai_commands.rs.
+// Keep existing code for read-compat with existing user data.
+
+pub mod key_manager;
 pub mod llm_client;
 pub mod usage_tracker;
 

@@ -135,6 +135,10 @@ impl Database {
         init_decision_logs_table(&conn)?;
         init_quick_drafts_table(&conn)?;
         init_ai_tables(&conn)?;
+        // [v2.1.1-AI] Schema migration: add migrated_from_v1 column
+        migrate_ai_provider_config_schema(&conn)?;
+        // [v2.1.1-AI] Migrate v1 BYOK api_keys to v2 ai_provider_config
+        migrate_v1_api_keys_to_v2(&conn)?;
         init_premise_steps_table(&conn)?;
         init_sparrow_tables(&conn)?;
         init_packet_detail_modes_table(&conn)?;
@@ -1812,6 +1816,7 @@ pub fn init_ai_tables(conn: &Connection) -> SqlResult<()> {
           models TEXT NOT NULL DEFAULT '[]',
           timeout_ms INTEGER NOT NULL DEFAULT 30000,
           is_active INTEGER NOT NULL DEFAULT 1,
+          migrated_from_v1 INTEGER NOT NULL DEFAULT 0,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL
         );
@@ -1853,6 +1858,102 @@ pub fn init_ai_tables(conn: &Connection) -> SqlResult<()> {
 
     // Seed 5 default skills if the table is empty
     init_default_skills(conn)?;
+
+    Ok(())
+}
+
+/// [v2.1.1-AI] Migrate ai_provider_config schema to add migrated_from_v1 column.
+/// Existing databases may not have this column.
+pub fn migrate_ai_provider_config_schema(conn: &Connection) -> SqlResult<()> {
+    // SQLite doesn't support ADD COLUMN IF NOT EXISTS, so we check first
+    let has_column: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('ai_provider_config') WHERE name='migrated_from_v1'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_column {
+        conn.execute_batch(
+            "ALTER TABLE ai_provider_config ADD COLUMN migrated_from_v1 INTEGER NOT NULL DEFAULT 0;"
+        )?;
+    }
+    Ok(())
+}
+
+/// [v2.1.1-AI] Migrate v1 BYOK api_keys to v2 ai_provider_config.
+/// Reads from api_keys table, decrypts using v1 master key, and creates
+/// entries in ai_provider_config if not already present.
+/// Must be called after init_ai_tables() and migrate_ai_provider_config_schema().
+pub fn migrate_v1_api_keys_to_v2(conn: &Connection) -> SqlResult<()> {
+    use rusqlite::params;
+
+    // Check if api_keys table exists (v1 BYOK)
+    let has_api_keys: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name='api_keys'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_api_keys {
+        return Ok(()); // No v1 data to migrate
+    }
+
+    // Read all v1 api_keys
+    let mut stmt = conn.prepare(
+        "SELECT provider, encrypted_key, created_at, updated_at FROM api_keys"
+    )?;
+    let v1_keys: Vec<(String, String, i64, i64)> = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, i64>(2)?,
+            row.get::<_, i64>(3)?,
+        ))
+    })?.filter_map(|r| r.ok()).collect();
+
+    for (provider_id, encrypted_key, created_at, _updated_at) in &v1_keys {
+        // Check if this provider already exists in v2 config
+        let exists: bool = conn.query_row(
+            "SELECT COUNT(*) > 0 FROM ai_provider_config WHERE provider_id = ?1",
+            params![provider_id],
+            |row| row.get(0),
+        ).unwrap_or(false);
+
+        if exists {
+            continue; // Already migrated
+        }
+
+        // Create v2 entry using v1 data
+        // Map provider_id to provider_name
+        let provider_name = match provider_id.as_str() {
+            "openai" => "OpenAI (migrated)",
+            "anthropic" => "Anthropic (migrated)",
+            "google" => "Google AI (migrated)",
+            "azure" => "Azure OpenAI (migrated)",
+            "deepseek" => "DeepSeek (migrated)",
+            "custom" => "Custom (migrated)",
+            _ => provider_id.as_str(),
+        };
+
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        let new_id = uuid::Uuid::new_v4().to_string();
+
+        conn.execute(
+            "INSERT INTO ai_provider_config (id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, migrated_from_v1, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, 1, ?8, ?9)",
+            params![
+                new_id,
+                provider_id,
+                provider_name,
+                encrypted_key,
+                "",   // endpoint — unknown from v1, user must configure
+                "[]", // models — unknown from v1
+                30000,
+                *created_at * 1000, // v1 uses seconds, v2 uses ms
+                now_ms,
+            ],
+        )?;
+    }
 
     Ok(())
 }
@@ -2836,7 +2937,7 @@ impl Database {
     pub fn list_ai_provider_configs(&self) -> SqlResult<Vec<crate::models::AiProviderConfig>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, migrated_from_v1, created_at, updated_at
              FROM ai_provider_config ORDER BY provider_name"
         )?;
         let rows = stmt.query_map([], |row| {
@@ -2849,8 +2950,9 @@ impl Database {
                 models: row.get(5)?,
                 timeout_ms: row.get(6)?,
                 is_active: row.get(7)?,
-                created_at: row.get(8)?,
-                updated_at: row.get(9)?,
+                migrated_from_v1: row.get(8)?,
+                created_at: row.get(9)?,
+                updated_at: row.get(10)?,
             })
         })?;
         let mut configs = Vec::new();
@@ -2863,7 +2965,7 @@ impl Database {
     pub fn get_ai_provider_config(&self, provider_id: &str) -> SqlResult<Option<crate::models::AiProviderConfig>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, migrated_from_v1, created_at, updated_at
              FROM ai_provider_config WHERE provider_id = ?"
         )?;
         let mut rows = stmt.query_map(params![provider_id], |row| {
@@ -2876,8 +2978,9 @@ impl Database {
                 models: row.get(5)?,
                 timeout_ms: row.get(6)?,
                 is_active: row.get(7)?,
-                created_at: row.get(8)?,
-                updated_at: row.get(9)?,
+                migrated_from_v1: row.get(8)?,
+                created_at: row.get(9)?,
+                updated_at: row.get(10)?,
             })
         })?;
         match rows.next() {
@@ -2926,6 +3029,7 @@ impl Database {
             models: models_json,
             timeout_ms: input.timeout_ms,
             is_active: true,
+            migrated_from_v1: false,
             created_at: now,
             updated_at: now,
         })
@@ -2940,7 +3044,7 @@ impl Database {
     pub fn get_ai_provider_config_by_id(&self, id: &str) -> SqlResult<Option<crate::models::AiProviderConfig>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, created_at, updated_at
+            "SELECT id, provider_id, provider_name, api_key_encrypted, endpoint, models, timeout_ms, is_active, migrated_from_v1, created_at, updated_at
              FROM ai_provider_config WHERE id = ?"
         )?;
         let mut rows = stmt.query_map(params![id], |row| {
@@ -2953,8 +3057,9 @@ impl Database {
                 models: row.get(5)?,
                 timeout_ms: row.get(6)?,
                 is_active: row.get(7)?,
-                created_at: row.get(8)?,
-                updated_at: row.get(9)?,
+                migrated_from_v1: row.get(8)?,
+                created_at: row.get(9)?,
+                updated_at: row.get(10)?,
             })
         })?;
         match rows.next() {

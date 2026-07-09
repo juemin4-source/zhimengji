@@ -1,4 +1,6 @@
-﻿use aes_gcm::{
+﻿// [DEPRECATED v2.1.1-AI] v1 BYOK key manager — Will be removed in v2.2.
+// All provider config operations now use ai_provider_config table via ai_commands.rs.
+use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Key, Nonce,
 };

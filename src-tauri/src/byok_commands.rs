@@ -1,4 +1,15 @@
-﻿use tauri::{AppHandle, State};
+﻿// =============================================================================
+// [DEPRECATED v2.1.1-AI] v1 BYOK Commands — Will be removed in v2.2
+//
+// These commands are kept for backward compatibility with existing frontend
+// components that may still reference them. New code must use v2 equivalents
+// in ai_commands.rs (list_providers_v2, save_provider_config, etc.).
+//
+// v1 api_keys table is now read-only; all new writes go to ai_provider_config.
+// Data has been migrated to ai_provider_config on first read.
+// =============================================================================
+
+use tauri::{AppHandle, State};
 
 use crate::byok::{key_manager, llm_client, usage_tracker};
 use crate::byok::{ChatMessage, ProviderInfo, TestResult, UsageStats};

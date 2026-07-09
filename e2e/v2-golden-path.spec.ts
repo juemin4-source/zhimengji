@@ -499,28 +499,28 @@ async function completePremiseStage(page: Page) {
   const genreSelect = page.locator("select").first();
   await genreSelect.selectOption("character_driven");
 
-  // Click "保存草稿"
-  await page.getByRole("button", { name: "保存草稿" }).click();
+  // Click "保存草稿" (force: true to bypass CanvasAiBar fixed overlay)
+  await page.getByRole("button", { name: "保存草稿" }).click({ force: true });
   await expect(page.getByText("保存中...")).toBeVisible({ timeout: 3000 }).catch(() => {});
 
   // Wait for save to complete (button text returns or other visual cue)
   await page.waitForTimeout(1500);
 
-  // Click "确认前提"
-  await page.getByRole("button", { name: "确认前提" }).click();
+  // Click "确认前提" (force: true to bypass CanvasAiBar fixed overlay)
+  await page.getByRole("button", { name: "确认前提" }).click({ force: true });
 }
 
 /** Stage 2: Create default structure and confirm */
 async function completeStructureStage(page: Page) {
   // "创建默认结构" button should appear
   await expect(page.getByRole("button", { name: "创建默认结构" })).toBeVisible({ timeout: 8000 });
-  await page.getByRole("button", { name: "创建默认结构" }).click();
+  await page.getByRole("button", { name: "创建默认结构" }).click({ force: true });
 
   // ReactFlow should render
   await expect(page.locator(".react-flow")).toBeVisible({ timeout: 5000 });
 
   // Click "确认结构 ✓"
-  await page.getByRole("button", { name: "确认结构" }).click();
+  await page.getByRole("button", { name: "确认结构" }).click({ force: true });
   await page.waitForTimeout(1000);
 }
 
@@ -551,7 +551,7 @@ async function completeSettingStage(page: Page) {
   await page.waitForTimeout(1000);
 
   // Click "确认设定 ✓"
-  await page.getByRole("button", { name: "确认设定" }).click();
+  await page.getByRole("button", { name: "确认设定" }).click({ force: true });
   await page.waitForTimeout(1000);
 }
 
@@ -573,7 +573,7 @@ async function completePacketStage(page: Page) {
   await page.waitForTimeout(1000);
 
   // Click "确认"
-  await page.getByRole("button", { name: "确认" }).click();
+  await page.getByRole("button", { name: "确认" }).click({ force: true });
   await page.waitForTimeout(1500);
 }
 

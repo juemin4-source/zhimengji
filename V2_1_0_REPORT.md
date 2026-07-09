@@ -49,7 +49,7 @@ All 4 P0 items implemented and accepted. Tech spike completed with FEASIBLE verd
 |-------|--------|-------|
 | `cargo check` | **PASS** | 0 errors, 7 pre-existing warnings (FI-05, NOT_FIXABLE) |
 | `npx tsc --noEmit` | **PASS** | 0 TypeScript errors |
-| `node scripts/acceptance/scan-contract-chain.mjs` | **75/75 PASS** | 75 total: 42 baseline + 24 AI infra + 4 CN-MET. CN-MET-04 ACTIVE, 01-03 PENDING (verified types exist). All existing contracts intact. |
+| `node scripts/acceptance/scan-contract-chain.mjs` | **90/90 PASS** | 90 total: 42 baseline + 24 AI infra + 4 CN-MET (all ACTIVE). All contracts intact. |
 | CN-MET-01 types (premise.contract.ts) | **VERIFIED** | WishlistItem, PremiseVariant, ReaderQuestion, GenreJudgment, PremiseFiveStepState, PremiseStep |
 | CN-MET-02 types (structure.contract.ts) | **VERIFIED** | BookLayer, ShiweiLayer, HouLayer, ZhangLayer, LayerType, HierarchyBreadcrumb, StructureGraphState |
 | CN-MET-03 types (setting.contract.ts) | **VERIFIED** | SparrowModule, SparrowStepState, CharacterStep3, TianDiRenLayer |
@@ -85,6 +85,8 @@ All 4 P0 items implemented and accepted. Tech spike completed with FEASIBLE verd
 | v2.0.2 AI infra (Context Builder, Router, Parser, Registry, Harness) | 24 | **ALL PASS** (unchanged) |
 | **Subtotal existing** | **66** | **ALL PASS** |
 
+**Note on count increase (75 → 90):** The T-000 prework added 4 CN-MET PENDING entries to the scanner when total was 66 (42+24). During T-007 final gate, the scanner was updated with full command/API-method/DB-method arrays for CN-MET-01~03 (promoted from PENDING to ACTIVE), and the entity-detail expansion (per-method breakdown) increased the granularity, resulting in 90 individual contract checks. All 90 pass. No existing contracts were modified.
+
 ### CN-MET Additions
 
 | ID | File | Status After T-007 | Types Added |
@@ -94,7 +96,7 @@ All 4 P0 items implemented and accepted. Tech spike completed with FEASIBLE verd
 | CN-MET-03 | setting.contract.ts | ACTIVE | SparrowModule, SparrowStepState, CharacterStep3, TianDiRenLayer |
 | CN-MET-04 | chapter-packet.contract.ts | ACTIVE | DetailMode, PacketDetailLevel, SketchConfig, RefinedConfig |
 
-**Total: 75 contracts, 75 PASS, 0 FAIL**
+**Total: 90 contracts, 90 PASS, 0 FAIL**
 
 ---
 
@@ -207,7 +209,10 @@ All 4 P0 items implemented and accepted. Tech spike completed with FEASIBLE verd
 | 4 | `npm run test:ai-evaluation-harness` not run (fixtures are stubs) — by design | Note | T-000 | Fixture stubs exist; AI-driven implementations added by T-002~T-005 |
 | 5 | `accept:static` pre-existing violations in TextCanvas.tsx (FI-03) — documentation comments | Note | pre-existing | NOT_FIXABLE (file in Forbidden zone) |
 | 6 | T-006 (Heaven/Earth/Human) deferred to v2.1.1 | Note | T-006 | Per scope freeze plan Section 3, Item 5 is P1 and deferrable |
-| 7 | CN-MET-01~03 still PENDING in contract scanner — needs T-007 update to ACTIVE | Note | T-007 | All types verified in source code; scanner status update needed |
+| 7 | CN-MET-01~03 now ACTIVE in scanner — T-007 updated successfully | Fixed | T-007 | 90/90 all PASS after scanner update |
+| 8 | Method AI integration is stub (placeholder text), not real AI through Command Router | P2 | T-002~T-005 | generation commands return hardcoded Chinese templates. Real AI integration deferred to v2.2. Architect finding. |
+| 9 | Raw SQL in structure_commands.rs bypasses db.rs abstraction layer | P3 | T-005 | `ai_generate_structure` executes raw conn.execute() instead of using db.rs methods. Should be migrated. |
+| 10 | T-001 spike scratch files still present | Note | T-001 | `.claude/spikes/canvas2-xyflow/*` should be cleaned up |
 
 ---
 
@@ -243,9 +248,15 @@ Verdict: **PASS_WITH_NOTES**
 
 ### tech-lead (architect)
 
-Verdict: **PASS** (pending final response)
+Verdict: **PASS_WITH_NOTES**
 
-> Awaiting architect verdict. Expected outcome based on technical evidence: additive patterns correctly followed, no contract breakage, performance mitigations for Canvas 2 appropriate, no technical debt beyond pre-existing issues.
+> Structural architecture (additive contracts, new tables, layered API, shared components, serial execution) is sound. All claimed Canvas 2 performance mitigations verified in production code (onlyRenderElementsVisible, React.memo, MiniMap disable at >500 nodes).
+>
+> **Critical finding — AI integration is stub, not real AI:** Despite the stated claim that "all method AI uses Command Router v2 + Structured Output Parser + Skill Registry," the actual implementations in all 4 canvas commands are hardcoded stubs (Chinese placeholder text, template strings, default SQL inserts). None call the v2.0.2 AI infrastructure. This is acceptable for MVP but must be honestly documented.
+>
+> **Architectural bypass noted:** `ai_generate_structure` in `structure_commands.rs` executes raw SQL (`conn.execute()`) instead of using the `db.rs` abstraction layer. Should be migrated.
+>
+> **Scanner now fixed and re-run:** 90/90 all PASS (contracts updated from PENDING to ACTIVE).
 
 ---
 

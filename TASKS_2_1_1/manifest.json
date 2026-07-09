@@ -1,0 +1,48 @@
+{
+  "manifestVersion": "1.0.0",
+  "version": "v2.1.1",
+  "title": "Method Integration",
+  "ticketCount": 4,
+  "totalBatches": 5,
+  "tickets": [
+    {
+      "id": "T-001",
+      "title": "Cross-Canvas Pipeline Foundation + Upstream Detection",
+      "batch": 1,
+      "priority": "P0",
+      "dependency": null,
+      "status": "ready"
+    },
+    {
+      "id": "T-002",
+      "title": "Premise Type → Writing Contract Integration",
+      "batch": 2,
+      "priority": "P0",
+      "dependency": "T-001",
+      "status": "ready"
+    },
+    {
+      "id": "T-003",
+      "title": "Structure→Packet Navigation + DetailMode AI Wiring",
+      "batch": "3+4",
+      "priority": "P0",
+      "dependency": "T-001",
+      "status": "ready"
+    },
+    {
+      "id": "T-004",
+      "title": "Heaven/Earth/Human Three-Layer Expansion",
+      "batch": 5,
+      "priority": "P0",
+      "dependency": "T-001",
+      "status": "ready"
+    }
+  ],
+  "executionOrder": ["T-001", "T-002", "T-003", "T-004"],
+  "contractTarget": {
+    "existing": 75,
+    "new": 2,
+    "total": 77
+  },
+  "versionLeadNotes": "T-003 combines Batch 3 and Batch 4 (independent sub-items that both depend on T-001). T-002 depends on T-001. T-004 is independent but needs T-001 for upstream detection wiring."
+}

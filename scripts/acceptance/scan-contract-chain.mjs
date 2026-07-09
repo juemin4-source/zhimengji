@@ -80,6 +80,18 @@ const ENTITIES = [
     apiMethods: ['createFactionCard', 'listFactionCards', 'getFactionCard', 'updateFactionCard', 'deleteFactionCard'],
     dbMethods: ['create_faction_card', 'list_faction_cards', 'get_faction_card', 'update_faction_card', 'delete_faction_card'],
   },
+  {
+    name: 'ChapterPacket',
+    contractFile: 'src/contracts/chapter-packet.contract.ts',
+    apiFile: 'src/api/chapterPacketApi.ts',
+    commandsFile: 'src-tauri/src/chapter_packet_commands.rs',
+    modelsStruct: 'ChapterPacket',
+    dbPrefix: 'chapter_packet',
+    uiFiles: [],
+    commands: ['create_chapter_packet', 'list_chapter_packets', 'get_chapter_packet', 'update_chapter_packet_layers', 'confirm_chapter_packet', 'delete_chapter_packet'],
+    apiMethods: ['createChapterPacket', 'listChapterPackets', 'getChapterPacket', 'updateChapterPacketLayers', 'confirmChapterPacket', 'deleteChapterPacket'],
+    dbMethods: ['create_chapter_packet', 'list_chapter_packets', 'get_chapter_packet', 'update_chapter_packet_layers', 'confirm_chapter_packet', 'delete_chapter_packet'],
+  },
 ];
 
 // ---- Helpers ----

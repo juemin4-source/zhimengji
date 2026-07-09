@@ -15,7 +15,8 @@
         "accept:static": "node scripts/acceptance/scan-forbidden-patterns.mjs",
         "accept:css": "node scripts/acceptance/scan-css-compliance.mjs",
         "accept:contracts": "node scripts/acceptance/scan-contract-chain.mjs",
-        "accept": "npm run accept:static && npm run accept:css && npm run accept:contracts"
+        "accept:persistence": "node scripts/acceptance/persistence.mjs",
+        "accept": "npm run accept:static && npm run accept:css && npm run accept:contracts && npm run accept:persistence"
     },
     "dependencies": {
         "@tauri-apps/api": "^2",

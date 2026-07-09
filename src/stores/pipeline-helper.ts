@@ -57,3 +57,26 @@ export async function confirmSetting(projectId: string): Promise<void> {
   });
   store.setPipelineState(ps);
 }
+
+/**
+ * confirmPacket — 推进画板④（packet）到 done，解锁画板⑤（text）为 active。
+ * createdAt 不由前端传，后端 upsert 时不覆盖。
+ */
+export async function confirmPacket(projectId: string): Promise<void> {
+  const store = useProjectStore.getState();
+  const prev = store.canvasStages;
+  const updatedStages = prev.map(s => ({
+    ...s,
+    status: s.stage === 'packet' ? 'done' as const
+           : s.stage === 'text' ? 'active' as const
+           : s.status as 'locked' | 'ready' | 'active' | 'done',
+  }));
+  const ps = await savePipelineState({
+    projectId,
+    currentStage: 'text' as const,
+    canvasStages: updatedStages,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+  store.setPipelineState(ps);
+}

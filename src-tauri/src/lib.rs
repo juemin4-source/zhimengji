@@ -1,5 +1,6 @@
 ﻿mod byok;
 mod byok_commands;
+mod chapter_packet_commands;
 mod commands;
 mod db;
 mod models;
@@ -104,6 +105,13 @@ pub fn run() {
             setting_commands::get_faction_card,
             setting_commands::update_faction_card,
             setting_commands::delete_faction_card,
+            // v2 ChapterPacket commands
+            chapter_packet_commands::create_chapter_packet,
+            chapter_packet_commands::list_chapter_packets,
+            chapter_packet_commands::get_chapter_packet,
+            chapter_packet_commands::update_chapter_packet_layers,
+            chapter_packet_commands::confirm_chapter_packet,
+            chapter_packet_commands::delete_chapter_packet,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

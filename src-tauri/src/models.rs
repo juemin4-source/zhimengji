@@ -573,3 +573,121 @@ pub struct GetFactionCardInput {
 pub struct DeleteFactionCardInput {
     pub id: String,
 }
+
+// ===== v2 ChapterPacket =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChapterPacket {
+    pub id: String,
+    pub project_id: String,
+    pub structure_node_id: Option<String>,
+    pub chapter_number: i64,
+    pub title: String,
+    pub line: String,
+    pub position: String,
+    pub chapter_function: String,
+    // 四层 JSON 字符串（前端反序列化为 TS interface）
+    pub layer1: String,
+    pub layer2: String,
+    pub layer3: String,
+    pub layer4: String,
+    pub status: String,
+    pub mode: String,
+    pub assumption_count: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateChapterPacketInput {
+    pub project_id: String,
+    pub structure_node_id: String,
+    pub chapter_number: i64,
+    pub title: String,
+    pub line: Option<String>,
+    pub position: String,
+    pub chapter_function: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateChapterPacketLayersInput {
+    pub packet_id: String,
+    pub layer1: Option<String>,
+    pub layer2: Option<String>,
+    pub layer3: Option<String>,
+    pub layer4: Option<String>,
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListChapterPacketsInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetChapterPacketInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfirmChapterPacketInput {
+    pub packet_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteChapterPacketInput {
+    pub id: String,
+}
+
+// DB Row（JSON 列用 String 存储）
+#[derive(Debug, Clone)]
+pub struct ChapterPacketRow {
+    pub id: String,
+    pub project_id: String,
+    pub structure_node_id: Option<String>,
+    pub chapter_number: i64,
+    pub title: String,
+    pub line: String,
+    pub position: String,
+    pub chapter_function: String,
+    pub layer1: String,
+    pub layer2: String,
+    pub layer3: String,
+    pub layer4: String,
+    pub status: String,
+    pub mode: String,
+    pub assumption_count: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+impl ChapterPacketRow {
+    pub fn to_api(self) -> ChapterPacket {
+        ChapterPacket {
+            id: self.id,
+            project_id: self.project_id,
+            structure_node_id: self.structure_node_id,
+            chapter_number: self.chapter_number,
+            title: self.title,
+            line: self.line,
+            position: self.position,
+            chapter_function: self.chapter_function,
+            layer1: self.layer1,
+            layer2: self.layer2,
+            layer3: self.layer3,
+            layer4: self.layer4,
+            status: self.status,
+            mode: self.mode,
+            assumption_count: self.assumption_count,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}

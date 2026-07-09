@@ -8,6 +8,8 @@ use crate::models::{
     Project, ProjectExportData, SaveCanvasTabStateResponse, StructureNode, UpdateCharacterCardInput,
     UpdateFactionCardInput, UpdatePremiseInput, UpdateStructureNodeInput, UpdateWorldRuleInput,
     WorldObject, WorldObjectRow, WorldRule,
+    // v2 ChapterPacket
+    ChapterPacket, ChapterPacketRow, CreateChapterPacketInput, UpdateChapterPacketLayersInput,
 };
 
 pub struct Database {
@@ -113,6 +115,7 @@ impl Database {
         init_world_rules_table(&conn)?;
         init_character_cards_table(&conn)?;
         init_faction_cards_table(&conn)?;
+        init_chapter_packets_table(&conn)?;
         Ok(())
     }
 
@@ -1657,6 +1660,239 @@ pub fn init_faction_cards_table(conn: &Connection) -> SqlResult<()> {
     Ok(())
 }
 
+// ===== v2 ChapterPacket =====
+
+pub fn init_chapter_packets_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS chapter_packets (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          structure_node_id TEXT DEFAULT NULL,
+          chapter_number INTEGER NOT NULL DEFAULT 1,
+          title TEXT NOT NULL DEFAULT '',
+          line TEXT NOT NULL DEFAULT '',
+          position TEXT NOT NULL DEFAULT '',
+          chapter_function TEXT NOT NULL DEFAULT '',
+          -- 四层 JSON TEXT 列
+          layer1 TEXT NOT NULL DEFAULT '{}',
+          layer2 TEXT NOT NULL DEFAULT '{}',
+          layer3 TEXT NOT NULL DEFAULT '{}',
+          layer4 TEXT NOT NULL DEFAULT '{}',
+          -- 元数据
+          status TEXT NOT NULL DEFAULT 'empty',
+          mode TEXT NOT NULL DEFAULT 'standard',
+          assumption_count INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (structure_node_id) REFERENCES structure_nodes(id) ON DELETE SET NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_cp_project ON chapter_packets(project_id);
+        CREATE INDEX IF NOT EXISTS idx_cp_structure_node ON chapter_packets(structure_node_id);
+        CREATE INDEX IF NOT EXISTS idx_cp_chapter ON chapter_packets(project_id, chapter_number);"
+    )?;
+    Ok(())
+}
+
+impl Database {
+    pub fn create_chapter_packet(&self, input: &CreateChapterPacketInput) -> SqlResult<ChapterPacket> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        let line = input.line.as_deref().unwrap_or("");
+        conn.execute(
+            "INSERT INTO chapter_packets (id, project_id, structure_node_id, chapter_number, title, line, position, chapter_function, status, mode, assumption_count, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'empty', 'standard', 0, ?9, ?10)",
+            params![id, input.project_id, input.structure_node_id, input.chapter_number, input.title, line, input.position, input.chapter_function, now, now],
+        )?;
+        Ok(ChapterPacket {
+            id,
+            project_id: input.project_id.clone(),
+            structure_node_id: Some(input.structure_node_id.clone()),
+            chapter_number: input.chapter_number,
+            title: input.title.clone(),
+            line: line.to_string(),
+            position: input.position.clone(),
+            chapter_function: input.chapter_function.clone(),
+            layer1: "{}".to_string(),
+            layer2: "{}".to_string(),
+            layer3: "{}".to_string(),
+            layer4: "{}".to_string(),
+            status: "empty".to_string(),
+            mode: "standard".to_string(),
+            assumption_count: 0,
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn list_chapter_packets(&self, project_id: &str) -> SqlResult<Vec<ChapterPacket>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, structure_node_id, chapter_number, title, line, position, chapter_function,
+                    layer1, layer2, layer3, layer4, status, mode, assumption_count, created_at, updated_at
+             FROM chapter_packets WHERE project_id = ? ORDER BY chapter_number"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(ChapterPacketRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                structure_node_id: row.get(2)?,
+                chapter_number: row.get(3)?,
+                title: row.get(4)?,
+                line: row.get(5)?,
+                position: row.get(6)?,
+                chapter_function: row.get(7)?,
+                layer1: row.get(8)?,
+                layer2: row.get(9)?,
+                layer3: row.get(10)?,
+                layer4: row.get(11)?,
+                status: row.get(12)?,
+                mode: row.get(13)?,
+                assumption_count: row.get(14)?,
+                created_at: row.get(15)?,
+                updated_at: row.get(16)?,
+            })
+        })?;
+        let mut packets = Vec::new();
+        for r in rows {
+            packets.push(r?.to_api());
+        }
+        Ok(packets)
+    }
+
+    pub fn get_chapter_packet(&self, id: &str) -> SqlResult<Option<ChapterPacket>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, structure_node_id, chapter_number, title, line, position, chapter_function,
+                    layer1, layer2, layer3, layer4, status, mode, assumption_count, created_at, updated_at
+             FROM chapter_packets WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(ChapterPacketRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                structure_node_id: row.get(2)?,
+                chapter_number: row.get(3)?,
+                title: row.get(4)?,
+                line: row.get(5)?,
+                position: row.get(6)?,
+                chapter_function: row.get(7)?,
+                layer1: row.get(8)?,
+                layer2: row.get(9)?,
+                layer3: row.get(10)?,
+                layer4: row.get(11)?,
+                status: row.get(12)?,
+                mode: row.get(13)?,
+                assumption_count: row.get(14)?,
+                created_at: row.get(15)?,
+                updated_at: row.get(16)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?.to_api())),
+            None => Ok(None),
+        }
+    }
+
+    pub fn update_chapter_packet_layers(&self, input: &UpdateChapterPacketLayersInput) -> SqlResult<ChapterPacket> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+
+        // Build dynamic UPDATE SET clauses
+        let mut set_clauses = Vec::new();
+        let mut param_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+        if let Some(ref v) = input.layer1 {
+            set_clauses.push("layer1 = ?");
+            param_values.push(Box::new(v.clone()));
+        }
+        if let Some(ref v) = input.layer2 {
+            set_clauses.push("layer2 = ?");
+            param_values.push(Box::new(v.clone()));
+        }
+        if let Some(ref v) = input.layer3 {
+            set_clauses.push("layer3 = ?");
+            param_values.push(Box::new(v.clone()));
+        }
+        if let Some(ref v) = input.layer4 {
+            set_clauses.push("layer4 = ?");
+            param_values.push(Box::new(v.clone()));
+        }
+        if let Some(ref v) = input.status {
+            set_clauses.push("status = ?");
+            param_values.push(Box::new(v.clone()));
+        }
+
+        if set_clauses.is_empty() {
+            // Nothing to update, just return current state
+            drop(conn);
+            return self.get_chapter_packet(&input.packet_id)
+                .map(|opt| opt.expect("packet not found"));
+        }
+
+        set_clauses.push("updated_at = ?");
+        param_values.push(Box::new(now));
+        param_values.push(Box::new(input.packet_id.clone()));
+
+        let sql = format!(
+            "UPDATE chapter_packets SET {} WHERE id = ?",
+            set_clauses.join(", ")
+        );
+
+        let param_refs: Vec<&dyn rusqlite::types::ToSql> = param_values.iter().map(|p| p.as_ref()).collect();
+        conn.execute(&sql, rusqlite::params_from_iter(param_refs))
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+
+        drop(conn);
+        self.get_chapter_packet(&input.packet_id)
+            .map(|opt| opt.expect("packet not found after update"))
+    }
+
+    pub fn confirm_chapter_packet(&self, id: &str) -> SqlResult<ChapterPacket> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE chapter_packets SET status = 'confirmed', updated_at = ? WHERE id = ?",
+            params![now, id],
+        )?;
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, structure_node_id, chapter_number, title, line, position, chapter_function,
+                    layer1, layer2, layer3, layer4, status, mode, assumption_count, created_at, updated_at
+             FROM chapter_packets WHERE id = ?"
+        )?;
+        let packet = stmt.query_row(params![id], |row| {
+            Ok(ChapterPacketRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                structure_node_id: row.get(2)?,
+                chapter_number: row.get(3)?,
+                title: row.get(4)?,
+                line: row.get(5)?,
+                position: row.get(6)?,
+                chapter_function: row.get(7)?,
+                layer1: row.get(8)?,
+                layer2: row.get(9)?,
+                layer3: row.get(10)?,
+                layer4: row.get(11)?,
+                status: row.get(12)?,
+                mode: row.get(13)?,
+                assumption_count: row.get(14)?,
+                created_at: row.get(15)?,
+                updated_at: row.get(16)?,
+            })
+        })?;
+        Ok(packet.to_api())
+    }
+
+    pub fn delete_chapter_packet(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM chapter_packets WHERE id = ?", params![id])?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2276,5 +2512,177 @@ mod tests {
         assert_eq!(imported_objects.len(), 2);
         let imported_connections = db.list_connections(&import_result.project_id).unwrap();
         assert_eq!(imported_connections.len(), 1);
+    }
+
+    // -???????????????????????????????????????????????????????????????????????????????????
+    //  v2 ChapterPacket CRUD
+    // -???????????????????????????????????????????????????????????????????????????????????
+
+    #[test]
+    fn test_chapter_packet_create() {
+        let db = setup_db();
+        let proj = db.create_project("CP Test", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+
+        // Initially empty
+        let packets = db.list_chapter_packets(&proj.id).unwrap();
+        assert!(packets.is_empty());
+
+        // Create
+        let input = CreateChapterPacketInput {
+            project_id: proj.id.clone(),
+            structure_node_id: "test-struct-1".to_string(),
+            chapter_number: 1,
+            title: "第一章".to_string(),
+            line: None,
+            position: "动".to_string(),
+            chapter_function: "opening".to_string(),
+        };
+        let cp = db.create_chapter_packet(&input).unwrap();
+        assert_eq!(cp.chapter_number, 1);
+        assert_eq!(cp.title, "第一章");
+        assert_eq!(cp.status, "empty");
+        assert_eq!(cp.chapter_function, "opening");
+        assert_eq!(cp.structure_node_id, Some("test-struct-1".to_string()));
+        assert!(!cp.id.is_empty());
+
+        // List
+        let packets = db.list_chapter_packets(&proj.id).unwrap();
+        assert_eq!(packets.len(), 1);
+
+        // Get
+        let got = db.get_chapter_packet(&cp.id).unwrap().expect("should exist");
+        assert_eq!(got.id, cp.id);
+        assert_eq!(got.title, "第一章");
+
+        // Get non-existent
+        assert!(db.get_chapter_packet("nonexistent").unwrap().is_none());
+    }
+
+    #[test]
+    fn test_chapter_packet_list_by_project() {
+        let db = setup_db();
+        let proj = db.create_project("CP List", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+
+        // Create two packets
+        for i in 1..=3 {
+            let input = CreateChapterPacketInput {
+                project_id: proj.id.clone(),
+                structure_node_id: format!("struct-{}", i),
+                chapter_number: i,
+                title: format!("第{}章", i),
+                line: None,
+                position: if i == 1 { "动".to_string() } else { "藏→生".to_string() },
+                chapter_function: if i == 1 { "opening".to_string() } else { "escalation".to_string() },
+            };
+            db.create_chapter_packet(&input).unwrap();
+        }
+
+        let packets = db.list_chapter_packets(&proj.id).unwrap();
+        assert_eq!(packets.len(), 3);
+        assert_eq!(packets[0].chapter_number, 1);
+        assert_eq!(packets[1].chapter_number, 2);
+        assert_eq!(packets[2].chapter_number, 3);
+
+        // Project isolation
+        let other = db.create_project("Other", "o", "conceiving", 0, r##"["#c","#d"]"##).unwrap();
+        let other_packets = db.list_chapter_packets(&other.id).unwrap();
+        assert!(other_packets.is_empty());
+    }
+
+    #[test]
+    fn test_chapter_packet_update_layers() {
+        let db = setup_db();
+        let proj = db.create_project("CP Update", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+
+        let input = CreateChapterPacketInput {
+            project_id: proj.id.clone(),
+            structure_node_id: "struct-1".to_string(),
+            chapter_number: 1,
+            title: "第一章".to_string(),
+            line: None,
+            position: "动".to_string(),
+            chapter_function: "opening".to_string(),
+        };
+        let cp = db.create_chapter_packet(&input).unwrap();
+
+        // Update layer1
+        let layer1_json = r#"{"narrativeDistance":"close","expositionStrategy":"balanced","characterVoice":"moderate","taboos":["不要剧透"],"voiceSamples":[]}"#;
+        let updated = db.update_chapter_packet_layers(&UpdateChapterPacketLayersInput {
+            packet_id: cp.id.clone(),
+            layer1: Some(layer1_json.to_string()),
+            layer2: None,
+            layer3: None,
+            layer4: None,
+            status: Some("draft".to_string()),
+        }).unwrap();
+        assert_eq!(updated.layer1, layer1_json);
+        assert_eq!(updated.status, "draft");
+
+        // Update multiple fields
+        let layer2_json = r#"{"characters":[{"characterId":"c1","name":"Test","hook":"h","currentState":"知情","status":"active"}],"scenes":[],"rules":[],"recap":"前情","knowledgeSnapshot":{"characterKnowledge":[],"readerKnows":[],"hiddenFromReader":[]},"characterStates":[]}"#;
+        let updated2 = db.update_chapter_packet_layers(&UpdateChapterPacketLayersInput {
+            packet_id: cp.id.clone(),
+            layer1: None,
+            layer2: Some(layer2_json.to_string()),
+            layer3: None,
+            layer4: None,
+            status: None,
+        }).unwrap();
+        assert_eq!(updated2.layer1, layer1_json); // unchanged
+        assert_eq!(updated2.layer2, layer2_json);
+        assert_eq!(updated2.status, "draft"); // unchanged
+
+        // Get and verify
+        let got = db.get_chapter_packet(&cp.id).unwrap().unwrap();
+        assert_eq!(got.layer1, layer1_json);
+        assert_eq!(got.layer2, layer2_json);
+    }
+
+    #[test]
+    fn test_chapter_packet_confirm() {
+        let db = setup_db();
+        let proj = db.create_project("CP Confirm", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+
+        let input = CreateChapterPacketInput {
+            project_id: proj.id.clone(),
+            structure_node_id: "struct-1".to_string(),
+            chapter_number: 1,
+            title: "第一章".to_string(),
+            line: None,
+            position: "动".to_string(),
+            chapter_function: "opening".to_string(),
+        };
+        let cp = db.create_chapter_packet(&input).unwrap();
+        assert_eq!(cp.status, "empty");
+
+        let confirmed = db.confirm_chapter_packet(&cp.id).unwrap();
+        assert_eq!(confirmed.status, "confirmed");
+        assert!(confirmed.updated_at >= confirmed.created_at);
+
+        // Confirm idempotent
+        let confirmed2 = db.confirm_chapter_packet(&cp.id).unwrap();
+        assert_eq!(confirmed2.status, "confirmed");
+    }
+
+    #[test]
+    fn test_chapter_packet_delete() {
+        let db = setup_db();
+        let proj = db.create_project("CP Delete", "fiction", "conceiving", 0, r##"["#a","#b"]"##).unwrap();
+
+        let input = CreateChapterPacketInput {
+            project_id: proj.id.clone(),
+            structure_node_id: "struct-1".to_string(),
+            chapter_number: 1,
+            title: "第一章".to_string(),
+            line: None,
+            position: "动".to_string(),
+            chapter_function: "opening".to_string(),
+        };
+        let cp = db.create_chapter_packet(&input).unwrap();
+
+        // Delete
+        db.delete_chapter_packet(&cp.id).unwrap();
+        assert!(db.get_chapter_packet(&cp.id).unwrap().is_none());
+        assert_eq!(db.list_chapter_packets(&proj.id).unwrap().len(), 0);
     }
 }

@@ -33,8 +33,9 @@ import { getPipelineState, savePipelineState } from './api/projectApi';
 import PipelineNav from './features/pipeline-nav/PipelineNav';
 import CanvasShell from './features/pipeline-canvas/CanvasShell';
 import PremiseEntryGate from './features/canvas-01-premise/PremiseEntryGate';
-import StructureFlowPlaceholder from './features/canvas-02-structure/StructureFlowPlaceholder';
+import StructureFlowView from './features/canvas-02-structure/StructureFlowView';
 import PacketComingSoon from './features/canvas-04-packet/PacketComingSoon';
+import SettingCanvasV2 from './features/canvas-03-setting/SettingCanvasV2';
 import CanvasAiBar from './components/ai/CanvasAiBar';
 
 // ===== ID Generators =====
@@ -850,16 +851,12 @@ function AppInner() {
         );
         case 'structure': return (
           <CanvasShell stage="structure" status={status}>
-            <StructureFlowPlaceholder />
+            <StructureFlowView />
           </CanvasShell>
         );
         case 'setting': return (
           <CanvasShell stage="setting" status={status}>
-            <SettingCollection
-              allObjects={objects} onSelectObject={onSelectObject}
-              onNavigate={onNavigate} onUpdateObject={onUpdateObject}
-              onCreateObject={onCreateObject} defaultSelected={settingDefaultSelected}
-            />
+            <SettingCanvasV2 />
           </CanvasShell>
         );
         case 'packet': return (

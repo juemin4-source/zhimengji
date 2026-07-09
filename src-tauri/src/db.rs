@@ -106,6 +106,11 @@ impl Database {
         )?;
 
         init_pipeline_states_table(&conn)?;
+        init_premise_cards_table(&conn)?;
+        init_structure_nodes_table(&conn)?;
+        init_world_rules_table(&conn)?;
+        init_character_cards_table(&conn)?;
+        init_faction_cards_table(&conn)?;
         Ok(())
     }
 

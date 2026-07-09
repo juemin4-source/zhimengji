@@ -281,3 +281,259 @@ pub struct GetPipelineStateInput {
 pub struct SavePipelineStateInput {
     pub state: PipelineState,
 }
+
+// ===== v2 PremiseCard =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PremiseCard {
+    pub id: String,
+    pub project_id: String,
+    pub premise_text: String,
+    /// JSON array of reader questions
+    pub reader_questions: String,
+    pub story_type: String,
+    pub status: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePremiseInput {
+    pub project_id: String,
+    pub premise_text: String,
+    pub reader_questions: String,
+    pub story_type: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePremiseInput {
+    pub id: String,
+    pub premise_text: String,
+    pub reader_questions: String,
+    pub story_type: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListPremiseInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetPremiseInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeletePremiseInput {
+    pub id: String,
+}
+
+// ===== v2 StructureNode =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureNode {
+    pub id: String,
+    pub project_id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub node_type: String,
+    pub narrative_function: String,
+    pub summary: String,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub sort_order: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateStructureNodeInput {
+    pub project_id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub node_type: String,
+    pub narrative_function: String,
+    pub summary: String,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub sort_order: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateStructureNodeInput {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub node_type: String,
+    pub narrative_function: String,
+    pub summary: String,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub sort_order: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListStructureNodeInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetStructureNodeInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteStructureNodeInput {
+    pub id: String,
+}
+
+// ===== v2 WorldRule =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorldRule {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub rule_text: String,
+    pub cost: String,
+    pub enforcer: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateWorldRuleInput {
+    pub project_id: String,
+    pub title: String,
+    pub rule_text: String,
+    pub cost: String,
+    pub enforcer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateWorldRuleInput {
+    pub id: String,
+    pub title: String,
+    pub rule_text: String,
+    pub cost: String,
+    pub enforcer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListWorldRuleInput {
+    pub project_id: String,
+}
+
+// ===== v2 CharacterCard =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CharacterCard {
+    pub id: String,
+    pub project_id: String,
+    pub name: String,
+    pub hook: String,
+    pub current_want: String,
+    pub real_block: String,
+    pub archetype: String,
+    pub description: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCharacterCardInput {
+    pub project_id: String,
+    pub name: String,
+    pub hook: String,
+    pub current_want: String,
+    pub real_block: String,
+    pub archetype: String,
+    pub description: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCharacterCardInput {
+    pub id: String,
+    pub name: String,
+    pub hook: String,
+    pub current_want: String,
+    pub real_block: String,
+    pub archetype: String,
+    pub description: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListCharacterCardInput {
+    pub project_id: String,
+}
+
+// ===== v2 FactionCard =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FactionCard {
+    pub id: String,
+    pub project_id: String,
+    pub name: String,
+    pub true_goal: String,
+    pub public_slogan: String,
+    /// JSON array of resource strings
+    pub resources: String,
+    /// JSON array of character IDs
+    pub representative_character_ids: String,
+    pub daily_interface: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateFactionCardInput {
+    pub project_id: String,
+    pub name: String,
+    pub true_goal: String,
+    pub public_slogan: String,
+    pub resources: String,
+    pub representative_character_ids: String,
+    pub daily_interface: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateFactionCardInput {
+    pub id: String,
+    pub name: String,
+    pub true_goal: String,
+    pub public_slogan: String,
+    pub resources: String,
+    pub representative_character_ids: String,
+    pub daily_interface: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListFactionCardInput {
+    pub project_id: String,
+}

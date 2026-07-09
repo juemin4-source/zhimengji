@@ -442,6 +442,18 @@ pub struct ListWorldRuleInput {
     pub project_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetWorldRuleInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteWorldRuleInput {
+    pub id: String,
+}
+
 // ===== v2 CharacterCard =====
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -487,6 +499,18 @@ pub struct UpdateCharacterCardInput {
 #[serde(rename_all = "camelCase")]
 pub struct ListCharacterCardInput {
     pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetCharacterCardInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteCharacterCardInput {
+    pub id: String,
 }
 
 // ===== v2 FactionCard =====
@@ -536,4 +560,16 @@ pub struct UpdateFactionCardInput {
 #[serde(rename_all = "camelCase")]
 pub struct ListFactionCardInput {
     pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetFactionCardInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteFactionCardInput {
+    pub id: String,
 }

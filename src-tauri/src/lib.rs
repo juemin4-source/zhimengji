@@ -4,6 +4,9 @@ mod commands;
 mod db;
 mod models;
 mod pipeline_commands;
+mod premise_commands;
+mod setting_commands;
+mod structure_commands;
 
 use db::Database;
 use std::fs;
@@ -71,6 +74,36 @@ pub fn run() {
             // v2 PipelineState commands
             pipeline_commands::get_pipeline_state,
             pipeline_commands::save_pipeline_state,
+            // v2 PremiseCard commands
+            premise_commands::create_premise_card,
+            premise_commands::list_premise_cards,
+            premise_commands::get_premise_card,
+            premise_commands::update_premise_card,
+            premise_commands::delete_premise_card,
+            // v2 StructureNode commands
+            structure_commands::create_structure_node,
+            structure_commands::list_structure_nodes,
+            structure_commands::get_structure_node,
+            structure_commands::update_structure_node,
+            structure_commands::delete_structure_node,
+            // v2 WorldRule commands
+            setting_commands::create_world_rule,
+            setting_commands::list_world_rules,
+            setting_commands::get_world_rule,
+            setting_commands::update_world_rule,
+            setting_commands::delete_world_rule,
+            // v2 CharacterCard commands
+            setting_commands::create_character_card,
+            setting_commands::list_character_cards,
+            setting_commands::get_character_card,
+            setting_commands::update_character_card,
+            setting_commands::delete_character_card,
+            // v2 FactionCard commands
+            setting_commands::create_faction_card,
+            setting_commands::list_faction_cards,
+            setting_commands::get_faction_card,
+            setting_commands::update_faction_card,
+            setting_commands::delete_faction_card,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

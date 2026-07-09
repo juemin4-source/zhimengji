@@ -2,11 +2,13 @@ use rusqlite::{params, Connection, Result as SqlResult};
 use std::sync::Mutex;
 
 use crate::models::{
-    CanvasStageState, CanvasTabState, CanvasTabStateRow, ImportResult, JudgmentRecord,
-    PipelineState, Project, ProjectExportData, SaveCanvasTabStateResponse, WorldObject,
-    WorldObjectRow,
+    CanvasStageState, CanvasTabState, CanvasTabStateRow, CharacterCard, Connection as ObjConnection,
+    CreateCharacterCardInput, CreateFactionCardInput, CreatePremiseInput, CreateStructureNodeInput,
+    CreateWorldRuleInput, FactionCard, ImportResult, JudgmentRecord, PipelineState, PremiseCard,
+    Project, ProjectExportData, SaveCanvasTabStateResponse, StructureNode, UpdateCharacterCardInput,
+    UpdateFactionCardInput, UpdatePremiseInput, UpdateStructureNodeInput, UpdateWorldRuleInput,
+    WorldObject, WorldObjectRow, WorldRule,
 };
-use crate::models::Connection as ObjConnection;
 
 pub struct Database {
     pub conn: Mutex<Connection>,
@@ -607,6 +609,569 @@ impl Database {
 
 
     // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+    //  v2 PremiseCard CRUD
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+
+    pub fn create_premise_card(&self, input: &CreatePremiseInput) -> SqlResult<PremiseCard> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO premise_cards (id, project_id, premise_text, reader_questions, story_type, status, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![id, input.project_id, input.premise_text, input.reader_questions, input.story_type, input.status, now, now],
+        )?;
+        Ok(PremiseCard {
+            id,
+            project_id: input.project_id.clone(),
+            premise_text: input.premise_text.clone(),
+            reader_questions: input.reader_questions.clone(),
+            story_type: input.story_type.clone(),
+            status: input.status.clone(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn list_premise_cards(&self, project_id: &str) -> SqlResult<Vec<PremiseCard>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, premise_text, reader_questions, story_type, status, created_at, updated_at
+             FROM premise_cards WHERE project_id = ? ORDER BY created_at"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(PremiseCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                premise_text: row.get(2)?,
+                reader_questions: row.get(3)?,
+                story_type: row.get(4)?,
+                status: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            })
+        })?;
+        let mut cards = Vec::new();
+        for r in rows {
+            cards.push(r?);
+        }
+        Ok(cards)
+    }
+
+    pub fn get_premise_card(&self, id: &str) -> SqlResult<Option<PremiseCard>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, premise_text, reader_questions, story_type, status, created_at, updated_at
+             FROM premise_cards WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(PremiseCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                premise_text: row.get(2)?,
+                reader_questions: row.get(3)?,
+                story_type: row.get(4)?,
+                status: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn update_premise_card(&self, input: &UpdatePremiseInput) -> SqlResult<PremiseCard> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE premise_cards SET premise_text=?1, reader_questions=?2, story_type=?3, status=?4, updated_at=?5 WHERE id=?6",
+            params![input.premise_text, input.reader_questions, input.story_type, input.status, now, input.id],
+        )?;
+        // Re-read to get full row
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, premise_text, reader_questions, story_type, status, created_at, updated_at
+             FROM premise_cards WHERE id = ?"
+        )?;
+        let card = stmt.query_row(params![input.id], |row| {
+            Ok(PremiseCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                premise_text: row.get(2)?,
+                reader_questions: row.get(3)?,
+                story_type: row.get(4)?,
+                status: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            })
+        })?;
+        Ok(card)
+    }
+
+    pub fn delete_premise_card(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM premise_cards WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+    //  v2 StructureNode CRUD
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+
+    pub fn create_structure_node(&self, input: &CreateStructureNodeInput) -> SqlResult<StructureNode> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO structure_nodes (id, project_id, parent_id, title, node_type, narrative_function, summary, position_x, position_y, sort_order, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+            params![id, input.project_id, input.parent_id, input.title, input.node_type, input.narrative_function, input.summary, input.position_x, input.position_y, input.sort_order, now, now],
+        )?;
+        Ok(StructureNode {
+            id,
+            project_id: input.project_id.clone(),
+            parent_id: input.parent_id.clone(),
+            title: input.title.clone(),
+            node_type: input.node_type.clone(),
+            narrative_function: input.narrative_function.clone(),
+            summary: input.summary.clone(),
+            position_x: input.position_x,
+            position_y: input.position_y,
+            sort_order: input.sort_order,
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn list_structure_nodes(&self, project_id: &str) -> SqlResult<Vec<StructureNode>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, parent_id, title, node_type, narrative_function, summary, position_x, position_y, sort_order, created_at, updated_at
+             FROM structure_nodes WHERE project_id = ? ORDER BY sort_order"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(StructureNode {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                parent_id: row.get(2)?,
+                title: row.get(3)?,
+                node_type: row.get(4)?,
+                narrative_function: row.get(5)?,
+                summary: row.get(6)?,
+                position_x: row.get(7)?,
+                position_y: row.get(8)?,
+                sort_order: row.get(9)?,
+                created_at: row.get(10)?,
+                updated_at: row.get(11)?,
+            })
+        })?;
+        let mut nodes = Vec::new();
+        for r in rows {
+            nodes.push(r?);
+        }
+        Ok(nodes)
+    }
+
+    pub fn get_structure_node(&self, id: &str) -> SqlResult<Option<StructureNode>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, parent_id, title, node_type, narrative_function, summary, position_x, position_y, sort_order, created_at, updated_at
+             FROM structure_nodes WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(StructureNode {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                parent_id: row.get(2)?,
+                title: row.get(3)?,
+                node_type: row.get(4)?,
+                narrative_function: row.get(5)?,
+                summary: row.get(6)?,
+                position_x: row.get(7)?,
+                position_y: row.get(8)?,
+                sort_order: row.get(9)?,
+                created_at: row.get(10)?,
+                updated_at: row.get(11)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn update_structure_node(&self, input: &UpdateStructureNodeInput) -> SqlResult<StructureNode> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE structure_nodes SET parent_id=?1, title=?2, node_type=?3, narrative_function=?4, summary=?5, position_x=?6, position_y=?7, sort_order=?8, updated_at=?9 WHERE id=?10",
+            params![input.parent_id, input.title, input.node_type, input.narrative_function, input.summary, input.position_x, input.position_y, input.sort_order, now, input.id],
+        )?;
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, parent_id, title, node_type, narrative_function, summary, position_x, position_y, sort_order, created_at, updated_at
+             FROM structure_nodes WHERE id = ?"
+        )?;
+        let node = stmt.query_row(params![input.id], |row| {
+            Ok(StructureNode {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                parent_id: row.get(2)?,
+                title: row.get(3)?,
+                node_type: row.get(4)?,
+                narrative_function: row.get(5)?,
+                summary: row.get(6)?,
+                position_x: row.get(7)?,
+                position_y: row.get(8)?,
+                sort_order: row.get(9)?,
+                created_at: row.get(10)?,
+                updated_at: row.get(11)?,
+            })
+        })?;
+        Ok(node)
+    }
+
+    pub fn delete_structure_node(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM structure_nodes WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+    //  v2 WorldRule CRUD
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+
+    pub fn create_world_rule(&self, input: &CreateWorldRuleInput) -> SqlResult<WorldRule> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO world_rules (id, project_id, title, rule_text, cost, enforcer, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![id, input.project_id, input.title, input.rule_text, input.cost, input.enforcer, now, now],
+        )?;
+        Ok(WorldRule {
+            id,
+            project_id: input.project_id.clone(),
+            title: input.title.clone(),
+            rule_text: input.rule_text.clone(),
+            cost: input.cost.clone(),
+            enforcer: input.enforcer.clone(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn list_world_rules(&self, project_id: &str) -> SqlResult<Vec<WorldRule>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, title, rule_text, cost, enforcer, created_at, updated_at
+             FROM world_rules WHERE project_id = ? ORDER BY created_at"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(WorldRule {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                title: row.get(2)?,
+                rule_text: row.get(3)?,
+                cost: row.get(4)?,
+                enforcer: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            })
+        })?;
+        let mut rules = Vec::new();
+        for r in rows {
+            rules.push(r?);
+        }
+        Ok(rules)
+    }
+
+    pub fn get_world_rule(&self, id: &str) -> SqlResult<Option<WorldRule>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, title, rule_text, cost, enforcer, created_at, updated_at
+             FROM world_rules WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(WorldRule {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                title: row.get(2)?,
+                rule_text: row.get(3)?,
+                cost: row.get(4)?,
+                enforcer: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn update_world_rule(&self, input: &UpdateWorldRuleInput) -> SqlResult<WorldRule> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE world_rules SET title=?1, rule_text=?2, cost=?3, enforcer=?4, updated_at=?5 WHERE id=?6",
+            params![input.title, input.rule_text, input.cost, input.enforcer, now, input.id],
+        )?;
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, title, rule_text, cost, enforcer, created_at, updated_at
+             FROM world_rules WHERE id = ?"
+        )?;
+        let rule = stmt.query_row(params![input.id], |row| {
+            Ok(WorldRule {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                title: row.get(2)?,
+                rule_text: row.get(3)?,
+                cost: row.get(4)?,
+                enforcer: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            })
+        })?;
+        Ok(rule)
+    }
+
+    pub fn delete_world_rule(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM world_rules WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+    //  v2 CharacterCard CRUD
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+
+    pub fn create_character_card(&self, input: &CreateCharacterCardInput) -> SqlResult<CharacterCard> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO character_cards (id, project_id, name, hook, current_want, real_block, archetype, description, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![id, input.project_id, input.name, input.hook, input.current_want, input.real_block, input.archetype, input.description, now, now],
+        )?;
+        Ok(CharacterCard {
+            id,
+            project_id: input.project_id.clone(),
+            name: input.name.clone(),
+            hook: input.hook.clone(),
+            current_want: input.current_want.clone(),
+            real_block: input.real_block.clone(),
+            archetype: input.archetype.clone(),
+            description: input.description.clone(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn list_character_cards(&self, project_id: &str) -> SqlResult<Vec<CharacterCard>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, name, hook, current_want, real_block, archetype, description, created_at, updated_at
+             FROM character_cards WHERE project_id = ? ORDER BY created_at"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(CharacterCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                hook: row.get(3)?,
+                current_want: row.get(4)?,
+                real_block: row.get(5)?,
+                archetype: row.get(6)?,
+                description: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        let mut cards = Vec::new();
+        for r in rows {
+            cards.push(r?);
+        }
+        Ok(cards)
+    }
+
+    pub fn get_character_card(&self, id: &str) -> SqlResult<Option<CharacterCard>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, name, hook, current_want, real_block, archetype, description, created_at, updated_at
+             FROM character_cards WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(CharacterCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                hook: row.get(3)?,
+                current_want: row.get(4)?,
+                real_block: row.get(5)?,
+                archetype: row.get(6)?,
+                description: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn update_character_card(&self, input: &UpdateCharacterCardInput) -> SqlResult<CharacterCard> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE character_cards SET name=?1, hook=?2, current_want=?3, real_block=?4, archetype=?5, description=?6, updated_at=?7 WHERE id=?8",
+            params![input.name, input.hook, input.current_want, input.real_block, input.archetype, input.description, now, input.id],
+        )?;
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, name, hook, current_want, real_block, archetype, description, created_at, updated_at
+             FROM character_cards WHERE id = ?"
+        )?;
+        let card = stmt.query_row(params![input.id], |row| {
+            Ok(CharacterCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                hook: row.get(3)?,
+                current_want: row.get(4)?,
+                real_block: row.get(5)?,
+                archetype: row.get(6)?,
+                description: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        Ok(card)
+    }
+
+    pub fn delete_character_card(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM character_cards WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+    //  v2 FactionCard CRUD
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
+
+    pub fn create_faction_card(&self, input: &CreateFactionCardInput) -> SqlResult<FactionCard> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO faction_cards (id, project_id, name, true_goal, public_slogan, resources, representative_character_ids, daily_interface, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![id, input.project_id, input.name, input.true_goal, input.public_slogan, input.resources, input.representative_character_ids, input.daily_interface, now, now],
+        )?;
+        Ok(FactionCard {
+            id,
+            project_id: input.project_id.clone(),
+            name: input.name.clone(),
+            true_goal: input.true_goal.clone(),
+            public_slogan: input.public_slogan.clone(),
+            resources: input.resources.clone(),
+            representative_character_ids: input.representative_character_ids.clone(),
+            daily_interface: input.daily_interface.clone(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    pub fn list_faction_cards(&self, project_id: &str) -> SqlResult<Vec<FactionCard>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, name, true_goal, public_slogan, resources, representative_character_ids, daily_interface, created_at, updated_at
+             FROM faction_cards WHERE project_id = ? ORDER BY created_at"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(FactionCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                true_goal: row.get(3)?,
+                public_slogan: row.get(4)?,
+                resources: row.get(5)?,
+                representative_character_ids: row.get(6)?,
+                daily_interface: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        let mut cards = Vec::new();
+        for r in rows {
+            cards.push(r?);
+        }
+        Ok(cards)
+    }
+
+    pub fn get_faction_card(&self, id: &str) -> SqlResult<Option<FactionCard>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, name, true_goal, public_slogan, resources, representative_character_ids, daily_interface, created_at, updated_at
+             FROM faction_cards WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(FactionCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                true_goal: row.get(3)?,
+                public_slogan: row.get(4)?,
+                resources: row.get(5)?,
+                representative_character_ids: row.get(6)?,
+                daily_interface: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn update_faction_card(&self, input: &UpdateFactionCardInput) -> SqlResult<FactionCard> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "UPDATE faction_cards SET name=?1, true_goal=?2, public_slogan=?3, resources=?4, representative_character_ids=?5, daily_interface=?6, updated_at=?7 WHERE id=?8",
+            params![input.name, input.true_goal, input.public_slogan, input.resources, input.representative_character_ids, input.daily_interface, now, input.id],
+        )?;
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, name, true_goal, public_slogan, resources, representative_character_ids, daily_interface, created_at, updated_at
+             FROM faction_cards WHERE id = ?"
+        )?;
+        let card = stmt.query_row(params![input.id], |row| {
+            Ok(FactionCard {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                true_goal: row.get(3)?,
+                public_slogan: row.get(4)?,
+                resources: row.get(5)?,
+                representative_character_ids: row.get(6)?,
+                daily_interface: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })?;
+        Ok(card)
+    }
+
+    pub fn delete_faction_card(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM faction_cards WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
     //  P0-05: Export / Import
     // -?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-?-
 
@@ -987,6 +1552,109 @@ pub fn save_pipeline_state(conn: &Connection, state: &PipelineState) -> Result<P
         created_at: if rows == 0 { now } else { state.created_at },
         updated_at: now,
     })
+}
+
+// ===== v2 PremiseCards =====
+
+pub fn init_premise_cards_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS premise_cards (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL UNIQUE,
+          premise_text TEXT NOT NULL DEFAULT '',
+          reader_questions TEXT NOT NULL DEFAULT '[]',
+          story_type TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'draft',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
+// ===== v2 StructureNodes =====
+
+pub fn init_structure_nodes_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS structure_nodes (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          parent_id TEXT,
+          title TEXT NOT NULL DEFAULT '新节点',
+          node_type TEXT NOT NULL DEFAULT 'chapter',
+          narrative_function TEXT NOT NULL DEFAULT '',
+          summary TEXT NOT NULL DEFAULT '',
+          position_x REAL NOT NULL DEFAULT 0,
+          position_y REAL NOT NULL DEFAULT 0,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
+// ===== v2 WorldRules =====
+
+pub fn init_world_rules_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS world_rules (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          title TEXT NOT NULL DEFAULT '',
+          rule_text TEXT NOT NULL DEFAULT '',
+          cost TEXT NOT NULL DEFAULT '',
+          enforcer TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
+// ===== v2 CharacterCards =====
+
+pub fn init_character_cards_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS character_cards (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          name TEXT NOT NULL DEFAULT '',
+          hook TEXT NOT NULL DEFAULT '',
+          current_want TEXT NOT NULL DEFAULT '',
+          real_block TEXT NOT NULL DEFAULT '',
+          archetype TEXT NOT NULL DEFAULT '',
+          description TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
+}
+
+// ===== v2 FactionCards =====
+
+pub fn init_faction_cards_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS faction_cards (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          name TEXT NOT NULL DEFAULT '',
+          true_goal TEXT NOT NULL DEFAULT '',
+          public_slogan TEXT NOT NULL DEFAULT '',
+          resources TEXT NOT NULL DEFAULT '[]',
+          representative_character_ids TEXT NOT NULL DEFAULT '[]',
+          daily_interface TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );"
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]

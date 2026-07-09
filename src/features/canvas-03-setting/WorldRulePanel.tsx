@@ -20,6 +20,7 @@ export default function WorldRulePanel() {
   const [editRuleText, setEditRuleText] = useState('');
   const [editCost, setEditCost] = useState('');
   const [editEnforcer, setEditEnforcer] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -41,6 +42,7 @@ export default function WorldRulePanel() {
     setEditRuleText('');
     setEditCost('');
     setEditEnforcer('');
+    setIsAdding(false);
   }, []);
 
   const selectRule = useCallback((r: WorldRule) => {
@@ -89,7 +91,7 @@ export default function WorldRulePanel() {
     } catch (e) { console.error('Failed to delete world rule', e); }
   }, [selected, resetEdit]);
 
-  const handleAdd = useCallback(() => resetEdit(), [resetEdit]);
+  const handleAdd = useCallback(() => { resetEdit(); setIsAdding(true); }, [resetEdit]);
 
   if (loading) {
     return <EmptyState title="加载中..." />;
@@ -128,7 +130,7 @@ export default function WorldRulePanel() {
       </div>
 
       {/* Editor */}
-      {(selected || (!selected && editTitle !== '')) && (
+      {(selected || isAdding) && (
         <div className="world-rule-editor">
           <div>
             <div className="world-rule-label">规则名称</div>

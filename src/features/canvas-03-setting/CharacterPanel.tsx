@@ -23,6 +23,7 @@ export default function CharacterPanel() {
   const [editRealBlock, setEditRealBlock] = useState('');
   const [editArchetype, setEditArchetype] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -46,6 +47,7 @@ export default function CharacterPanel() {
     setEditRealBlock('');
     setEditArchetype('');
     setEditDescription('');
+    setIsAdding(false);
   }, []);
 
   const selectChar = useCallback((c: CharacterCard) => {
@@ -92,7 +94,7 @@ export default function CharacterPanel() {
     } catch (e) { console.error('Failed to delete character', e); }
   }, [selected, resetEdit]);
 
-  const handleAdd = useCallback(() => resetEdit(), [resetEdit]);
+  const handleAdd = useCallback(() => { resetEdit(); setIsAdding(true); }, [resetEdit]);
 
   if (loading) {
     return <EmptyState title="加载中..." />;
@@ -131,7 +133,7 @@ export default function CharacterPanel() {
       </div>
 
       {/* Editor */}
-      {(selected || (!selected && editName !== '')) && (
+      {(selected || isAdding) && (
         <div className="character-editor">
           <div>
             <div className="character-label">角色名</div>

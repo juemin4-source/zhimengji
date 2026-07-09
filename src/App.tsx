@@ -954,7 +954,7 @@ function AppInner() {
           />
           <div className="main-area">
             <div className="main-content">{renderMainContent()}</div>
-            <Inspector object={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onNavigate={onNavigate} onAction={onInspectorAction} />
+            {!currentStage && <Inspector object={currentObject} allObjects={objects} allBoardTabs={allBoardTabs} onNavigate={onNavigate} onAction={onInspectorAction} />}
           </div>
           <CanvasAiBar stage={currentStage || 'premise'} />
           {/* Bottom StatusBar */}

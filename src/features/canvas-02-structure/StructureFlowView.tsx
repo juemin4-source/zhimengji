@@ -38,7 +38,7 @@ const NODE_COLORS: Record<StructureNodeType, string> = {
 const NODE_LABELS: Record<StructureNodeType, string> = {
   book: '作品',
   phase: '阶段',
-  position: '情节点',
+  position: '章节卡',
   chapter: '章节',
 };
 
@@ -271,7 +271,7 @@ export default function StructureFlowView() {
       const book = await structureApi.createStructureNode({
         projectId,
         parentId: null,
-        title: '作品结构',
+        title: '故事骨架',
         nodeType: 'book',
         narrativeFunction: '',
         summary: '',
@@ -363,35 +363,42 @@ export default function StructureFlowView() {
 
         {/* Inspector Panel */}
         {selectedNode && (
-          <InspectorPanel title={`编辑 ${NODE_LABELS[selectedNode.nodeType as StructureNodeType] || '节点'}`}>
-            <div>
-              <div className="structure-flow-label">标题</div>
+          <InspectorPanel title="章节信息">
+            <div className="inspector-field">
+              <label>章节标题</label>
               <input
                 className="structure-flow-input"
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
-                placeholder="节点标题"
+                placeholder="章节标题"
               />
             </div>
 
-            <div>
-              <div className="structure-flow-label">叙事功能</div>
+            <div className="inspector-field">
+              <label>所属阶段</label>
+              <span className="inspector-value">
+                {NODE_LABELS[selectedNode.nodeType as StructureNodeType] || '未知'}
+              </span>
+            </div>
+
+            <div className="inspector-field">
+              <label>章节功能</label>
               <textarea
                 className="structure-flow-textarea"
                 value={editNarrativeFunction}
                 onChange={e => setEditNarrativeFunction(e.target.value)}
-                placeholder="该节点在叙事中的功能作用"
+                placeholder="例如：开局 / 升级 / 反转 / 揭示 / 决策 / 高潮 / 收束"
                 rows={3}
               />
             </div>
 
-            <div>
-              <div className="structure-flow-label">摘要</div>
+            <div className="inspector-field">
+              <label>本章摘要</label>
               <textarea
                 className="structure-flow-textarea"
                 value={editSummary}
                 onChange={e => setEditSummary(e.target.value)}
-                placeholder="节点内容摘要"
+                placeholder="写下本章发生了什么、冲突是什么、结尾把读者推向哪里。"
                 rows={4}
               />
             </div>
@@ -406,20 +413,9 @@ export default function StructureFlowView() {
                 保存
               </Button>
               <Button
-                variant="secondary"
+                variant="danger"
                 style={{ flex: 1 }}
                 size="sm"
-                onClick={handleAddChild}
-              >
-                + 添加子节点
-              </Button>
-            </div>
-
-            <div style={{ marginTop: 4 }}>
-              <Button
-                variant="danger"
-                size="sm"
-                style={{ width: '100%' }}
                 onClick={handleDelete}
               >
                 删除节点（含子节点）

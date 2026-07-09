@@ -26,6 +26,7 @@ export default function FactionPanel() {
   const [editResources, setEditResources] = useState('');
   const [editCharIds, setEditCharIds] = useState<string[]>([]);
   const [editDailyInterface, setEditDailyInterface] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -53,6 +54,7 @@ export default function FactionPanel() {
     setEditResources('');
     setEditCharIds([]);
     setEditDailyInterface('');
+    setIsAdding(false);
   }, []);
 
   const selectFaction = useCallback((f: FactionCard) => {
@@ -111,7 +113,7 @@ export default function FactionPanel() {
     } catch (e) { console.error('Failed to delete faction', e); }
   }, [selected, resetEdit]);
 
-  const handleAdd = useCallback(() => resetEdit(), [resetEdit]);
+  const handleAdd = useCallback(() => { resetEdit(); setIsAdding(true); }, [resetEdit]);
 
   if (loading) {
     return <EmptyState title="加载中..." />;
@@ -154,7 +156,7 @@ export default function FactionPanel() {
       </div>
 
       {/* Editor */}
-      {(selected || (!selected && editName !== '')) && (
+      {(selected || isAdding) && (
         <div className="faction-editor">
           <div>
             <div className="faction-label">势力名称</div>

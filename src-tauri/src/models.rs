@@ -1297,6 +1297,21 @@ pub struct GetSparrowModuleInput {
     pub project_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateTianDiRenAiInput {
+    pub project_id: String,
+    pub field: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateTianDiRenAiOutput {
+    pub project_id: String,
+    pub field: String,
+    pub suggested_content: String,
+}
+
 /// Response from get_sparrow_module: returns all steps + protagonist steps + tian-di-ren
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

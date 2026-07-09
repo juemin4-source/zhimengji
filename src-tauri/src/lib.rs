@@ -133,6 +133,8 @@ pub fn run() {
             setting_commands::generate_sparrow_ai,
             setting_commands::save_tiandiren_layer,
             setting_commands::get_sparrow_module,
+            // v2.1.1 CN-MET-03 Tian-Di-Ren AI generation
+            setting_commands::generate_tiandiren_ai,
             // v2 ChapterPacket commands
             chapter_packet_commands::create_chapter_packet,
             chapter_packet_commands::list_chapter_packets,

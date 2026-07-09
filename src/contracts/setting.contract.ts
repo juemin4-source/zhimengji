@@ -206,3 +206,14 @@ export interface SparrowModuleResponse {
   protagonistSteps: CharacterStep3[];
   tianDiRen: TianDiRenLayer | null;
 }
+
+export interface GenerateTianDiRenAiInput {
+  projectId: string;
+  field: 'tian' | 'di' | 'ren';
+}
+
+export interface GenerateTianDiRenAiOutput {
+  projectId: string;
+  field: string;
+  suggestedContent: string;
+}

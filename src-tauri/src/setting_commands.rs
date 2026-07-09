@@ -11,6 +11,7 @@ use crate::models::{
     SaveProtagonistStepInput, SaveProtagonistStepOutput,
     MarkStepUsableInput, MarkStepUsableOutput,
     GenerateSparrowAiInput, GenerateSparrowAiOutput,
+    GenerateTianDiRenAiInput, GenerateTianDiRenAiOutput,
     SaveTianDiRenLayerInput, SaveTianDiRenLayerOutput,
     GetSparrowModuleInput, SparrowModuleResponse,
 };
@@ -191,6 +192,29 @@ pub fn save_tiandiren_layer(
     input: SaveTianDiRenLayerInput,
 ) -> Result<SaveTianDiRenLayerOutput, String> {
     db.upsert_tiandiren_layer(&input).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn generate_tiandiren_ai(
+    _db: State<'_, Database>,
+    input: GenerateTianDiRenAiInput,
+) -> Result<GenerateTianDiRenAiOutput, String> {
+    // v2.1.1: AI generation stub for Heaven/Earth/Human three-layer expansion
+    // Full AI integration will be added in v2.2
+    let placeholder = format!(
+        "基于当前项目设定，关于「{}」视角的 AI 建议内容。请在此处编辑和补充。",
+        match input.field.as_str() {
+            "tian" => "天 — 更大的力量如何影响故事",
+            "di" => "地 — 环境和社会如何塑造角色",
+            "ren" => "人 — 人和人之间的关系张力",
+            _ => &input.field,
+        }
+    );
+    Ok(GenerateTianDiRenAiOutput {
+        project_id: input.project_id,
+        field: input.field,
+        suggested_content: placeholder,
+    })
 }
 
 #[tauri::command]

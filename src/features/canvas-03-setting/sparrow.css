@@ -316,3 +316,130 @@
   padding: 40px 20px;
   text-align: center;
 }
+
+/* Tian-Di-Ren (Heaven/Earth/Human) three-layer section */
+.tiandiren-section {
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.tiandiren-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-raised, #1a1a2e);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--transition-fast, 0.15s ease);
+}
+
+.tiandiren-header:hover {
+  border-color: var(--border-light, #444);
+}
+
+.tiandiren-icon {
+  font-size: 0.85rem;
+  color: var(--canon-project, #4A9EFF);
+}
+
+.tiandiren-title {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.tiandiren-count {
+  font-size: 0.7rem;
+  color: var(--text-muted, #888);
+  background: var(--bg-surface, #141414);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.tiandiren-chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted, #666);
+  transition: transform var(--transition-fast, 0.15s ease);
+}
+
+.tiandiren-chevron-open {
+  transform: rotate(180deg);
+}
+
+/* Body */
+.tiandiren-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+/* Individual field */
+.tiandiren-field {
+  background: var(--bg-surface, #141414);
+  border: 1px solid var(--border-default, #2a2a2a);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.tiandiren-field-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tiandiren-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--canon-project, #4A9EFF);
+}
+
+.tiandiren-field-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+}
+
+.tiandiren-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-default, #333);
+  background: var(--bg-raised, #1a1a2e);
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.82rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  line-height: var(--lh-base, 1.5);
+  margin-bottom: 8px;
+}
+
+.tiandiren-textarea:focus {
+  border-color: var(--canon-project, #4A9EFF);
+}
+
+.tiandiren-field-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tiandiren-field-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tiandiren-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}

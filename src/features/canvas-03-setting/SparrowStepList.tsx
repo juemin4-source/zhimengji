@@ -10,13 +10,13 @@ import { useProjectStore } from '../../stores/projectStore';
 import { EmptyState } from '../../components/ui';
 import { useToast } from '../../components/Toast';
 import * as settingApi from '../../api/settingApi';
-import { useProjectStore } from '../../stores/projectStore';
 import PipelineIndicator from '../common/pipeline-indicator/PipelineIndicator';
 import type {
-  SparrowStepId, SparrowStepState, CharacterStep3,
+  SparrowStepId, SparrowStepState, CharacterStep3, TianDiRenLayer,
 } from '../../contracts/setting.contract';
 import SparrowStepCard from './SparrowStepCard';
 import SparrowProtagonistSteps from './SparrowProtagonistSteps';
+import TianDiRenSection from './TianDiRenSection';
 import './sparrow.css';
 
 /**
@@ -74,6 +74,9 @@ export default function SparrowStepList() {
     { stepType: 'vulnerability', characterId: '', description: '', isUsable: false },
   ]);
 
+  // Tian-Di-Ren layer
+  const [tianDiRen, setTianDiRen] = useState<TianDiRenLayer | null>(null);
+
   // Load existing state from backend
   useEffect(() => {
     if (!projectId) return;
@@ -94,6 +97,11 @@ export default function SparrowStepList() {
               );
               return loaded || pStep;
             }));
+          }
+
+          // Load Tian-Di-Ren layer
+          if (data.tianDiRen) {
+            setTianDiRen(data.tianDiRen);
           }
         }
       } catch (e) {
@@ -238,6 +246,33 @@ export default function SparrowStepList() {
     [projectId]
   );
 
+  // ── Tian-Di-Ren handlers ──
+
+  const handleSaveTianDiRen = useCallback(
+    async (tian: string, di: string, ren: string) => {
+      if (!projectId) return;
+      await settingApi.saveTianDiRenLayer({ projectId, tian, di, ren });
+      setTianDiRen(prev => prev ? { ...prev, tian, di, ren } : { tian, di, ren, isExpanded: true });
+      showToast('视角已保存', 'success');
+    },
+    [projectId, showToast]
+  );
+
+  const handleAiGenerateTianDiRen = useCallback(
+    async (field: 'tian' | 'di' | 'ren'): Promise<string> => {
+      if (!projectId) return '';
+      try {
+        const result = await settingApi.generateTianDiRenAi({ projectId, field });
+        return result?.suggestedContent || '';
+      } catch (e) {
+        console.error('AI generation failed for TianDiRen', e);
+        showToast('AI 生成失败', 'error');
+        return '';
+      }
+    },
+    [projectId, showToast]
+  );
+
   // ── All expand/collapse toggle ──
 
   const handleToggleAll = useCallback(() => {
@@ -303,6 +338,15 @@ export default function SparrowStepList() {
         projectId={projectId}
         onSaveStep={handleSaveProtagonistStep}
         onMarkUsable={handleMarkUsable}
+      />
+
+      {/* Tian-Di-Ren Heaven/Earth/Human three-layer expansion */}
+      <TianDiRenSection
+        projectId={projectId}
+        tianDiRen={tianDiRen}
+        onSave={handleSaveTianDiRen}
+        onAiGenerate={handleAiGenerateTianDiRen}
+        loading={saving !== null}
       />
     </div>
   );

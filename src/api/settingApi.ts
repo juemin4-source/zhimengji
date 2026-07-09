@@ -117,6 +117,7 @@ import type {
   SaveProtagonistStepInput, SaveProtagonistStepOutput,
   MarkStepUsableInput, MarkStepUsableOutput,
   GenerateSparrowAiInput, GenerateSparrowAiOutput,
+  GenerateTianDiRenAiInput, GenerateTianDiRenAiOutput,
   SaveTianDiRenLayerInput, SaveTianDiRenLayerOutput,
   GetSparrowModuleInput, SparrowModuleResponse,
   SparrowStepState, CharacterStep3, TianDiRenLayer, SparrowStepId,
@@ -164,6 +165,10 @@ export async function saveTianDiRenLayer(input: SaveTianDiRenLayerInput): Promis
   return invoke<SaveTianDiRenLayerOutput>('save_tiandiren_layer', { input });
 }
 
+export async function generateTianDiRenAi(input: GenerateTianDiRenAiInput): Promise<GenerateTianDiRenAiOutput> {
+  return invoke<GenerateTianDiRenAiOutput>('generate_tiandiren_ai', { input });
+}
+
 /**
  * getSparrowLastSavedAt — 查询设定画板最近保存时间 (CN-INT-01).
  * 返回 Unix ms 时间戳，0 表示未保存过。
@@ -178,7 +183,12 @@ export async function getSparrowModule(input: GetSparrowModuleInput): Promise<Sp
   const steps = ((data.steps as Record<string, unknown>[]) || []).map(parseSparrowStepRecord);
   const protagonistSteps = ((data.protagonistSteps as Record<string, unknown>[]) || []).map(parseProtagonistStepRecord);
   const tianDiRen = data.tianDiRen
-    ? { tian: '', di: '', ren: '', isExpanded: false }
+    ? {
+        tian: (data.tianDiRen as Record<string, unknown>).tian as string || '',
+        di: (data.tianDiRen as Record<string, unknown>).di as string || '',
+        ren: (data.tianDiRen as Record<string, unknown>).ren as string || '',
+        isExpanded: false,
+      }
     : null;
 
   return {

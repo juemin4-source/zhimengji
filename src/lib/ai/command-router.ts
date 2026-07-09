@@ -382,8 +382,20 @@ async function callProvider(
     available: true,
   };
 
+  // Look up API key from provider config
+  let apiKey = '';
+  try {
+    const { listProviderConfigs } = await import('../../api/aiControlCenterApi');
+    const configs = await listProviderConfigs();
+    const cfg = configs.find((c: { providerId: string; apiKeyEncrypted: string }) => c.providerId === providerId);
+    if (cfg && cfg.apiKeyEncrypted) apiKey = cfg.apiKeyEncrypted;
+  } catch {
+    // Fallback: no API key, callLlm will use its own default
+  }
+
   const response = await callLlm(messages, {
     model,
+    apiKey,
     onToken: options?.onToken,
     signal: options?.signal,
     outputType: 'chat',

@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
+import PipelineIndicator from '../common/pipeline-indicator/PipelineIndicator';
 import * as chapterPacketApi from '../../api/chapterPacketApi';
 import * as premiseApi from '../../api/premiseApi';
 import * as structureApi from '../../api/structureApi';
@@ -30,8 +31,9 @@ import type {
   PacketStatus,
   DetailMode,
 } from '../../contracts/chapter-packet.contract';
-import type { PremiseCard } from '../../contracts/premise.contract';
+import type { PremiseCard, PremiseFiveStepState } from '../../contracts/premise.contract';
 import type { StructureNode } from '../../contracts/structure.contract';
+import { premiseToWritingContract, isPremiseReadyForContract } from '../common/pipeline/premise-to-contract';
 import type { CharacterCard, WorldRule, FactionCard } from '../../contracts/setting.contract';
 import { Button, Input, TextArea, Select, Badge, EmptyState } from '../../components/ui';
 import { generateChapterPacketFromUpstream } from '../../lib/generateChapterPacket';
@@ -294,6 +296,8 @@ function UpstreamSummary({ premise, chapterNodes, characters, rules, factions }:
 
 export default function ChapterPacketCanvas() {
   const projectId = useProjectStore(s => s.currentProjectId);
+  const upstreamStatus = useProjectStore(s => s.upstreamStatus.packet);
+  const markRefreshed = useProjectStore(s => s.markRefreshed);
   const { showToast } = useToast();
 
   // ── Data state ──
@@ -385,6 +389,58 @@ export default function ChapterPacketCanvas() {
     }
   }, [projectId]);
 
+  // ── CN-INT-01: Refresh packet data when upstream changes ──
+
+  const handleRefresh = useCallback(async () => {
+    const packetIdBeforeRefresh = selectedPacket?.id;
+
+    await loadData();
+
+    // ── CN-INT-02: Auto-fill layer1 on refresh if still at default ──
+    if (projectId && packetIdBeforeRefresh) {
+      try {
+        // Fetch fresh data independently (closure state may be stale after loadData)
+        const freshPackets = await chapterPacketApi.listChapterPackets(projectId);
+        const targetPacket = freshPackets.find(p => p.id === packetIdBeforeRefresh)
+          || freshPackets[0];
+        if (!targetPacket) return;
+
+        const freshPremiseCards = await premiseApi.listPremiseCards(projectId);
+        const pCard = freshPremiseCards[0] || null;
+        if (!pCard || pCard.status !== 'confirmed') return;
+
+        const stepResp = await premiseApi.getPremiseStepState({ projectId });
+        if (!stepResp.exists || !stepResp.state) return;
+
+        const currentL1 = parseLayer<WritingContract>(targetPacket.layer1, DEFAULT_WRITING_CONTRACT);
+        const isDefault = JSON.stringify(currentL1) === JSON.stringify(DEFAULT_WRITING_CONTRACT);
+        if (!isDefault) return; // user already edited — do not overwrite
+
+        const fiveStep = stepResp.state as PremiseFiveStepState;
+        if (!isPremiseReadyForContract(pCard, fiveStep)) return;
+
+        const derived = premiseToWritingContract(pCard, fiveStep);
+        const merged = { ...DEFAULT_WRITING_CONTRACT, ...derived };
+
+        // Save to backend
+        const updatedRaw = await chapterPacketApi.updateChapterPacketLayers({
+          packetId: targetPacket.id,
+          layer1: merged,
+        } as any);
+        const updatedPacket = parsePacket(updatedRaw as unknown as Record<string, unknown>);
+
+        // Update local state
+        setEditLayer1(merged);
+        setSelectedPacket(updatedPacket);
+        setPackets(prev => prev.map(p => (p.id === updatedPacket.id ? updatedPacket : p)));
+      } catch (e) {
+        console.warn('[ChapterPacketCanvas] auto-fill on refresh failed', e);
+      }
+    }
+
+    markRefreshed('packet');
+  }, [loadData, markRefreshed, projectId, selectedPacket?.id]);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -472,9 +528,26 @@ export default function ChapterPacketCanvas() {
       } as any);
       const created = parsePacket(raw as unknown as Record<string, unknown>);
 
+      // ── CN-INT-02: Auto-fill layer1 from premise if ready ──
+      let layer1ForNew: WritingContract = DEFAULT_WRITING_CONTRACT;
+      if (premise?.status === 'confirmed') {
+        try {
+          const stepResp = await premiseApi.getPremiseStepState({ projectId });
+          if (stepResp.exists && stepResp.state) {
+            const fiveStep = stepResp.state as PremiseFiveStepState;
+            if (isPremiseReadyForContract(premise, fiveStep)) {
+              const derived = premiseToWritingContract(premise, fiveStep);
+              layer1ForNew = { ...DEFAULT_WRITING_CONTRACT, ...derived };
+            }
+          }
+        } catch (e) {
+          console.warn('[ChapterPacketCanvas] auto-fill layer1 failed', e);
+        }
+      }
+
       const updatedRaw = await chapterPacketApi.updateChapterPacketLayers({
         packetId: created.id,
-        layer1: DEFAULT_WRITING_CONTRACT,
+        layer1: layer1ForNew,
         layer2: DEFAULT_ACTIVE_CONTEXT,
         layer3: DEFAULT_NARRATIVE_COMPRESSION,
         layer4: DEFAULT_EXECUTION_LAYER,
@@ -1070,6 +1143,11 @@ export default function ChapterPacketCanvas() {
   if (packets.length === 0) {
     return (
       <div className="packet-container">
+        {/* CN-INT-01: Upstream stale indicator */}
+        <PipelineIndicator
+          staleUpstreams={upstreamStatus.staleUpstreams}
+          onRefresh={handleRefresh}
+        />
         <div className="packet-welcome">
           <div className="packet-welcome-icon">📋</div>
           <div className="packet-welcome-title">排期细纲</div>
@@ -1146,6 +1224,11 @@ export default function ChapterPacketCanvas() {
 
   return (
     <div className="packet-container">
+      {/* CN-INT-01: Upstream stale indicator */}
+      <PipelineIndicator
+        staleUpstreams={upstreamStatus.staleUpstreams}
+        onRefresh={handleRefresh}
+      />
       {/* Left: Editor */}
       <div className="packet-editor">
         {/* Packet selector */}

@@ -31,6 +31,7 @@ import './styles/ai.css';
 import './components/ui/design-tokens.css';
 import { useProjectStore } from './stores/projectStore';
 import { getPipelineState, savePipelineState } from './api/projectApi';
+import { useUpstreamDetection } from './hooks/useUpstreamDetection';
 import PipelineNav from './features/pipeline-nav/PipelineNav';
 import CanvasShell from './features/pipeline-canvas/CanvasShell';
 import PremiseEntryGate from './features/canvas-01-premise/PremiseEntryGate';
@@ -143,6 +144,8 @@ function AppInner() {
   // Sync local state when pipeline-helper updates the store (e.g. confirmPremise)
   const storeStage = useProjectStore(s => s.currentStage);
   const storeStages = useProjectStore(s => s.canvasStages);
+  const storeProjectId = useProjectStore(s => s.currentProjectId);
+  useUpstreamDetection(storeProjectId);
   useEffect(() => {
     if (storeStage && storeStage !== currentStage) {
       setCurrentStage(storeStage);

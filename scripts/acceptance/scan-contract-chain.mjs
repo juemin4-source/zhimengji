@@ -215,6 +215,41 @@ const ENTITIES = [
     status: 'ACTIVE',
     batch: 'T-003',
   },
+  // ===== CN-INT-01: Cross-Canvas Pipeline Integrator (T-001) =====
+  // Frontend foundation only. Backend timestamp commands + model struct will be
+  // filled by T-004. Marked PENDING so scanner skips backend verification for now.
+  {
+    name: 'CN-INT-01-PipelineIntegrator',
+    contractFile: 'src/contracts/pipeline-integrator.contract.ts',
+    apiFile: 'src/api/premiseApi.ts',
+    commandsFile: 'src-tauri/src/pipeline_commands.rs',
+    modelsStruct: 'TimestampRecord',
+    dbPrefix: 'pipeline',
+    uiFiles: [
+      'src/features/common/pipeline-indicator/PipelineIndicator.tsx',
+      'src/hooks/useUpstreamDetection.ts',
+      'src/features/canvas-03-setting/SparrowStepList.tsx',
+      'src/features/canvas-04-packet/ChapterPacketCanvas.tsx',
+      'src/stores/projectStore.ts',
+    ],
+    commands: [
+      'get_premise_updated_at',
+      'get_structure_updated_at',
+      'get_sparrow_last_saved_at',
+      'get_packets_updated_at',
+    ],
+    apiMethods: [
+      'getPremiseUpdatedAt',
+      'getStructureUpdatedAt',
+      'getSparrowLastSavedAt',
+      'getPacketsUpdatedAt',
+    ],
+    dbMethods: [
+      'get_updated_at_timestamp',
+    ],
+    status: 'PENDING',
+    batch: 'T-001',
+  },
   {
     name: 'CN-MET-04-PacketDetail',
     contractFile: 'src/contracts/chapter-packet.contract.ts',
@@ -232,6 +267,27 @@ const ENTITIES = [
     dbMethods: ['set_detail_mode', 'get_packet_detail', 'auto_generate_sketch', 'save_refined_content'],
     status: 'ACTIVE',
     batch: 'T-004',
+  },
+  // ===== CN-INT-02: Premise→WritingContract Mapping (T-002) =====
+  // Pure frontend mapping function. No backend commands or models.
+  // References the mapping function + modified UI files.
+  {
+    name: 'CN-INT-02-PremiseToContract',
+    contractFile: 'src/contracts/premise.contract.ts',
+    apiFile: 'src/features/common/pipeline/premise-to-contract.ts',
+    commandsFile: 'src-tauri/src/premise_commands.rs',
+    modelsStruct: 'PremiseCard',
+    dbPrefix: 'premise_to_contract',
+    uiFiles: [
+      'src/features/common/pipeline/premise-to-contract.ts',
+      'src/features/canvas-04-packet/ChapterPacketCanvas.tsx',
+      'src/features/canvas-01-premise/PremiseEntryGate.tsx',
+    ],
+    commands: [],
+    apiMethods: [],
+    dbMethods: [],
+    status: 'PENDING',
+    batch: 'T-002',
   },
 ];
 

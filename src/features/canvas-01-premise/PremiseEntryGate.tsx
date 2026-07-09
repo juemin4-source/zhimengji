@@ -288,9 +288,14 @@ export default function PremiseEntryGate() {
 
   useEffect(() => {
     if (allConfirmed && projectId) {
-      confirmPremise(projectId).catch((err) => {
-        console.error('[PremiseEntryGate] confirmPremise error', err);
-      });
+      confirmPremise(projectId)
+        .then(() => {
+          // ── CN-INT-02: Mark downstream canvases as stale ──
+          useProjectStore.getState().markStale('premise');
+        })
+        .catch((err) => {
+          console.error('[PremiseEntryGate] confirmPremise error', err);
+        });
     }
   }, [allConfirmed, projectId]);
 

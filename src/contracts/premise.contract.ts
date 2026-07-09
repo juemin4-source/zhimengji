@@ -140,3 +140,19 @@ export interface PremiseStepStateResponse {
   exists: boolean;
   state: PremiseFiveStepState | null;
 }
+
+// ── CN-INT-02: Premise→WritingContract mapping ──
+
+import type { WritingContract } from './chapter-packet.contract';
+
+export interface PremiseToContractMapping {
+  narrativeDistance: WritingContract['narrativeDistance'];
+  expositionStrategy: WritingContract['expositionStrategy'];
+  characterVoice: WritingContract['characterVoice'];
+  taboos: string[];
+}
+
+export type PremiseContractInput = {
+  projectId: string;
+  packetId: string;
+};

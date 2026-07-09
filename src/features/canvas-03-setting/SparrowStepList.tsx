@@ -10,6 +10,8 @@ import { useProjectStore } from '../../stores/projectStore';
 import { EmptyState } from '../../components/ui';
 import { useToast } from '../../components/Toast';
 import * as settingApi from '../../api/settingApi';
+import { useProjectStore } from '../../stores/projectStore';
+import PipelineIndicator from '../common/pipeline-indicator/PipelineIndicator';
 import type {
   SparrowStepId, SparrowStepState, CharacterStep3,
 } from '../../contracts/setting.contract';
@@ -35,10 +37,21 @@ const STEP_DEFS: { stepId: SparrowStepId; label: string; required: boolean }[] =
 
 export default function SparrowStepList() {
   const projectId = useProjectStore(s => s.currentProjectId);
+  const upstreamStatus = useProjectStore(s => s.upstreamStatus.setting);
+  const markRefreshed = useProjectStore(s => s.markRefreshed);
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [allExpanded, setAllExpanded] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ── CN-INT-01: Refresh upstream data ──
+
+  const handleRefresh = useCallback(() => {
+    setLoading(true);
+    setRefreshKey(k => k + 1);
+    markRefreshed('setting');
+  }, [markRefreshed]);
 
   // Step states
   const [steps, setSteps] = useState<SparrowStepState[]>(() =>
@@ -90,7 +103,7 @@ export default function SparrowStepList() {
       }
     };
     load();
-  }, [projectId]);
+  }, [projectId, refreshKey]);
 
   // ── Step handlers ──
 
@@ -247,6 +260,11 @@ export default function SparrowStepList() {
 
   return (
     <div className="sparrow-wrapper">
+      {/* CN-INT-01: Upstream stale indicator */}
+      <PipelineIndicator
+        staleUpstreams={upstreamStatus.staleUpstreams}
+        onRefresh={handleRefresh}
+      />
       {/* Header */}
       <div className="sparrow-header">
         <div className="sparrow-header-title">

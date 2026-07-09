@@ -17,7 +17,10 @@
         "accept:css": "node scripts/acceptance/scan-css-compliance.mjs",
         "accept:contracts": "node scripts/acceptance/scan-contract-chain.mjs",
         "accept:persistence": "node scripts/acceptance/persistence.mjs",
-        "accept": "npm run accept:static && npm run accept:css && npm run accept:contracts && npm run accept:persistence"
+        "accept": "npm run accept:static && npm run accept:css && npm run accept:contracts && npm run accept:persistence",
+        "accept:quickdraft": "node scripts/acceptance/accept-quickdraft.mjs",
+        "accept:export": "node scripts/acceptance/accept-export.mjs",
+        "accept:feedback": "node scripts/acceptance/accept-feedback.mjs"
     },
     "dependencies": {
         "@tauri-apps/api": "^2",

@@ -758,3 +758,295 @@ impl DecisionLogRow {
         }
     }
 }
+
+// ===== v2.0.2 AI Foundation Structs =====
+
+/// Record of an AI prompt execution (ai_prompt_registry table)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiPromptRecord {
+    pub id: String,
+    pub project_id: String,
+    pub skill_id: String,
+    pub prompt_text: String,
+    pub input_data: String,
+    pub output_data: String,
+    pub status: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// AI provider configuration (ai_provider_config table)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiProviderConfig {
+    pub id: String,
+    pub provider_id: String,
+    pub provider_name: String,
+    pub api_key_encrypted: String,
+    pub endpoint: String,
+    pub models: String,          // JSON array of model IDs
+    pub timeout_ms: i64,
+    pub is_active: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// Result of an AI evaluation run (ai_evaluation_results table)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiEvaluationResult {
+    pub id: String,
+    pub project_id: String,
+    pub prompt_id: Option<String>,
+    pub provider_id: String,
+    pub model_id: String,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub latency_ms: i64,
+    pub success: bool,
+    pub error_message: String,
+    pub created_at: i64,
+}
+
+// ===== AI Input/Output Types for Command Stubs =====
+
+/// Input for build_context command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildContextInput {
+    pub canvas_id: String,
+    pub project_id: String,
+    pub output_type: String,
+    pub additional_prompt: Option<String>,
+}
+
+/// Output from build_context command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiBuiltContext {
+    pub system_prompt: String,
+    pub context_data: String,
+    pub writable_targets: Vec<String>,
+    pub forbidden_targets: Vec<String>,
+    pub output_format: String,
+    pub skill_id: Option<String>,
+}
+
+/// Input for route_intent command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiRouteInput {
+    pub message: String,
+    pub canvas_id: String,
+    pub project_id: String,
+    pub history: Option<String>,
+}
+
+/// Output from route_intent command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiRouteOutput {
+    pub intent: String,
+    pub confidence: f64,
+    pub parameters: serde_json::Value,
+    pub fallback_reason: Option<String>,
+}
+
+/// Input for parse_output command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiParseInput {
+    pub raw_content: String,
+    pub schema: String,
+    pub strict: bool,
+}
+
+/// Output from parse_output command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiParseOutput {
+    pub data: serde_json::Value,
+    pub validation_errors: Vec<String>,
+    pub repair_log: Vec<String>,
+    pub fallback_text: Option<String>,
+}
+
+/// Skill record for AI skill registry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiSkillRecord {
+    pub id: String,
+    pub skill_id: String,
+    pub name: String,
+    pub prompt_template: String,
+    pub input_schema: String,
+    pub output_schema: String,
+    pub version: String,
+}
+
+/// Input for list_skills command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListSkillsInput {
+    pub project_id: String,
+}
+
+/// Output from list_skills command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListSkillsOutput {
+    pub skills: Vec<AiSkillRecord>,
+}
+
+/// Input for get_skill command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSkillInput {
+    pub id: String,
+}
+
+/// Input for save_provider_config command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveProviderConfigInput {
+    pub provider_id: String,
+    pub provider_name: String,
+    pub api_key_encrypted: String,
+    pub endpoint: String,
+    pub models: Vec<String>,
+    pub timeout_ms: i64,
+}
+
+/// Input for delete_provider_config command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteProviderConfigInput {
+    pub id: String,
+}
+
+/// Input for test_provider_connection command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestProviderConnectionInput {
+    pub provider_id: String,
+    pub endpoint: String,
+    pub api_key: String,
+    pub model: String,
+}
+
+/// Input for run_evaluation command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunEvaluationInput {
+    pub project_id: String,
+    pub prompt: String,
+    pub provider_id: String,
+    pub model_id: String,
+}
+
+// ===== v2.0.1 QuickDraft =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickDraftInput {
+    pub project_id: String,
+    pub user_input: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickDraftGenerateResult {
+    pub draft: QuickDraftApi,
+    pub preview_title: String,
+    pub preview_content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickDraftApi {
+    pub id: String,
+    pub project_id: String,
+    pub user_input: String,
+    pub premise_text: String,
+    pub premise_type: String,
+    pub chapters: String,
+    pub status: String,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuickDraftRow {
+    pub id: String,
+    pub project_id: String,
+    pub user_input: String,
+    pub premise_text: String,
+    pub premise_type: String,
+    pub chapters: String,
+    pub status: String,
+    pub created_at: i64,
+}
+
+impl QuickDraftRow {
+    pub fn to_api(self) -> QuickDraftApi {
+        QuickDraftApi {
+            id: self.id,
+            project_id: self.project_id,
+            user_input: self.user_input,
+            premise_text: self.premise_text,
+            premise_type: self.premise_type,
+            chapters: self.chapters,
+            status: self.status,
+            created_at: self.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickDraftTransferInput {
+    pub draft_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListQuickDraftsInput {
+    pub project_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetQuickDraftInput {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteQuickDraftInput {
+    pub id: String,
+}
+
+// ===== v2.0.1 Export =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportInput {
+    pub chapter_content: String,
+    pub default_name: String,
+}
+
+// ===== v2.0.1 Feedback =====
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedbackInput {
+    pub project_id: String,
+    pub rating: i64,
+    pub feedback_text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListFeedbackInput {
+    pub project_id: String,
+}

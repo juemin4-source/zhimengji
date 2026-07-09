@@ -115,3 +115,33 @@ export const DEFAULT_MODELS: AiModel[] = [
   { id: 'deepseek-v3', name: 'DeepSeek V3', providerId: 'deepseek', providerName: 'DeepSeek', description: 'DeepSeek · 高性价比 · 中文优秀', costPer1KTokens: 0.001, icon: '\u{1F7E4}', available: true },
   { id: 'deepseek-r1', name: 'DeepSeek R1', providerId: 'deepseek', providerName: 'DeepSeek', description: 'DeepSeek · 推理增强 · 长上下文', costPer1KTokens: 0.002, icon: '\u{1F7E4}', available: true },
 ];
+
+// ===== v2.0.2 AI Infrastructure Types =====
+
+/**
+ * Maps each AI role (chat, structured, generation, detection) to a modelId.
+ */
+export interface ProviderRoleModels {
+  chat: string;
+  structured: string;
+  generation: string;
+  detection: string;
+}
+
+/**
+ * Capability status for a specific provider role.
+ */
+export interface CapabilityStatus {
+  providerId: string;
+  role: string;
+  status: 'available' | 'unavailable' | 'degraded';
+  latencyMs?: number;
+}
+
+/**
+ * Router configuration for AI intent routing.
+ */
+export interface RouterConfig {
+  defaultModelId: string;
+  fallbackProviderIds: string[];
+}

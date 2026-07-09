@@ -12,6 +12,11 @@ use crate::models::{
     ChapterPacket, ChapterPacketRow, CreateChapterPacketInput, UpdateChapterPacketLayersInput,
     // v2 DecisionLog
     AppendDecisionLogInput, DecisionLogEntry, DecisionLogRow,
+    // v2.0.1 QuickDraft
+    QuickDraftApi, QuickDraftInput, QuickDraftRow,
+    // v2.0.1 Feedback
+    FeedbackInput,
+    // v2.0.2 AI Foundation (types used via SQL schema, not direct Rust references)
 };
 
 pub struct Database {
@@ -119,6 +124,8 @@ impl Database {
         init_faction_cards_table(&conn)?;
         init_chapter_packets_table(&conn)?;
         init_decision_logs_table(&conn)?;
+        init_quick_drafts_table(&conn)?;
+        init_ai_tables(&conn)?;
         Ok(())
     }
 
@@ -1720,6 +1727,82 @@ pub fn init_decision_logs_table(conn: &Connection) -> SqlResult<()> {
     Ok(())
 }
 
+// ===== v2.0.1 QuickDraft =====
+
+pub fn init_quick_drafts_table(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS quick_drafts (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          user_input TEXT NOT NULL,
+          premise_text TEXT NOT NULL DEFAULT '',
+          premise_type TEXT NOT NULL DEFAULT '',
+          chapters TEXT NOT NULL DEFAULT '[]',
+          status TEXT NOT NULL DEFAULT 'draft',
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_qd_project ON quick_drafts(project_id);
+        CREATE INDEX IF NOT EXISTS idx_qd_status ON quick_drafts(status);"
+    )?;
+    Ok(())
+}
+
+// ===== v2.0.2 AI Foundation =====
+
+pub fn init_ai_tables(conn: &Connection) -> SqlResult<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS ai_prompt_registry (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          skill_id TEXT NOT NULL DEFAULT '',
+          prompt_text TEXT NOT NULL DEFAULT '',
+          input_data TEXT NOT NULL DEFAULT '{}',
+          output_data TEXT NOT NULL DEFAULT '{}',
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS ai_provider_config (
+          id TEXT PRIMARY KEY,
+          provider_id TEXT NOT NULL,
+          provider_name TEXT NOT NULL DEFAULT '',
+          api_key_encrypted TEXT NOT NULL DEFAULT '',
+          endpoint TEXT NOT NULL DEFAULT '',
+          models TEXT NOT NULL DEFAULT '[]',
+          timeout_ms INTEGER NOT NULL DEFAULT 30000,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS ai_evaluation_results (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          prompt_id TEXT DEFAULT NULL,
+          provider_id TEXT NOT NULL DEFAULT '',
+          model_id TEXT NOT NULL DEFAULT '',
+          input_tokens INTEGER NOT NULL DEFAULT 0,
+          output_tokens INTEGER NOT NULL DEFAULT 0,
+          latency_ms INTEGER NOT NULL DEFAULT 0,
+          success INTEGER NOT NULL DEFAULT 1,
+          error_message TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_prompt_project ON ai_prompt_registry(project_id);
+        CREATE INDEX IF NOT EXISTS idx_ai_prompt_status ON ai_prompt_registry(status);
+        CREATE INDEX IF NOT EXISTS idx_ai_provider_id ON ai_provider_config(provider_id);
+        CREATE INDEX IF NOT EXISTS idx_ai_eval_project ON ai_evaluation_results(project_id);
+        CREATE INDEX IF NOT EXISTS idx_ai_eval_provider ON ai_evaluation_results(provider_id);"
+    )?;
+    Ok(())
+}
+
 impl Database {
     pub fn append_decision_log(&self, input: &AppendDecisionLogInput) -> SqlResult<DecisionLogEntry> {
         let conn = self.conn.lock().unwrap();
@@ -1994,6 +2077,109 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM chapter_packets WHERE id = ?", params![id])?;
         Ok(())
+    }
+
+    // ===== v2.0.1 QuickDraft =====
+
+    pub fn create_quick_draft(&self, input: &QuickDraftInput, premise_text: &str, premise_type: &str, chapters: &str) -> SqlResult<QuickDraftApi> {
+        let conn = self.conn.lock().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().timestamp_millis();
+        conn.execute(
+            "INSERT INTO quick_drafts (id, project_id, user_input, premise_text, premise_type, chapters, status, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'draft', ?7)",
+            params![id, input.project_id, input.user_input, premise_text, premise_type, chapters, now],
+        )?;
+        Ok(QuickDraftApi {
+            id,
+            project_id: input.project_id.clone(),
+            user_input: input.user_input.clone(),
+            premise_text: premise_text.to_string(),
+            premise_type: premise_type.to_string(),
+            chapters: chapters.to_string(),
+            status: "draft".to_string(),
+            created_at: now,
+        })
+    }
+
+    pub fn get_quick_draft(&self, id: &str) -> SqlResult<Option<QuickDraftApi>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, user_input, premise_text, premise_type, chapters, status, created_at
+             FROM quick_drafts WHERE id = ?"
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(QuickDraftRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                user_input: row.get(2)?,
+                premise_text: row.get(3)?,
+                premise_type: row.get(4)?,
+                chapters: row.get(5)?,
+                status: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?.to_api())),
+            None => Ok(None),
+        }
+    }
+
+    pub fn list_quick_drafts_by_project(&self, project_id: &str) -> SqlResult<Vec<QuickDraftApi>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, user_input, premise_text, premise_type, chapters, status, created_at
+             FROM quick_drafts WHERE project_id = ? ORDER BY created_at DESC"
+        )?;
+        let rows = stmt.query_map(params![project_id], |row| {
+            Ok(QuickDraftRow {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                user_input: row.get(2)?,
+                premise_text: row.get(3)?,
+                premise_type: row.get(4)?,
+                chapters: row.get(5)?,
+                status: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })?;
+        let mut drafts = Vec::new();
+        for r in rows {
+            drafts.push(r?.to_api());
+        }
+        Ok(drafts)
+    }
+
+    pub fn transfer_quick_draft(&self, id: &str) -> SqlResult<QuickDraftApi> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE quick_drafts SET status = 'transferred', premise_text = premise_text WHERE id = ?",
+            params![id],
+        )?;
+        drop(conn);
+        self.get_quick_draft(id).map(|opt| opt.expect("quick_draft not found after transfer"))
+    }
+
+    pub fn delete_quick_draft(&self, id: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM quick_drafts WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
+    // ===== v2.0.1 Feedback =====
+
+    pub fn submit_feedback(&self, input: &FeedbackInput) -> SqlResult<DecisionLogEntry> {
+        self.append_decision_log(&AppendDecisionLogInput {
+            project_id: input.project_id.clone(),
+            operation: "feedback".to_string(),
+            summary: format!("rating={}", input.rating),
+            entity_type: Some("feedback".to_string()),
+            entity_id: Some("".to_string()),
+            details: Some(if input.feedback_text.is_empty() { "{}".to_string() } else {
+                serde_json::json!({"text": input.feedback_text}).to_string()
+            }),
+        })
     }
 }
 

@@ -1,4 +1,6 @@
-﻿mod byok;
+﻿mod ai;
+mod ai_commands;
+mod byok;
 mod byok_commands;
 mod chapter_packet_commands;
 mod commands;
@@ -9,6 +11,9 @@ mod pipeline_commands;
 mod premise_commands;
 mod setting_commands;
 mod structure_commands;
+mod quick_draft_commands;
+mod export_commands;
+mod feedback_commands;
 
 use db::Database;
 use std::fs;
@@ -36,6 +41,7 @@ pub fn run() {
             app.manage(database);
             Ok(())
         })
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             // Project
             commands::list_projects,
@@ -117,6 +123,28 @@ pub fn run() {
             decision_log_commands::append_decision_log,
             decision_log_commands::list_decision_logs,
             decision_log_commands::get_decision_log,
+            // v2.0.1 QuickDraft commands
+            quick_draft_commands::quickdraft_generate,
+            quick_draft_commands::quickdraft_transfer,
+            quick_draft_commands::quickdraft_list_by_project,
+            quick_draft_commands::quickdraft_get,
+            quick_draft_commands::quickdraft_delete,
+            // v2.0.1 Export commands
+            export_commands::export_text_as_markdown,
+            // v2.0.1 Feedback commands
+            feedback_commands::submit_feedback,
+            feedback_commands::list_feedback,
+            // v2.0.2 AI commands
+            ai_commands::build_context,
+            ai_commands::route_intent,
+            ai_commands::parse_output,
+            ai_commands::list_skills,
+            ai_commands::get_skill,
+            ai_commands::list_providers_v2,
+            ai_commands::save_provider_config,
+            ai_commands::delete_provider_config,
+            ai_commands::test_provider_connection,
+            ai_commands::run_evaluation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

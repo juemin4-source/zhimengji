@@ -101,6 +101,7 @@ export const PRESET_PROVIDERS: Array<{ id: string; name: string; icon: string; d
   { id: 'google', name: 'Google AI', icon: '\u{1F535}', defaultEndpoint: 'https://generativelanguage.googleapis.com/v1', defaultModels: ['Gemini Pro', 'Gemini Ultra'] },
   { id: 'azure', name: 'Azure OpenAI', icon: '\u{1F7E3}', defaultEndpoint: 'https://<resource>.openai.azure.com', defaultModels: ['GPT-4o', 'GPT-4'] },
   { id: 'local', name: '本地模型', icon: '\u{1F49A}', defaultEndpoint: 'http://localhost:11434/v1', defaultModels: ['Llama 3', 'Mistral', '自定义'] },
+  { id: 'deepseek', name: 'DeepSeek', icon: '\u{1F7E4}', defaultEndpoint: 'https://api.deepseek.com/v1', defaultModels: ['DeepSeek V3', 'DeepSeek R1'] },
   { id: 'custom', name: '自定义端点', icon: '⚙️', defaultEndpoint: '', defaultModels: ['自定义'] },
 ];
 
@@ -109,4 +110,8 @@ export const DEFAULT_MODELS: AiModel[] = [
   { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', providerId: 'anthropic', providerName: 'Anthropic', description: 'Anthropic · 长上下文 · 知识截止 2026-04', costPer1KTokens: 0.008, icon: '\u{1F7E0}', available: true },
   { id: 'claude-3-haiku', name: 'Claude 3 Haiku', providerId: 'anthropic', providerName: 'Anthropic', description: 'Anthropic · 轻量快速 · 知识截止 2026-01', costPer1KTokens: 0.002, icon: '\u{1F7E0}', available: true },
   { id: 'local-llama3', name: '本地模型 (Llama 3)', providerId: 'local', providerName: '本地模型', description: '本地推理 · 免费 · 需配置端点', costPer1KTokens: 0, icon: '\u{1F49A}', available: true },
+  { id: 'gemini-pro', name: 'Gemini Pro', providerId: 'google', providerName: 'Google AI', description: 'Google · 多模态 · 性价比高', costPer1KTokens: 0.003, icon: '\u{1F535}', available: true },
+  { id: 'gemini-flash', name: 'Gemini 2.0 Flash', providerId: 'google', providerName: 'Google AI', description: 'Google · 轻量快速 · 超低价格', costPer1KTokens: 0.0005, icon: '\u{1F535}', available: true },
+  { id: 'deepseek-v3', name: 'DeepSeek V3', providerId: 'deepseek', providerName: 'DeepSeek', description: 'DeepSeek · 高性价比 · 中文优秀', costPer1KTokens: 0.001, icon: '\u{1F7E4}', available: true },
+  { id: 'deepseek-r1', name: 'DeepSeek R1', providerId: 'deepseek', providerName: 'DeepSeek', description: 'DeepSeek · 推理增强 · 长上下文', costPer1KTokens: 0.002, icon: '\u{1F7E4}', available: true },
 ];
